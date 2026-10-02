@@ -163,6 +163,7 @@ const componentCatalog = [
   ["Push button", "input", "Momentary normally-open tactile button."],
   ["Piezo buzzer", "output", "Low-power buzzer suitable for classroom experiments."],
   ["Photoresistor (LDR)", "sensor", "Light-dependent resistor for analog sensing."],
+  ["DHT11/DHT22 temperature-humidity sensor", "sensor", "Digital environmental sensor for classroom temperature and relative-humidity measurements."],
   ["DC motor", "actuator", "Small classroom DC gear motor."],
   ["L298N motor driver", "driver", "Dual H-bridge module for small DC motors."],
   ["HC-SR04 ultrasonic sensor", "sensor", "Distance sensor; Echo is typically 5 V logic."],
@@ -319,6 +320,7 @@ async function main() {
     ["DEBUG-01", "Systematic troubleshooting", "Record faults, tests and outcomes while debugging practical work.", "debugging"],
     ["ROBOT-01", "Robotics integration", "Integrate sensing, control, actuation and power into a simple robot.", "robotics"],
     ["PROBLEM-01", "Practical problem solving", "Use observations and tests to choose the next practical action.", "problem-solving"],
+    ["IOT-01", "IoT data flow", "Explain how validated sensor readings could be transmitted from a connected microcontroller to an application dashboard.", "iot"],
   ] as const) {
     const outcome = await db.learningOutcome.create({ data: { code: item[0], title: item[1], description: item[2], skillId: skills.get(item[3]), isDemo: true } });
     outcomes.set(item[0], outcome.id);
@@ -449,6 +451,215 @@ async function main() {
     });
   }
 
+  const showcaseRubric = await db.rubric.create({
+    data: {
+      name: "DEMO Smart Environment Monitor Rubric",
+      description: "Teacher-scored showcase rubric. A learner is not marked successful merely because code was uploaded; evidence and teacher review remain authoritative.",
+      isDemo: true,
+      criteria: {
+        create: [
+          { label: "Safe circuit and sensor wiring", description: "Power, ground, sensor data and LED connections match the selected board and are safe to inspect.", skillTag: "circuit-building", skillId: skills.get("circuit-building"), maxScore: 4, order: 1 },
+          { label: "Sensor reading and interpretation", description: "Learner captures plausible temperature/humidity values and explains what the measurements represent.", skillTag: "sensors", skillId: skills.get("sensors"), maxScore: 4, order: 2 },
+          { label: "Microcontroller program", description: "Code reads the sensor, reports measurements and drives the indicators using the selected board correctly.", skillTag: "microcontroller-programming", skillId: skills.get("microcontroller-programming"), maxScore: 4, order: 3 },
+          { label: "Testing and troubleshooting", description: "Learner documents at least one deliberate test and records useful troubleshooting if readings are missing or implausible.", skillTag: "debugging", skillId: skills.get("debugging"), maxScore: 4, order: 4 },
+          { label: "Evidence and explanation", description: "Submitted evidence clearly shows the build/readings or clearly documents an unresolved result without claiming success.", skillTag: "problem-solving", skillId: skills.get("problem-solving"), maxScore: 4, order: 5 },
+          { label: "Connected-data understanding", description: "Learner can explain, without needing to implement it, how an ESP32 could send validated readings to a dashboard.", skillTag: "iot", skillId: skills.get("iot"), maxScore: 4, order: 6 },
+        ],
+      },
+    },
+  });
+
+  const showcaseModule = await db.module.create({
+    data: {
+      courseId: course.id,
+      title: "Module 11: Smart Environment Monitor",
+      slug: "module-11-smart-environment-monitor",
+      description: "Showcase project: read temperature and humidity, turn sensor values into useful indicators, test the system and document evidence.",
+      order: 11,
+    },
+  });
+
+  const showcaseLesson = await db.lesson.create({
+    data: {
+      moduleId: showcaseModule.id,
+      title: "Smart Environment Monitor",
+      slug: "smart-environment-monitor",
+      concept: "Environmental sensing: a microcontroller reads physical measurements, validates them, and converts them into useful information.",
+      objective: "Students learn how a microcontroller reads environmental sensors and converts temperature and humidity measurements into useful information.",
+      theory: "A temperature/humidity sensor measures environmental conditions and sends digital data to the microcontroller. The program reads the measurement, checks whether it is valid, displays it through the serial monitor, and can convert the value into a simple indicator such as an LED state. Good sensor work separates measurement from interpretation: first confirm that the reading is plausible, then decide what the information means.",
+      safetyNotes: "Use only low-voltage educational electronics. Disconnect USB/battery power before changing wiring. Check the sensor pinout because DHT modules and bare sensors can use different physical pin orders. Arduino Uno uses 5 V logic while ESP32 GPIO is 3.3 V; keep ESP32 GPIO within 3.3 V limits. The optional buzzer/LED threshold in this activity is a classroom indicator only, not a certified environmental or safety alarm.",
+      practicalChallenge: "Build a monitor that reads temperature and relative humidity, prints both measurements, and uses LEDs to communicate a simple example state. Record several readings, deliberately test one fault or wiring check, and submit evidence showing what actually happened.",
+      expectedOutput: "Serial output shows plausible temperature and humidity measurements and the indicator LEDs respond to the example threshold logic. If the build does not work, the learner should submit honest troubleshooting evidence rather than claim success.",
+      generalTroubleshoot: "Check sensor power and ground first, confirm the data pin and exact sensor pinout, confirm the DHT library/toolchain, wait between sensor reads, and treat NaN/invalid values as a fault to investigate. Change one item at a time and record the result.",
+      difficulty: "BEGINNER",
+      estimatedMinutes: 90,
+      order: 1,
+      status: "PUBLISHED",
+      isDemo: true,
+      outcomes: {
+        create: ["SENSE-01", "CODE-01", "DEBUG-01", "PROBLEM-01", "IOT-01"].map((code) => ({ outcomeId: outcomes.get(code)! })),
+      },
+      quiz: {
+        create: {
+          title: "Smart Environment Monitor assessment",
+          passScore: 70,
+          questions: {
+            create: [
+              { prompt: "What should you do first if the sensor reports no valid temperature or humidity value?", type: "SINGLE_CHOICE", options: ["Check power, ground, data pin and sensor configuration", "Increase the voltage", "Mark the task complete", "Remove all delays"], correctAnswer: "Check power, ground, data pin and sensor configuration", explanation: "Start with power, ground, pin mapping and sensor configuration before changing several things at once.", points: 1, order: 1, skillId: skills.get("debugging") },
+              { prompt: "Why should several environmental readings be recorded instead of trusting a single value?", type: "SINGLE_CHOICE", options: ["To see whether readings are plausible and stable", "To increase GPIO voltage", "To bypass the sensor", "To avoid using code"], correctAnswer: "To see whether readings are plausible and stable", explanation: "Repeated readings help reveal unstable wiring, sensor timing problems or changing conditions.", points: 1, order: 2, skillId: skills.get("sensors") },
+              { prompt: "What is the main educational purpose of the LED threshold in this project?", type: "SINGLE_CHOICE", options: ["Convert a measurement into an understandable indicator", "Create a certified safety alarm", "Power the sensor", "Upload code automatically"], correctAnswer: "Convert a measurement into an understandable indicator", explanation: "The LED demonstrates how software can turn measurements into useful information; it is not a certified alarm.", points: 1, order: 3, skillId: skills.get("problem-solving") },
+              { prompt: "In ESP32 advanced mode, what must happen before dashboard data can be trusted?", type: "SINGLE_CHOICE", options: ["Validate the sensor reading and identify the device/measurement", "Send every value without checking it", "Increase sensor voltage", "Let the AI mark the practical complete"], correctAnswer: "Validate the sensor reading and identify the device/measurement", explanation: "Connected data should retain measurement context and validation; AI does not replace practical evidence or teacher assessment.", points: 1, order: 4, skillId: skills.get("iot") },
+            ],
+          },
+        },
+      },
+      practicalTasks: {
+        create: {
+          rubricId: showcaseRubric.id,
+          title: "Build and validate the Smart Environment Monitor",
+          instructions: "1) Select Arduino Uno or ESP32. 2) Identify the sensor pinout before wiring. 3) Build the low-voltage circuit with LEDs and optional buzzer. 4) Upload the board-specific code. 5) Run a serial test. 6) Record at least three temperature/humidity readings. 7) Perform one deliberate troubleshooting check if anything is unexpected. 8) Upload evidence and notes. Do not claim success without observable readings/evidence.",
+          successCriteria: "Evidence supports a safe, correctly identified board/sensor setup; recorded readings are present and plausible or an unresolved fault is honestly documented; code and troubleshooting match the selected board; teacher rubric review determines final practical completion.",
+          evidencePrompt: "Upload a clear photo or PDF showing the circuit and/or serial readings. In your notes, record at least three readings, the board used, what the LEDs indicated, and any troubleshooting performed.",
+        },
+      },
+    },
+  });
+  lessonIds.push(showcaseLesson.id);
+
+  const showcaseComponents = ["Solderless breadboard", "Jumper wires", "DHT11/DHT22 temperature-humidity sensor", "LED", "330 ohm resistor", "10k ohm resistor", "Piezo buzzer"];
+  await db.lessonHardwareVariant.createMany({
+    data: [
+      {
+        lessonId: showcaseLesson.id,
+        hardwarePlatformId: hardware.get("arduino-uno")!,
+        title: "Smart Environment Monitor — Arduino Uno",
+        wiringInstructions: "Use the sensor's documented pinout. For a common DHT module: VCC -> 5V, GND -> GND, DATA -> D2. Connect a green LED anode through 330 ohm to D8 and a red LED anode through 330 ohm to D9; LED cathodes -> GND. Optional buzzer -> D10 only if it is a low-current classroom buzzer suitable for GPIO use. If using a bare DHT sensor, add the documented pull-up resistor between VCC and DATA where required.",
+        gpioMappings: "DHT DATA -> D2\nGreen LED -> D8 through 330 ohm\nRed LED -> D9 through 330 ohm\nOptional low-current buzzer -> D10\nAll grounds -> GND",
+        codeLanguage: "Arduino C++",
+        programmingFramework: "Arduino IDE + DHT sensor library",
+        codeSnippet: `#include <DHT.h>
+#define DHTPIN 2
+#define DHTTYPE DHT11
+const int GREEN_LED=8, RED_LED=9;
+DHT dht(DHTPIN,DHTTYPE);
+
+void setup(){
+  Serial.begin(9600);
+  pinMode(GREEN_LED,OUTPUT);
+  pinMode(RED_LED,OUTPUT);
+  dht.begin();
+}
+void loop(){
+  delay(2000);
+  float humidity=dht.readHumidity();
+  float tempC=dht.readTemperature();
+  if(isnan(humidity)||isnan(tempC)){
+    Serial.println("Sensor read failed - check wiring/pin/type");
+    digitalWrite(GREEN_LED,LOW);
+    digitalWrite(RED_LED,HIGH);
+    return;
+  }
+  Serial.print("Temperature C: "); Serial.print(tempC);
+  Serial.print(" | Humidity %: "); Serial.println(humidity);
+  bool exampleAlert = tempC > 30.0 || humidity > 75.0;
+  digitalWrite(GREEN_LED, exampleAlert ? LOW : HIGH);
+  digitalWrite(RED_LED, exampleAlert ? HIGH : LOW);
+}`,
+        uploadProcedure: "Install/select the required DHT sensor library, connect the Uno by USB, select Arduino Uno and the correct port, compile, upload, then open Serial Monitor at 9600 baud. Wait at least two seconds between DHT reads.",
+        expectedOutput: "Every few seconds the Serial Monitor shows temperature in °C and relative humidity in %. The green LED is used for the example normal state and the red LED for the example threshold state. These thresholds are instructional only.",
+        troubleshooting: "If readings are NaN/invalid, confirm the exact DHT model, pinout, DATA pin D2, ground and supply. Check whether a pull-up resistor is required by the sensor version. Verify the library and read interval before replacing hardware.",
+      },
+      {
+        lessonId: showcaseLesson.id,
+        hardwarePlatformId: hardware.get("esp32")!,
+        title: "Smart Environment Monitor — ESP32",
+        wiringInstructions: "Power a 3.3 V-compatible DHT module from 3.3V where supported by the exact sensor/module; GND -> GND; DATA -> GPIO4. Connect a green LED through 330 ohm to GPIO18 and a red LED through 330 ohm to GPIO19; cathodes -> GND. Optional low-current buzzer -> GPIO23 if suitable. Confirm the specific sensor module's voltage requirements before power-up.",
+        gpioMappings: "DHT DATA -> GPIO4\nGreen LED -> GPIO18 through 330 ohm\nRed LED -> GPIO19 through 330 ohm\nOptional low-current buzzer -> GPIO23\nAll grounds -> GND",
+        codeLanguage: "Arduino C++",
+        programmingFramework: "Arduino IDE + ESP32 core + DHT sensor library",
+        codeSnippet: `#include <DHT.h>
+#define DHTPIN 4
+#define DHTTYPE DHT11
+const int GREEN_LED=18, RED_LED=19;
+DHT dht(DHTPIN,DHTTYPE);
+
+void setup(){
+  Serial.begin(115200);
+  pinMode(GREEN_LED,OUTPUT);
+  pinMode(RED_LED,OUTPUT);
+  dht.begin();
+}
+void loop(){
+  delay(2000);
+  float humidity=dht.readHumidity();
+  float tempC=dht.readTemperature();
+  if(isnan(humidity)||isnan(tempC)){
+    Serial.println("Sensor read failed - check wiring/pin/type");
+    digitalWrite(GREEN_LED,LOW);
+    digitalWrite(RED_LED,HIGH);
+    return;
+  }
+  Serial.printf("Temperature C: %.1f | Humidity %%: %.1f\\n",tempC,humidity);
+  bool exampleAlert = tempC > 30.0 || humidity > 75.0;
+  digitalWrite(GREEN_LED, exampleAlert ? LOW : HIGH);
+  digitalWrite(RED_LED, exampleAlert ? HIGH : LOW);
+}`,
+        uploadProcedure: "Install/select the ESP32 board support and DHT sensor library, select the exact ESP32 board and USB port, compile/upload, then open Serial Monitor at 115200 baud. Keep all ESP32 GPIO signals within 3.3 V limits.",
+        expectedOutput: "Serial Monitor shows temperature and humidity readings and the LEDs reflect the example threshold logic. A reading should be checked for plausibility rather than accepted automatically.",
+        troubleshooting: "Check 3.3 V-compatible power, common ground, GPIO4, the exact DHT type and sensor pinout. If upload fails, verify board, USB cable and port before changing wiring. If values are unstable, check loose jumpers and sampling interval.",
+      },
+    ],
+  });
+  const showcaseVariantRows = await db.lessonHardwareVariant.findMany({ where: { lessonId: showcaseLesson.id }, select: { id: true } });
+  for (const variant of showcaseVariantRows) {
+    await db.variantComponent.createMany({
+      data: showcaseComponents.map((name) => ({ variantId: variant.id, componentId: components.get(name)!, quantity: name === "LED" || name === "330 ohm resistor" ? 2 : 1, notes: name === "Piezo buzzer" ? "Optional" : name === "10k ohm resistor" ? "Use if required by the exact sensor version/module." : null })),
+    });
+  }
+
+  const showcaseProject = await db.project.create({
+    data: {
+      courseId: course.id,
+      rubricId: showcaseRubric.id,
+      title: "SMART ENVIRONMENT MONITOR",
+      slug: "smart-environment-monitor",
+      description: "A polished beginner showcase project that turns real temperature and humidity measurements into useful serial data and simple visual indicators.",
+      instructions: "Follow the 12-step journey: introduction, components, safety, wiring, code, run test, record readings, troubleshoot, answer assessment questions, upload evidence, teacher rubric and learning analytics update. Select your board first; STEMBuild adapts the implementation guidance automatically.",
+      successCriteria: "The project is considered practically successful only when measurable evidence supports the build/readings and/or teacher rubric review validates the result. Merely opening instructions or running code does not mark the project complete.",
+      difficulty: "BEGINNER",
+      status: "PUBLISHED",
+      isDemo: true,
+      hardware: {
+        create: [
+          {
+            hardwarePlatformId: hardware.get("arduino-uno")!,
+            notes: "Beginner mode: focus on local serial readings and LED indicators.",
+            wiringInstructions: "DHT DATA -> D2. Green LED -> D8 through 330 ohm. Red LED -> D9 through 330 ohm. Common ground. Follow the exact sensor module pinout.",
+            gpioMappings: "DHT DATA D2 | Green LED D8 | Red LED D9 | Optional buzzer D10",
+            codeLanguage: "Arduino C++",
+            programmingFramework: "Arduino IDE + DHT sensor library",
+            sourceCode: "Use the tested Arduino Uno code from the Smart Environment Monitor lesson. Keep the sampling interval at about two seconds and reject invalid sensor reads.",
+            uploadProcedure: "Select Arduino Uno, correct port, compile/upload, then verify readings in Serial Monitor at 9600 baud.",
+            expectedOutput: "At least three recorded temperature/humidity readings plus visible LED-state evidence or honest fault evidence.",
+            troubleshooting: "Verify sensor type/pinout, VCC/GND/D2, required pull-up, library installation and sampling interval.",
+          },
+          {
+            hardwarePlatformId: hardware.get("esp32")!,
+            notes: "Advanced extension (optional): after the local sensor reading is validated, an ESP32 could connect to Wi-Fi and send a small HTTPS/JSON payload such as {deviceId, temperatureC, humidityPct, measuredAt} to a future authenticated STEMBuild telemetry endpoint. The current MVP does not treat telemetry as practical completion and no Wi-Fi password should be hard-coded into shared project code.",
+            wiringInstructions: "DHT DATA -> GPIO4. Green LED -> GPIO18 through 330 ohm. Red LED -> GPIO19 through 330 ohm. Common ground. Confirm 3.3 V compatibility.",
+            gpioMappings: "DHT DATA GPIO4 | Green LED GPIO18 | Red LED GPIO19 | Optional buzzer GPIO23",
+            codeLanguage: "Arduino C++",
+            programmingFramework: "Arduino IDE + ESP32 core + DHT sensor library",
+            sourceCode: "Use the tested ESP32 code from the Smart Environment Monitor lesson first. Only after local readings are validated should an advanced learner add Wi-Fi/HTTPS transport as a separate extension.",
+            uploadProcedure: "Select the exact ESP32 board and port, compile/upload, verify local readings at 115200 baud, then optionally explore authenticated dashboard telemetry as a separate advanced exercise.",
+            expectedOutput: "At least three recorded temperature/humidity readings plus visible indicator evidence. Optional telemetry is not required for completion.",
+            troubleshooting: "Verify 3.3 V-safe wiring, GPIO4, sensor type, library/toolchain and serial readings before adding any network code.",
+          },
+        ],
+      },
+    },
+  });
+
   const project = await db.project.create({
     data: {
       courseId: course.id,
@@ -494,6 +705,7 @@ async function main() {
     data: lessonIds.map((lessonId, i) => ({ classroomId: classroom.id, lessonId, assignedById: teacher.id, dueAt: new Date(Date.now() + (i + 7) * 86400000) })),
   });
   await db.projectAssignment.create({ data: { classroomId: classroom.id, projectId: project.id, assignedById: teacher.id, dueAt: new Date(Date.now() + 30 * 86400000) } });
+  await db.projectAssignment.create({ data: { classroomId: classroom.id, projectId: showcaseProject.id, assignedById: teacher.id, dueAt: new Date(Date.now() + 35 * 86400000) } });
 
   await db.lessonProgress.create({ data: { studentId: student.id, lessonId: lessonIds[0], status: "NOT_STARTED" } });
 
