@@ -38,6 +38,19 @@ export async function createHardware(formData: FormData) {
   revalidatePath("/dashboard/admin/hardware");
 }
 
+export async function createRoboticsKit(formData: FormData) {
+  await requireRole("ADMIN");
+  const schoolId=String(formData.get("schoolId")??""); const hardwarePlatformId=String(formData.get("hardwarePlatformId")??""); const name=String(formData.get("name")??"").trim(); const code=String(formData.get("code")??"").trim().toUpperCase().replace(/[^A-Z0-9_-]/g,"").slice(0,30);
+  if(!schoolId||!hardwarePlatformId||!name||!code) throw new Error("School, hardware platform, kit name and kit code are required.");
+  const [school,hardware]=await Promise.all([db.school.findUnique({where:{id:schoolId},select:{id:true}}),db.hardwarePlatform.findUnique({where:{id:hardwarePlatformId},select:{id:true}})]);
+  if(!school||!hardware) throw new Error("School or hardware platform was not found.");
+  await db.roboticsKit.create({data:{schoolId,hardwarePlatformId,name,code}});
+  revalidatePath("/dashboard/admin/hardware");
+}
+export async function toggleRoboticsKit(kitId:string) {
+  await requireRole("ADMIN"); const kit=await db.roboticsKit.findUnique({where:{id:kitId},select:{active:true}}); if(!kit) throw new Error("Robotics kit not found."); await db.roboticsKit.update({where:{id:kitId},data:{active:!kit.active}}); revalidatePath("/dashboard/admin/hardware");
+}
+
 export async function createOutcome(formData: FormData) {
   await requireRole("ADMIN");
   const code = String(formData.get("code") ?? "").trim().toUpperCase();
