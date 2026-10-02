@@ -1,0 +1,874 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  STUDENT
+  TEACHER
+  ADMIN
+}
+
+enum ContentStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum Difficulty {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum EnrollmentStatus {
+  INVITED
+  ACTIVE
+  ARCHIVED
+}
+
+enum ProgressStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum SubmissionStatus {
+  DRAFT
+  SUBMITTED
+  NEEDS_REVISION
+  ASSESSED
+}
+
+enum QuestionType {
+  SINGLE_CHOICE
+  MULTIPLE_CHOICE
+  TRUE_FALSE
+  SHORT_TEXT
+}
+
+enum EvidenceType {
+  IMAGE
+  PDF
+  LINK
+  CODE
+}
+
+enum BadgeKind {
+  MODULE
+  COURSE
+  PROJECT
+  SKILL
+}
+
+enum CertificateStatus {
+  ELIGIBLE
+  ISSUED
+  REVOKED
+}
+
+enum AssignmentStatus {
+  ACTIVE
+  CLOSED
+}
+
+enum LearningEventType {
+  LESSON_STARTED
+  LESSON_COMPLETED
+  QUIZ_STARTED
+  QUIZ_ANSWERED
+  QUIZ_COMPLETED
+  PRACTICAL_TASK_STARTED
+  PRACTICAL_TASK_ATTEMPTED
+  PRACTICAL_TASK_COMPLETED
+  EVIDENCE_UPLOADED
+  PROJECT_STARTED
+  PROJECT_SUBMITTED
+  TEACHER_FEEDBACK_RECEIVED
+  RUBRIC_SCORED
+  TROUBLESHOOTING_ATTEMPTED
+  HINT_REQUESTED
+  CODE_SUBMISSION
+  HARDWARE_PLATFORM_SELECTED
+}
+
+
+enum AiCoachSessionStatus {
+  ACTIVE
+  COMPLETED
+  ABANDONED
+}
+
+enum AiCoachStepStatus {
+  PENDING
+  VERIFIED
+  NEEDS_HELP
+  SUPERSEDED
+  SKIPPED
+}
+
+enum AiCoachCheckOutcome {
+  WORKED
+  PARTLY_WORKED
+  DID_NOT_WORK
+  NEED_TEACHER
+}
+
+enum AiCoachPhase {
+  OBSERVE
+  REASON
+  PLAN
+  GUIDE
+  CHECK
+  ADAPT
+  SAFETY
+}
+
+enum LearningEventOutcome {
+  STARTED
+  COMPLETED
+  SUBMITTED
+  PASSED
+  FAILED
+  CORRECT
+  INCORRECT
+  NEEDS_REVISION
+  RECORDED
+  RECEIVED
+  REQUESTED
+  SELECTED
+}
+
+model School {
+  id          String      @id @default(cuid())
+  name        String
+  slug        String      @unique
+  isDemo      Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  users       User[]
+  classrooms  Classroom[]
+}
+
+model User {
+  id                     String                  @id @default(cuid())
+  email                  String                  @unique
+  passwordHash           String
+  displayName            String
+  role                   Role
+  schoolId               String?
+  isDemo                 Boolean                 @default(false)
+  isActive               Boolean                 @default(true)
+  failedLoginCount       Int                     @default(0)
+  lockedUntil            DateTime?
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+  school                 School?                 @relation(fields: [schoolId], references: [id], onDelete: SetNull)
+  sessions               Session[]
+  taughtClasses          Classroom[]             @relation("ClassTeacher")
+  enrollments            ClassEnrollment[]       @relation("StudentEnrollments")
+  quizAttempts           QuizAttempt[]
+  lessonProgress         LessonProgress[]
+  practicalSubmissions   PracticalSubmission[]   @relation("PracticalStudent")
+  practicalAssessments   PracticalAssessment[]   @relation("PracticalTeacher")
+  lessonAssignmentsMade  LessonAssignment[]      @relation("LessonAssigner")
+  projectAssignmentsMade ProjectAssignment[]     @relation("ProjectAssigner")
+  projectSubmissions     ProjectSubmission[]     @relation("ProjectStudent")
+  projectAssessments     ProjectAssessment[]     @relation("ProjectTeacher")
+  badges                 StudentBadge[]
+  certificates           Certificate[]
+  aiHelpRequests         AiHelpRequest[]
+  learningEvents         LearningEvent[]         @relation("LearningEventLearner")
+  learningEventsActed    LearningEvent[]         @relation("LearningEventActor")
+  aiCoachSessions         AiCoachSession[]        @relation("AiCoachLearner")
+
+  @@index([schoolId, role])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+}
+
+model Classroom {
+  id          String            @id @default(cuid())
+  name        String
+  joinCode    String            @unique
+  teacherId   String
+  schoolId    String?
+  isDemo      Boolean           @default(false)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  teacher     User              @relation("ClassTeacher", fields: [teacherId], references: [id], onDelete: Restrict)
+  school      School?           @relation(fields: [schoolId], references: [id], onDelete: SetNull)
+  enrollments ClassEnrollment[]
+  lessons     LessonAssignment[]
+  projects    ProjectAssignment[]
+  submissions PracticalSubmission[]
+  projectSubmissions ProjectSubmission[]
+  learningEvents LearningEvent[]
+
+  @@index([teacherId])
+  @@index([schoolId])
+}
+
+model ClassEnrollment {
+  id          String           @id @default(cuid())
+  classroomId String
+  studentId   String
+  status      EnrollmentStatus @default(ACTIVE)
+  joinedAt    DateTime         @default(now())
+  classroom   Classroom        @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  student     User             @relation("StudentEnrollments", fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([classroomId, studentId])
+  @@index([studentId, status])
+}
+
+model Course {
+  id           String              @id @default(cuid())
+  title        String
+  slug         String              @unique
+  description  String
+  status       ContentStatus       @default(DRAFT)
+  difficulty   Difficulty          @default(BEGINNER)
+  isDemo       Boolean             @default(false)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  modules       Module[]
+  projects      Project[]
+  certificates  Certificate[]
+  learningEvents LearningEvent[]
+}
+
+model Module {
+  id          String   @id @default(cuid())
+  courseId    String
+  title       String
+  slug        String
+  description String
+  order       Int
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons     Lesson[]
+
+  @@unique([courseId, slug])
+  @@unique([courseId, order])
+}
+
+model LearningOutcome {
+  id          String                  @id @default(cuid())
+  code        String                  @unique
+  title       String
+  description String
+  skillId     String?
+  isDemo      Boolean                 @default(false)
+  skill       Skill?                  @relation(fields: [skillId], references: [id], onDelete: SetNull)
+  lessons     LessonLearningOutcome[]
+
+  @@index([skillId])
+}
+
+model Lesson {
+  id                  String                  @id @default(cuid())
+  moduleId            String
+  title               String
+  slug                String
+  objective           String
+  theory              String
+  safetyNotes         String
+  practicalChallenge  String
+  expectedOutput      String
+  generalTroubleshoot String
+  difficulty          Difficulty              @default(BEGINNER)
+  estimatedMinutes    Int                     @default(45)
+  order               Int
+  status              ContentStatus           @default(DRAFT)
+  isDemo              Boolean                 @default(false)
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
+  module              Module                  @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  outcomes            LessonLearningOutcome[]
+  hardwareVariants    LessonHardwareVariant[]
+  quiz                 Quiz?
+  practicalTasks      PracticalTask[]
+  assignments          LessonAssignment[]
+  progress             LessonProgress[]
+  aiHelpRequests       AiHelpRequest[]
+  learningEvents       LearningEvent[]
+  aiCoachSessions      AiCoachSession[]
+
+  @@unique([moduleId, slug])
+  @@unique([moduleId, order])
+}
+
+model LessonLearningOutcome {
+  lessonId  String
+  outcomeId String
+  lesson    Lesson          @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  outcome   LearningOutcome @relation(fields: [outcomeId], references: [id], onDelete: Cascade)
+
+  @@id([lessonId, outcomeId])
+}
+
+model HardwarePlatform {
+  id          String                  @id @default(cuid())
+  name        String
+  slug        String                  @unique
+  family      String
+  description String
+  active      Boolean                 @default(true)
+  isDemo      Boolean                 @default(false)
+  variants    LessonHardwareVariant[]
+  practicals  PracticalSubmission[]
+  projects    ProjectHardware[]
+  projectSubs ProjectSubmission[]
+  learningEvents LearningEvent[]
+  aiCoachSessions AiCoachSession[]
+}
+
+model Component {
+  id          String             @id @default(cuid())
+  name        String
+  category    String
+  description String
+  isDemo      Boolean            @default(false)
+  variants    VariantComponent[]
+}
+
+model LessonHardwareVariant {
+  id                 String             @id @default(cuid())
+  lessonId           String
+  hardwarePlatformId String
+  title              String
+  wiringInstructions String
+  codeLanguage       String
+  codeSnippet        String
+  expectedOutput     String
+  troubleshooting    String
+  lesson             Lesson             @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  hardwarePlatform   HardwarePlatform   @relation(fields: [hardwarePlatformId], references: [id], onDelete: Restrict)
+  components         VariantComponent[]
+
+  @@unique([lessonId, hardwarePlatformId])
+  @@index([hardwarePlatformId])
+}
+
+model VariantComponent {
+  id        String                @id @default(cuid())
+  variantId String
+  componentId String
+  quantity  Int                   @default(1)
+  notes     String?
+  variant   LessonHardwareVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  component Component             @relation(fields: [componentId], references: [id], onDelete: Restrict)
+
+  @@unique([variantId, componentId])
+}
+
+model Quiz {
+  id        String         @id @default(cuid())
+  lessonId  String         @unique
+  title     String
+  passScore Int            @default(70)
+  lesson    Lesson         @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  questions QuizQuestion[]
+  attempts  QuizAttempt[]
+  learningEvents LearningEvent[]
+}
+
+model QuizQuestion {
+  id            String       @id @default(cuid())
+  quizId        String
+  prompt        String
+  type          QuestionType
+  options       Json?
+  correctAnswer Json
+  explanation   String
+  points        Int          @default(1)
+  order         Int
+  skillId       String?
+  quiz          Quiz         @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  skill         Skill?       @relation(fields: [skillId], references: [id], onDelete: SetNull)
+  answers       QuizAnswer[]
+
+  @@unique([quizId, order])
+  @@index([skillId])
+}
+
+model QuizAttempt {
+  id          String       @id @default(cuid())
+  quizId      String
+  studentId   String
+  score       Float
+  maxScore    Float
+  passed      Boolean
+  attemptNo   Int
+  startedAt   DateTime     @default(now())
+  completedAt DateTime?
+  quiz        Quiz         @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  student     User         @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  answers     QuizAnswer[]
+  learningEvents LearningEvent[]
+
+  @@unique([quizId, studentId, attemptNo])
+  @@index([studentId, completedAt])
+}
+
+model QuizAnswer {
+  id         String       @id @default(cuid())
+  attemptId  String
+  questionId String
+  answer     Json
+  isCorrect  Boolean
+  points     Float        @default(0)
+  attempt    QuizAttempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question   QuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([attemptId, questionId])
+}
+
+model Rubric {
+  id          String            @id @default(cuid())
+  name        String
+  description String
+  isDemo      Boolean           @default(false)
+  criteria    RubricCriterion[]
+  practicals  PracticalTask[]
+  projects    Project[]
+}
+
+model RubricCriterion {
+  id          String           @id @default(cuid())
+  rubricId    String
+  label       String
+  description String
+  skillTag    String
+  skillId     String?
+  maxScore    Float
+  order       Int
+  rubric      Rubric           @relation(fields: [rubricId], references: [id], onDelete: Cascade)
+  skill       Skill?           @relation(fields: [skillId], references: [id], onDelete: SetNull)
+  scores      CriterionScore[]
+  projectScores ProjectCriterionScore[]
+
+  @@unique([rubricId, order])
+  @@index([skillId])
+}
+
+model PracticalTask {
+  id              String                @id @default(cuid())
+  lessonId        String
+  rubricId        String
+  title           String
+  instructions    String
+  successCriteria String
+  evidencePrompt  String
+  lesson          Lesson                @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  rubric          Rubric                @relation(fields: [rubricId], references: [id], onDelete: Restrict)
+  submissions     PracticalSubmission[]
+  learningEvents   LearningEvent[]
+
+  @@index([lessonId])
+}
+
+model PracticalSubmission {
+  id                   String                   @id @default(cuid())
+  taskId               String
+  studentId            String
+  classroomId          String?
+  hardwarePlatformId   String
+  status               SubmissionStatus         @default(DRAFT)
+  studentNotes         String?
+  codeSnippet          String?
+  submissionNo         Int                      @default(1)
+  submittedAt          DateTime?
+  createdAt            DateTime                 @default(now())
+  updatedAt            DateTime                 @updatedAt
+  task                 PracticalTask            @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  student              User                     @relation("PracticalStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  classroom            Classroom?               @relation(fields: [classroomId], references: [id], onDelete: SetNull)
+  hardwarePlatform     HardwarePlatform         @relation(fields: [hardwarePlatformId], references: [id], onDelete: Restrict)
+  evidence             EvidenceAsset[]
+  troubleshooting      TroubleshootingAttempt[]
+  assessment           PracticalAssessment?
+  learningEvents       LearningEvent[]
+
+  @@unique([taskId, studentId, submissionNo])
+  @@index([studentId, status])
+  @@index([classroomId, status])
+}
+
+model EvidenceAsset {
+  id                    String               @id @default(cuid())
+  practicalSubmissionId String?
+  projectSubmissionId   String?
+  type                  EvidenceType
+  storagePath           String
+  originalName          String?
+  mimeType              String?
+  sizeBytes             Int?
+  caption               String?
+  createdAt             DateTime             @default(now())
+  practicalSubmission   PracticalSubmission? @relation(fields: [practicalSubmissionId], references: [id], onDelete: Cascade)
+  projectSubmission     ProjectSubmission?   @relation(fields: [projectSubmissionId], references: [id], onDelete: Cascade)
+
+  @@index([practicalSubmissionId])
+  @@index([projectSubmissionId])
+}
+
+model TroubleshootingAttempt {
+  id           String              @id @default(cuid())
+  submissionId String
+  issue        String
+  actionTried  String
+  result       String
+  createdAt    DateTime            @default(now())
+  submission   PracticalSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  @@index([submissionId, createdAt])
+}
+
+model PracticalAssessment {
+  id           String              @id @default(cuid())
+  submissionId String              @unique
+  teacherId    String
+  totalScore   Float
+  maxScore     Float
+  feedback     String
+  assessedAt   DateTime            @default(now())
+  submission   PracticalSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  teacher      User                @relation("PracticalTeacher", fields: [teacherId], references: [id], onDelete: Restrict)
+  scores       CriterionScore[]
+}
+
+model CriterionScore {
+  id           String              @id @default(cuid())
+  assessmentId String
+  criterionId  String
+  score        Float
+  feedback     String?
+  assessment   PracticalAssessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  criterion    RubricCriterion     @relation(fields: [criterionId], references: [id], onDelete: Restrict)
+
+  @@unique([assessmentId, criterionId])
+}
+
+model LessonAssignment {
+  id          String           @id @default(cuid())
+  classroomId String
+  lessonId    String
+  assignedById String
+  dueAt       DateTime?
+  status      AssignmentStatus @default(ACTIVE)
+  createdAt   DateTime         @default(now())
+  classroom   Classroom        @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  lesson      Lesson           @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  assignedBy  User             @relation("LessonAssigner", fields: [assignedById], references: [id], onDelete: Restrict)
+
+  @@unique([classroomId, lessonId])
+}
+
+model LessonProgress {
+  id          String         @id @default(cuid())
+  studentId   String
+  lessonId    String
+  status      ProgressStatus @default(NOT_STARTED)
+  startedAt   DateTime?
+  completedAt DateTime?
+  updatedAt   DateTime       @updatedAt
+  student     User           @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  lesson      Lesson         @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, lessonId])
+  @@index([studentId, status])
+}
+
+model Project {
+  id              String              @id @default(cuid())
+  courseId        String
+  rubricId        String
+  title           String
+  slug            String
+  description     String
+  instructions    String
+  successCriteria String
+  difficulty      Difficulty          @default(BEGINNER)
+  status          ContentStatus       @default(DRAFT)
+  isDemo          Boolean             @default(false)
+  course          Course              @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  rubric          Rubric              @relation(fields: [rubricId], references: [id], onDelete: Restrict)
+  hardware        ProjectHardware[]
+  assignments     ProjectAssignment[]
+  submissions     ProjectSubmission[]
+  learningEvents   LearningEvent[]
+
+  @@unique([courseId, slug])
+}
+
+model ProjectHardware {
+  projectId          String
+  hardwarePlatformId String
+  notes              String?
+  project            Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  hardwarePlatform   HardwarePlatform @relation(fields: [hardwarePlatformId], references: [id], onDelete: Restrict)
+
+  @@id([projectId, hardwarePlatformId])
+}
+
+model ProjectAssignment {
+  id           String           @id @default(cuid())
+  classroomId  String
+  projectId    String
+  assignedById String
+  dueAt        DateTime?
+  status       AssignmentStatus @default(ACTIVE)
+  createdAt    DateTime         @default(now())
+  classroom    Classroom        @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  project      Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assignedBy   User             @relation("ProjectAssigner", fields: [assignedById], references: [id], onDelete: Restrict)
+
+  @@unique([classroomId, projectId])
+}
+
+model ProjectSubmission {
+  id                 String             @id @default(cuid())
+  projectId          String
+  studentId          String
+  classroomId        String
+  hardwarePlatformId String
+  status             SubmissionStatus   @default(DRAFT)
+  studentNotes       String?
+  codeSnippet        String?
+  troubleshootingNotes String?
+  submissionNo       Int                @default(1)
+  submittedAt        DateTime?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  project            Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  student            User               @relation("ProjectStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  classroom          Classroom          @relation(fields: [classroomId], references: [id], onDelete: Restrict)
+  hardwarePlatform   HardwarePlatform   @relation(fields: [hardwarePlatformId], references: [id], onDelete: Restrict)
+  evidence           EvidenceAsset[]
+  assessment         ProjectAssessment?
+  learningEvents     LearningEvent[]
+
+  @@unique([projectId, studentId, submissionNo])
+  @@index([studentId, status])
+  @@index([classroomId, status])
+}
+
+model ProjectAssessment {
+  id           String              @id @default(cuid())
+  submissionId String              @unique
+  teacherId    String
+  totalScore   Float
+  maxScore     Float
+  feedback     String
+  assessedAt   DateTime            @default(now())
+  submission   ProjectSubmission   @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  teacher      User                @relation("ProjectTeacher", fields: [teacherId], references: [id], onDelete: Restrict)
+  scores       ProjectCriterionScore[]
+}
+
+model ProjectCriterionScore {
+  id           String            @id @default(cuid())
+  assessmentId String
+  criterionId  String
+  score        Float
+  feedback     String?
+  assessment   ProjectAssessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  criterion    RubricCriterion   @relation(fields: [criterionId], references: [id], onDelete: Restrict)
+
+  @@unique([assessmentId, criterionId])
+}
+
+model BadgeDefinition {
+  id          String         @id @default(cuid())
+  title       String
+  description String
+  kind        BadgeKind
+  rule        Json
+  isDemo      Boolean        @default(false)
+  awards      StudentBadge[]
+}
+
+model StudentBadge {
+  id        String          @id @default(cuid())
+  studentId String
+  badgeId   String
+  awardedAt DateTime        @default(now())
+  evidence  Json
+  student   User            @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  badge     BadgeDefinition @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, badgeId])
+}
+
+model Certificate {
+  id                String            @id @default(cuid())
+  studentId         String
+  courseId          String
+  certificateNumber String            @unique
+  status            CertificateStatus @default(ELIGIBLE)
+  issuedAt          DateTime?
+  student           User              @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  course            Course            @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, courseId])
+}
+
+model Skill {
+  id             String            @id @default(cuid())
+  slug           String            @unique
+  name           String
+  description    String
+  category       String            @default("STEM")
+  isDemo         Boolean           @default(false)
+  outcomes       LearningOutcome[]
+  rubricCriteria RubricCriterion[]
+  quizQuestions  QuizQuestion[]
+  learningEvents LearningEvent[]
+  aiCoachSteps    AiCoachStep[]
+}
+
+model LearningEvent {
+  id                    String               @id @default(cuid())
+  type                  LearningEventType
+  outcome               LearningEventOutcome?
+  learnerId             String
+  actorUserId           String?
+  classroomId           String?
+  courseId              String?
+  lessonId              String?
+  projectId             String?
+  quizId                String?
+  quizAttemptId         String?
+  practicalTaskId       String?
+  practicalSubmissionId String?
+  projectSubmissionId   String?
+  hardwarePlatformId    String?
+  skillId               String?
+  attemptNo             Int?
+  durationMs            Int?
+  score                 Float?
+  maxScore              Float?
+  metadata              Json?
+  source                String               @default("server")
+  schemaVersion         Int                  @default(1)
+  occurredAt            DateTime             @default(now())
+  learner               User                 @relation("LearningEventLearner", fields: [learnerId], references: [id], onDelete: Cascade)
+  actor                 User?                @relation("LearningEventActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+  classroom             Classroom?           @relation(fields: [classroomId], references: [id], onDelete: SetNull)
+  course                Course?              @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  lesson                Lesson?              @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  project               Project?             @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  quiz                  Quiz?                @relation(fields: [quizId], references: [id], onDelete: SetNull)
+  quizAttempt           QuizAttempt?         @relation(fields: [quizAttemptId], references: [id], onDelete: SetNull)
+  practicalTask         PracticalTask?       @relation(fields: [practicalTaskId], references: [id], onDelete: SetNull)
+  practicalSubmission   PracticalSubmission? @relation(fields: [practicalSubmissionId], references: [id], onDelete: SetNull)
+  projectSubmission     ProjectSubmission?   @relation(fields: [projectSubmissionId], references: [id], onDelete: SetNull)
+  hardwarePlatform      HardwarePlatform?     @relation(fields: [hardwarePlatformId], references: [id], onDelete: SetNull)
+  skill                 Skill?                @relation(fields: [skillId], references: [id], onDelete: SetNull)
+
+  @@index([learnerId, occurredAt])
+  @@index([learnerId, skillId, occurredAt])
+  @@index([classroomId, occurredAt])
+  @@index([classroomId, learnerId, occurredAt])
+  @@index([courseId, occurredAt])
+  @@index([lessonId, type, occurredAt])
+  @@index([skillId, type, occurredAt])
+  @@index([hardwarePlatformId, type, occurredAt])
+  @@index([projectId, type, occurredAt])
+}
+
+
+model AiCoachSession {
+  id                 String               @id @default(cuid())
+  learnerId          String
+  lessonId           String
+  hardwarePlatformId String?
+  status             AiCoachSessionStatus @default(ACTIVE)
+  model              String
+  sourceMode         String               @default("ai-gateway")
+  promptVersion      String               @default("lab-coach-v1")
+  evidenceSnapshot   Json
+  observeSummary     String
+  reasonSummary      String
+  guardrailFlags     Json?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  completedAt        DateTime?
+  learner            User                 @relation("AiCoachLearner", fields: [learnerId], references: [id], onDelete: Cascade)
+  lesson             Lesson               @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  hardwarePlatform   HardwarePlatform?    @relation(fields: [hardwarePlatformId], references: [id], onDelete: SetNull)
+  steps              AiCoachStep[]
+  logs               AiCoachLog[]
+
+  @@index([learnerId, createdAt])
+  @@index([learnerId, lessonId, createdAt])
+}
+
+model AiCoachStep {
+  id             String              @id @default(cuid())
+  sessionId      String
+  skillId        String?
+  order          Int
+  revision       Int                 @default(0)
+  actionType     String
+  sourceMode     String              @default("ai-gateway")
+  title          String
+  instruction    String
+  rationale      String
+  checkPrompt    String
+  hint           String
+  safetyNote     String?
+  status         AiCoachStepStatus   @default(PENDING)
+  hintRevealedAt DateTime?
+  checkOutcome   AiCoachCheckOutcome?
+  learnerResult  String?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  session        AiCoachSession      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  skill          Skill?              @relation(fields: [skillId], references: [id], onDelete: SetNull)
+
+  @@index([sessionId, order])
+  @@index([skillId, status])
+}
+
+model AiCoachLog {
+  id        String       @id @default(cuid())
+  sessionId String
+  phase     AiCoachPhase
+  event     String
+  payload   Json?
+  latencyMs Int?
+  createdAt DateTime     @default(now())
+  session   AiCoachSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, createdAt])
+  @@index([phase, createdAt])
+}
+
+model AiHelpRequest {
+  id         String   @id @default(cuid())
+  studentId  String
+  lessonId   String
+  question   String
+  response   String
+  sourceMode String   @default("approved-guidance")
+  createdAt  DateTime @default(now())
+  student    User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  lesson     Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@index([studentId, lessonId, createdAt])
+}
