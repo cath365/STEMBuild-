@@ -2,23 +2,49 @@ name: CI
 
 on:
   push:
-    branches: [main]
   pull_request:
 
 jobs:
   verify:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/stembuild
       BLOB_READ_WRITE_TOKEN: vercel_blob_rw_placeholder
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm install
-      - run: npm run db:generate
-      - run: npm run typecheck
-      - run: npm run lint
-      - run: npm run build
+
+      - name: Start PostgreSQL
+        run: |
+          sudo systemctl start postgresql.service
+          sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'postgres';"
+          sudo -u postgres createdb stembuild
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Generate Prisma client
+        run: npm run db:generate
+
+      - name: Push schema to ephemeral PostgreSQL
+        run: npm run db:push
+
+      - name: Validate DEMO seed
+        run: npm run db:seed
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Production build
+        run: npm run build
