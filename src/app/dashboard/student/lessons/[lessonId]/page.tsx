@@ -73,6 +73,7 @@ export default async function LessonPage({ params }: { params: Promise<{ lessonI
     courseTitle: lesson.module.course.title,
     moduleTitle: lesson.module.title,
     title: lesson.title,
+    concept: lesson.concept || lesson.title,
     difficulty: lesson.difficulty,
     estimatedMinutes: lesson.estimatedMinutes,
     objective: lesson.objective,
@@ -86,7 +87,11 @@ export default async function LessonPage({ params }: { params: Promise<{ lessonI
       hardwarePlatform: variant.hardwarePlatform.name,
       components: variant.components.map((item) => ({ quantity: item.quantity, name: item.component.name, notes: item.notes })),
       wiringInstructions: variant.wiringInstructions,
+      gpioMappings: variant.gpioMappings,
+      codeLanguage: variant.codeLanguage,
+      programmingFramework: variant.programmingFramework,
       codeSnippet: variant.codeSnippet,
+      uploadProcedure: variant.uploadProcedure,
       expectedOutput: variant.expectedOutput,
       troubleshooting: variant.troubleshooting,
     })),
@@ -100,7 +105,7 @@ export default async function LessonPage({ params }: { params: Promise<{ lessonI
     <div className="topbar"><div className="page-title"><div className="eyebrow">{lesson.module.course.title} / {lesson.module.title}</div><h1 style={{fontSize:38}}>{lesson.title}</h1><div className="inline"><span className="badge">{lesson.difficulty}</span><span className="badge">~{lesson.estimatedMinutes} min</span><span className={progress === "COMPLETED" ? "badge badge-green" : "badge badge-yellow"}>{progress.replaceAll("_", " ")}</span></div></div><Link className="btn" href="/dashboard/student/learning-path">Back to path</Link></div>
     <div className="lesson-layout">
       <div className="stack">
-        <div className="card"><div className="eyebrow">Learning objective</div><h2 style={{fontSize:28,marginTop:8}}>{lesson.objective}</h2><p className="lead" style={{fontSize:16}}>{lesson.theory}</p><div className="inline">{lesson.outcomes.map(({outcome}) => <span className="badge" key={outcome.id}>{outcome.code}: {outcome.title}{outcome.skill ? ` · ${outcome.skill.name}` : ""}</span>)}</div></div>
+        <div className="card"><div className="eyebrow">Core concept</div><h2 style={{fontSize:28,marginTop:8}}>{lesson.concept || lesson.title}</h2><div className="eyebrow" style={{marginTop:18}}>Learning objective</div><h3 style={{fontSize:22,marginTop:8}}>{lesson.objective}</h3><p className="lead" style={{fontSize:16}}>{lesson.theory}</p><div className="inline">{lesson.outcomes.map(({outcome}) => <span className="badge" key={outcome.id}>{outcome.code}: {outcome.title}{outcome.skill ? ` · ${outcome.skill.name}` : ""}</span>)}</div></div>
         <div className="notice"><strong>Safety:</strong> {lesson.safetyNotes}</div>
         <div className="card"><h2 style={{fontSize:26}}>Choose your board</h2><p className="muted">The concept, objective, assessment and skills stay the same. Only the implementation details below change for the selected board.</p><HardwareVariantSelector variants={hardwareVariantsForSelector} label="Compatible hardware"/></div>
         <div className="card"><div className="eyebrow">Practical challenge</div><h2 style={{fontSize:26,marginTop:8}}>{lesson.practicalChallenge}</h2><p className="muted"><strong>Expected result:</strong> {lesson.expectedOutput}</p>{progress === "NOT_STARTED" ? <form action={startLesson.bind(null, lesson.id)}><button className="btn btn-primary">Start practical lesson</button></form> : null}</div>
