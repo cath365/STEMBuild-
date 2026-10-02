@@ -58,7 +58,7 @@ export default async function StudentProjects() {
         uploadProcedure: variant.uploadProcedure,
         expectedOutput: variant.expectedOutput,
         troubleshooting: variant.troubleshooting,
-        advancedExtension: variant.notes,
+        advancedExtension: variant.hardwarePlatform.slug === "esp32" ? variant.notes : null,
       }));
       const lockedVariant = started?.hardwarePlatformId
         ? variants.find((variant) => variant.hardwarePlatformId === started.hardwarePlatformId)
