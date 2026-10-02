@@ -152,6 +152,7 @@ model School {
   updatedAt   DateTime    @updatedAt
   users       User[]
   classrooms  Classroom[]
+  roboticsKits RoboticsKit[]
 }
 
 model User {
@@ -185,6 +186,8 @@ model User {
   learningEvents         LearningEvent[]         @relation("LearningEventLearner")
   learningEventsActed    LearningEvent[]         @relation("LearningEventActor")
   aiCoachSessions         AiCoachSession[]        @relation("AiCoachLearner")
+  offlineCheckpoints      OfflineLessonCheckpoint[] @relation("OfflineCheckpointLearner")
+  kitUsages               KitUsage[]               @relation("KitUsageLearner")
 
   @@index([schoolId, role])
 }
@@ -217,6 +220,7 @@ model Classroom {
   submissions PracticalSubmission[]
   projectSubmissions ProjectSubmission[]
   learningEvents LearningEvent[]
+  kitUsages      KitUsage[]
 
   @@index([teacherId])
   @@index([schoolId])
@@ -306,6 +310,8 @@ model Lesson {
   aiHelpRequests       AiHelpRequest[]
   learningEvents       LearningEvent[]
   aiCoachSessions      AiCoachSession[]
+  offlineCheckpoints   OfflineLessonCheckpoint[]
+  kitUsages            KitUsage[]
 
   @@unique([moduleId, slug])
   @@unique([moduleId, order])
@@ -334,6 +340,7 @@ model HardwarePlatform {
   projectSubs ProjectSubmission[]
   learningEvents LearningEvent[]
   aiCoachSessions AiCoachSession[]
+  roboticsKits RoboticsKit[]
 }
 
 model Component {
@@ -477,6 +484,8 @@ model PracticalTask {
   rubric          Rubric                @relation(fields: [rubricId], references: [id], onDelete: Restrict)
   submissions     PracticalSubmission[]
   learningEvents   LearningEvent[]
+  offlineCheckpoints OfflineLessonCheckpoint[]
+  kitUsages          KitUsage[]
 
   @@index([lessonId])
 }
@@ -487,6 +496,7 @@ model PracticalSubmission {
   studentId            String
   classroomId          String?
   hardwarePlatformId   String
+  kitUsageId           String?                    @unique
   status               SubmissionStatus         @default(DRAFT)
   studentNotes         String?
   codeSnippet          String?
@@ -498,6 +508,7 @@ model PracticalSubmission {
   student              User                     @relation("PracticalStudent", fields: [studentId], references: [id], onDelete: Cascade)
   classroom            Classroom?               @relation(fields: [classroomId], references: [id], onDelete: SetNull)
   hardwarePlatform     HardwarePlatform         @relation(fields: [hardwarePlatformId], references: [id], onDelete: Restrict)
+  kitUsage             KitUsage?                 @relation(fields: [kitUsageId], references: [id], onDelete: SetNull)
   evidence             EvidenceAsset[]
   troubleshooting      TroubleshootingAttempt[]
   assessment           PracticalAssessment?
@@ -789,6 +800,70 @@ model LearningEvent {
   @@index([skillId, type, occurredAt])
   @@index([hardwarePlatformId, type, occurredAt])
   @@index([projectId, type, occurredAt])
+}
+
+
+model OfflineLessonCheckpoint {
+  id                String        @id @default(cuid())
+  clientKey         String        @unique
+  learnerId         String
+  lessonId          String
+  practicalTaskId   String?
+  completedSections Json?
+  notes             String        @default("")
+  codeDraft         String        @default("")
+  troubleshooting   String        @default("")
+  clientUpdatedAt   DateTime
+  syncedAt          DateTime      @default(now())
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  learner           User          @relation("OfflineCheckpointLearner", fields: [learnerId], references: [id], onDelete: Cascade)
+  lesson            Lesson        @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  practicalTask     PracticalTask? @relation(fields: [practicalTaskId], references: [id], onDelete: Cascade)
+
+  @@index([learnerId, lessonId, updatedAt])
+  @@index([lessonId, practicalTaskId])
+}
+
+model RoboticsKit {
+  id                 String           @id @default(cuid())
+  schoolId           String
+  hardwarePlatformId String
+  name               String
+  code               String
+  active             Boolean          @default(true)
+  isDemo             Boolean          @default(false)
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  school             School           @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  hardwarePlatform   HardwarePlatform @relation(fields: [hardwarePlatformId], references: [id], onDelete: Restrict)
+  usages             KitUsage[]
+
+  @@unique([schoolId, code])
+  @@index([schoolId, active])
+  @@index([hardwarePlatformId, active])
+}
+
+model KitUsage {
+  id                 String              @id @default(cuid())
+  kitId              String
+  learnerId          String
+  classroomId        String
+  lessonId           String?
+  practicalTaskId    String?
+  startedAt          DateTime            @default(now())
+  endedAt            DateTime?
+  kit                RoboticsKit         @relation(fields: [kitId], references: [id], onDelete: Cascade)
+  learner            User                @relation("KitUsageLearner", fields: [learnerId], references: [id], onDelete: Cascade)
+  classroom          Classroom           @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  lesson             Lesson?             @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  practicalTask      PracticalTask?      @relation(fields: [practicalTaskId], references: [id], onDelete: SetNull)
+  submission         PracticalSubmission?
+
+  @@index([kitId, startedAt])
+  @@index([learnerId, startedAt])
+  @@index([classroomId, startedAt])
+  @@index([practicalTaskId, learnerId, endedAt])
 }
 
 

@@ -104,3 +104,5 @@ hr { border:0; border-top:1px solid var(--border); margin:18px 0; }
   .btn { width:100%; }
   .actions .btn { width:auto; }
 }
+
+.connectivity{position:fixed;right:14px;bottom:14px;z-index:100;display:flex;align-items:center;gap:7px;padding:7px 10px;border:1px solid var(--border);border-radius:999px;background:var(--surface);font-size:12px;font-weight:700}.connectivity-dot{width:8px;height:8px;border-radius:50%;background:#40d99c}.connectivity.offline .connectivity-dot{background:#ffc857}.connectivity.offline{border-color:#6d5a25}
