@@ -85,7 +85,7 @@ export default async function StudentProjects() {
         </form> : <form action={submitProject.bind(null, a.project.id)} className="form" encType="multipart/form-data">
           <HardwareVariantSelector variants={lockedVariant ? [lockedVariant] : variants} defaultId={started.hardwarePlatformId} label="Board selected for this attempt"/>
           <CompressedEvidenceInput label="Project evidence photo or PDF"/>
-          <div className="field"><label>Build notes</label><textarea className="textarea" name="studentNotes" required/></div>
+          <div className="field"><label>{a.project.slug === "smart-environment-monitor" ? "Recorded readings + build notes" : "Build notes"}</label><textarea className="textarea" name="studentNotes" required placeholder={a.project.slug === "smart-environment-monitor" ? "Record at least three readings, for example: 24.8°C / 58%, 24.9°C / 57%, 25.0°C / 57%. Then describe what the LEDs indicated." : undefined}/>{a.project.slug === "smart-environment-monitor" ? <span className="small muted">Do not invent readings. Enter only values you actually observed, or explain that valid readings were not obtained.</span> : null}</div>
           <div className="field"><label>Code</label><textarea className="textarea" name="codeSnippet"/></div>
           <div className="field"><label>Troubleshooting attempts</label><textarea className="textarea" name="troubleshootingNotes" placeholder="Describe a fault, what you tested, and what changed." required/></div>
           <button className="btn btn-primary">Submit project</button>
