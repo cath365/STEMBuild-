@@ -111,3 +111,5 @@ hr { border:0; border-top:1px solid var(--border); margin:18px 0; }
 .connectivity.offline { color:#ffd978; border-color:#5d4b1a; }
 .offline-actions { display:grid; gap:10px; }
 @media (max-width: 620px) { .connectivity { left:12px; right:12px; bottom:10px; justify-content:center; } body { padding-bottom:48px; } }
+
+.journey-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.journey-step{display:grid;grid-template-columns:38px 1fr;gap:10px;align-items:start;padding:13px;border:1px solid var(--border);border-radius:14px;background:var(--surface-2,rgba(255,255,255,.02))}.journey-number{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;background:var(--primary);color:#06141c;font-weight:900}.showcase-journey{overflow:hidden}.showcase-journey:before{content:"";display:block;height:4px;margin:-18px -18px 18px;background:linear-gradient(90deg,var(--primary),#58a6ff,#9b7bff)}@media(max-width:760px){.journey-grid{grid-template-columns:1fr}}
