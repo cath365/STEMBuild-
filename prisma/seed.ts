@@ -190,6 +190,28 @@ function codeFor(slug: string, board: "uno" | "esp32") {
   return snippets[slug] ?? "// This lesson is hardware-neutral. Record observations and verify connections before applying power.";
 }
 
+const boardProfiles: Record<string, { language: string; framework: string; upload: string; digitalPin: string; analogPin: string }> = {
+  "hardware-neutral": { language: "none", framework: "No toolchain", upload: "No firmware upload is required for this hardware-neutral activity.", digitalPin: "N/A", analogPin: "N/A" },
+  "arduino-uno": { language: "Arduino C++", framework: "Arduino IDE", upload: "Connect the Uno by USB, select Arduino Uno and the correct port in Arduino IDE, then click Upload.", digitalPin: "D13", analogPin: "A0" },
+  "arduino-nano": { language: "Arduino C++", framework: "Arduino IDE", upload: "Connect the Nano by USB, select Arduino Nano plus the correct processor/port, then click Upload.", digitalPin: "D13", analogPin: "A0" },
+  "esp32": { language: "Arduino C++", framework: "Arduino IDE + ESP32 core", upload: "Connect the ESP32 by USB, select the exact ESP32 board and port, then Upload. Hold BOOT only if the board requires it.", digitalPin: "GPIO 2", analogPin: "GPIO 34" },
+  "raspberry-pi-pico": { language: "MicroPython", framework: "Thonny + MicroPython", upload: "Install MicroPython on the Pico if needed, connect by USB, select the Pico interpreter in Thonny, then save/run the script on the board.", digitalPin: "GP15", analogPin: "GP26 / ADC0" },
+  "bbc-microbit": { language: "MicroPython / MakeCode", framework: "Microsoft MakeCode or MicroPython", upload: "Connect the micro:bit by USB and transfer the generated HEX file to the MICROBIT drive, or use WebUSB when supported.", digitalPin: "P0", analogPin: "P1" },
+  "stm32": { language: "C/C++", framework: "STM32CubeIDE + HAL", upload: "Configure the target MCU/board in STM32CubeIDE, build the project, connect ST-Link/USB as supported, and flash the firmware.", digitalPin: "PA5", analogPin: "PA0" },
+};
+
+function boardProfile(boardSlug: string) {
+  return boardProfiles[boardSlug] ?? { language: "C/C++", framework: "Board vendor toolchain", upload: "Follow the board vendor's documented build and upload procedure.", digitalPin: "Configured GPIO", analogPin: "Configured ADC pin" };
+}
+
+function ledCodeFor(boardSlug: string) {
+  if (boardSlug === "arduino-nano") return "const int LED_PIN=13;\nvoid setup(){ pinMode(LED_PIN,OUTPUT); }\nvoid loop(){ digitalWrite(LED_PIN,HIGH); delay(1000); digitalWrite(LED_PIN,LOW); delay(1000); }";
+  if (boardSlug === "bbc-microbit") return "from microbit import *\nwhile True:\n    pin0.write_digital(1)\n    sleep(1000)\n    pin0.write_digital(0)\n    sleep(1000)";
+  if (boardSlug === "raspberry-pi-pico") return "from machine import Pin\nfrom time import sleep\nled = Pin(15, Pin.OUT)\nwhile True:\n    led.toggle()\n    sleep(1)";
+  if (boardSlug === "stm32") return "/* Configure PA5 as GPIO Output in STM32CubeIDE/CubeMX. */\nwhile (1) {\n  HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);\n  HAL_Delay(1000);\n}";
+  return "// Configure one safe digital output and toggle it once per second.";
+}
+
 async function resetDemoData() {
   await db.classroom.deleteMany({ where: { isDemo: true } });
   await db.user.deleteMany({ where: { isDemo: true } });
@@ -392,8 +414,11 @@ async function main() {
                 : index === 9
                   ? `Connect the two DC motors through the L298N. Connect control pins to the GPIOs in the starter code. Connect HC-SR04 VCC/GND and trigger/echo to chosen GPIO. ${isEsp ? "Use a suitable voltage divider or level shifter on the 5 V Echo signal before the ESP32 input." : "Use the sensor only within its documented voltage requirements."} Test with wheels lifted before floor testing.`
                   : `Use the component list and connect signals to the GPIOs shown in the starter code. ${isEsp ? "Keep all ESP32 GPIO signals within 3.3 V limits." : "Keep GPIO current within the board limits."}`,
-          codeLanguage: neutral ? "none" : "Arduino C++",
+          gpioMappings: neutral ? "No GPIO mapping is required." : `Primary digital output: ${boardProfile(boardSlug).digitalPin}\nPrimary analog input: ${boardProfile(boardSlug).analogPin}`,
+          codeLanguage: boardProfile(boardSlug).language,
+          programmingFramework: boardProfile(boardSlug).framework,
           codeSnippet: neutral ? "// Hardware-neutral lesson: no firmware required." : codeFor(source.slug, isEsp ? "esp32" : "uno"),
+          uploadProcedure: boardProfile(boardSlug).upload,
           expectedOutput: source.output,
           troubleshooting: source.troubleshoot,
           components: { create: selectedComponents.map((name) => ({ componentId: components.get(name)!, quantity: name === "DC motor" && index === 9 ? 2 : 1 })) },
@@ -411,9 +436,12 @@ async function main() {
         lessonId: ledLesson.id,
         hardwarePlatformId: hardware.get(boardSlug)!,
         title: `LEDs and resistors — ${boardName}`,
-        wiringInstructions: "Connect a board-appropriate digital output through a 330 ohm resistor to the LED anode; connect the cathode to ground. Confirm the board's GPIO voltage and pin naming before powering.",
-        codeLanguage: boardSlug === "bbc-microbit" ? "MakeCode / MicroPython" : "C/C++ or MicroPython",
-        codeSnippet: "// Board-specific starter: configure one safe digital output and toggle it HIGH/LOW once per second.\n// Use the official pin name and toolchain for the selected board.",
+        wiringInstructions: `Connect ${boardProfile(boardSlug).digitalPin} through a 330 ohm resistor to the LED anode; connect the LED cathode to board GND. Confirm the exact development-board pinout before powering.`,
+        gpioMappings: `LED anode -> 330 ohm resistor -> ${boardProfile(boardSlug).digitalPin}\nLED cathode -> GND`,
+        codeLanguage: boardProfile(boardSlug).language,
+        programmingFramework: boardProfile(boardSlug).framework,
+        codeSnippet: ledCodeFor(boardSlug),
+        uploadProcedure: boardProfile(boardSlug).upload,
         expectedOutput: "The LED blinks at a steady one-second interval without overheating.",
         troubleshooting: "Check LED polarity, resistor placement, selected pin name and board voltage. Use the official board pinout for the exact development board model.",
         components: { create: ["Solderless breadboard", "Jumper wires", "LED", "330 ohm resistor"].map((name) => ({ componentId: components.get(name)!, quantity: 1 })) },
@@ -433,7 +461,32 @@ async function main() {
       difficulty: "BEGINNER",
       status: "PUBLISHED",
       isDemo: true,
-      hardware: { create: [{ hardwarePlatformId: hardware.get("arduino-uno")! }, { hardwarePlatformId: hardware.get("esp32")! }] },
+      hardware: { create: [
+        {
+          hardwarePlatformId: hardware.get("arduino-uno")!,
+          notes: "5 V Uno control logic. Keep motor power separate from the board.",
+          wiringInstructions: "Connect both DC motors to the L298N outputs. Tie L298N GND to Uno GND. Connect IN1/IN2/IN3/IN4 to D5/D6/D9/D10. Connect HC-SR04 TRIG to D7 and ECHO to D8.",
+          gpioMappings: "Left motor IN1 -> D5\nLeft motor IN2 -> D6\nRight motor IN3 -> D9\nRight motor IN4 -> D10\nHC-SR04 TRIG -> D7\nHC-SR04 ECHO -> D8",
+          codeLanguage: "Arduino C++",
+          programmingFramework: "Arduino IDE",
+          sourceCode: "const int L1=5,L2=6,R1=9,R2=10,TRIG=7,ECHO=8;\n// Build and test motor + distance functions separately before integration.\nvoid setup(){ pinMode(L1,OUTPUT); pinMode(L2,OUTPUT); pinMode(R1,OUTPUT); pinMode(R2,OUTPUT); pinMode(TRIG,OUTPUT); pinMode(ECHO,INPUT); }\nvoid loop(){ /* read distance; stop/turn if obstacle is close; otherwise drive forward */ }",
+          uploadProcedure: boardProfile("arduino-uno").upload,
+          expectedOutput: "The robot moves forward, detects a nearby obstacle, stops and changes direction.",
+          troubleshooting: "Lift the wheels before first motor test. Verify common ground, motor-driver supply and each motor direction separately. Confirm ultrasonic trigger/echo wiring before integration.",
+        },
+        {
+          hardwarePlatformId: hardware.get("esp32")!,
+          notes: "3.3 V ESP32 GPIO. Do not feed the HC-SR04 5 V Echo signal directly into an ESP32 input.",
+          wiringInstructions: "Connect L298N control inputs to GPIO25/GPIO26/GPIO27/GPIO14. Tie grounds together. Connect HC-SR04 TRIG to GPIO18. Route ECHO through a suitable voltage divider or level shifter before GPIO19.",
+          gpioMappings: "Left motor IN1 -> GPIO25\nLeft motor IN2 -> GPIO26\nRight motor IN3 -> GPIO27\nRight motor IN4 -> GPIO14\nHC-SR04 TRIG -> GPIO18\nHC-SR04 ECHO -> level shift/divider -> GPIO19",
+          codeLanguage: "Arduino C++",
+          programmingFramework: "Arduino IDE + ESP32 core",
+          sourceCode: "const int L1=25,L2=26,R1=27,R2=14,TRIG=18,ECHO=19;\n// Build and test motor + distance functions separately before integration.\nvoid setup(){ pinMode(L1,OUTPUT); pinMode(L2,OUTPUT); pinMode(R1,OUTPUT); pinMode(R2,OUTPUT); pinMode(TRIG,OUTPUT); pinMode(ECHO,INPUT); }\nvoid loop(){ /* read distance; stop/turn if obstacle is close; otherwise drive forward */ }",
+          uploadProcedure: boardProfile("esp32").upload,
+          expectedOutput: "The robot moves forward, detects a nearby obstacle, stops and changes direction.",
+          troubleshooting: "Keep ESP32 inputs at 3.3 V logic. Verify the Echo level shift, common ground, motor power and pin selection before changing code.",
+        },
+      ] },
     },
   });
 
