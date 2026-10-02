@@ -14,6 +14,12 @@ function evidenceType(file: File): "IMAGE" | "PDF" {
   return file.type === "application/pdf" ? "PDF" : "IMAGE";
 }
 
+function metadataString(value: unknown, key: string) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const item = (value as Record<string, unknown>)[key];
+  return typeof item === "string" && item ? item : null;
+}
+
 function assertEvidence(file: FormDataEntryValue | null) {
   if (!(file instanceof File) || file.size === 0) throw new Error("A photo or PDF evidence file is required.");
   if (!EVIDENCE_TYPES.has(file.type)) throw new Error("Evidence must be JPG, PNG, WEBP or PDF.");
@@ -170,6 +176,7 @@ export async function submitQuiz(quizId: string, formData: FormData) {
 export async function startPracticalTask(taskId: string, formData: FormData) {
   const user = await requireRole("STUDENT");
   const hardwarePlatformId = String(formData.get("hardwarePlatformId") ?? "");
+  const roboticsKitId = String(formData.get("roboticsKitId") ?? "") || null;
   const task = await db.practicalTask.findUnique({
     where: { id: taskId },
     include: { lesson: { include: { module: { include: { course: true } }, hardwareVariants: true } } },
@@ -181,9 +188,13 @@ export async function startPracticalTask(taskId: string, formData: FormData) {
   });
   if (!assignment) throw new Error("This practical task is not assigned to your active class.");
 
+  const kit = roboticsKitId ? await db.roboticsKit.findFirst({ where: { id: roboticsKitId, active: true, hardwarePlatformId, schoolId: user.schoolId ?? "__no-school__" }, select: { id: true, code: true } }) : null;
+  if (roboticsKitId && !kit) throw new Error("The selected shared kit is not available for this learner and hardware platform.");
+
   const attemptNo = (await db.practicalSubmission.count({ where: { taskId, studentId: user.id } })) + 1;
   const existing = await latestOpenStart({ learnerId: user.id, type: "PRACTICAL_TASK_STARTED", practicalTaskId: taskId, attemptNo });
   if (!existing) {
+    if (kit) await db.kitUsage.create({ data: { kitId: kit.id, learnerId: user.id, classroomId: assignment.classroomId, lessonId: task.lessonId, practicalTaskId: taskId } });
     await db.learningEvent.createMany({
       data: [
         {
@@ -208,7 +219,7 @@ export async function startPracticalTask(taskId: string, formData: FormData) {
           practicalTaskId: taskId,
           hardwarePlatformId,
           attemptNo,
-          metadata: { phase: "task_start" },
+          metadata: { phase: "task_start", ...(kit ? { kitId: kit.id, kitCode: kit.code } : {}) },
           source: "server",
         },
       ],
@@ -221,6 +232,7 @@ export async function submitPractical(formData: FormData) {
   const user = await requireRole("STUDENT");
   const taskId = String(formData.get("taskId") ?? "");
   const hardwarePlatformId = String(formData.get("hardwarePlatformId") ?? "");
+  const requestedKitId = String(formData.get("roboticsKitId") ?? "") || null;
   const studentNotes = String(formData.get("studentNotes") ?? "").trim();
   const codeSnippet = String(formData.get("codeSnippet") ?? "").trim();
   const issue = String(formData.get("issue") ?? "").trim();
@@ -247,6 +259,12 @@ export async function submitPractical(formData: FormData) {
   const prior = await db.practicalSubmission.count({ where: { taskId, studentId: user.id } });
   const attemptNo = prior + 1;
   const started = await latestOpenStart({ learnerId: user.id, type: "PRACTICAL_TASK_STARTED", practicalTaskId: taskId, attemptNo });
+  const startedKitId = metadataString(started?.metadata, "kitId");
+  if (startedKitId && requestedKitId && startedKitId !== requestedKitId) throw new Error("Use the same shared kit selected when this attempt started.");
+  const roboticsKitId = startedKitId ?? requestedKitId;
+  const kit = roboticsKitId ? await db.roboticsKit.findFirst({ where: { id: roboticsKitId, active: true, hardwarePlatformId, schoolId: user.schoolId ?? "__no-school__" }, select: { id: true, code: true } }) : null;
+  if (roboticsKitId && !kit) throw new Error("The selected shared kit is not available for this learner and hardware platform.");
+  const openKitUsage = kit ? await db.kitUsage.findFirst({ where: { kitId: kit.id, learnerId: user.id, classroomId: assignment.classroomId, practicalTaskId: taskId, endedAt: null }, orderBy: { startedAt: "desc" } }) : null;
   const submittedAt = new Date();
   const durationMs = clampDurationMs(started ? submittedAt.getTime() - started.occurredAt.getTime() : null);
   const [programmingSkill, debuggingSkill] = await Promise.all([
@@ -261,6 +279,7 @@ export async function submitPractical(formData: FormData) {
         studentId: user.id,
         classroomId: assignment.classroomId,
         hardwarePlatformId,
+        kitUsageId: openKitUsage?.id ?? null,
         status: "SUBMITTED",
         studentNotes: studentNotes || null,
         codeSnippet: codeSnippet || null,
@@ -270,6 +289,8 @@ export async function submitPractical(formData: FormData) {
         troubleshooting: issue || actionTried || result ? { create: { issue: issue || "Not specified", actionTried: actionTried || "Not specified", result: result || "Not specified" } } : undefined,
       },
     });
+
+    if (openKitUsage) await tx.kitUsage.update({ where: { id: openKitUsage.id }, data: { endedAt: submittedAt } });
 
     const common = {
       learnerId: user.id,
@@ -283,10 +304,11 @@ export async function submitPractical(formData: FormData) {
       source: "server",
       occurredAt: submittedAt,
     };
+    const kitMetadata = kit ? { kitId: kit.id, kitCode: kit.code } : {};
     const events: LearningEventInput[] = [
-      { ...common, type: "PRACTICAL_TASK_ATTEMPTED", outcome: "SUBMITTED", durationMs },
-      { ...common, type: "EVIDENCE_UPLOADED", outcome: "RECORDED", metadata: { mimeType: file.type, sizeBytes: file.size } },
-      { ...common, type: "HARDWARE_PLATFORM_SELECTED", outcome: "SELECTED", metadata: { phase: "submission" } },
+      { ...common, type: "PRACTICAL_TASK_ATTEMPTED", outcome: "SUBMITTED", durationMs, metadata: kitMetadata },
+      { ...common, type: "EVIDENCE_UPLOADED", outcome: "RECORDED", metadata: { mimeType: file.type, sizeBytes: file.size, ...kitMetadata } },
+      { ...common, type: "HARDWARE_PLATFORM_SELECTED", outcome: "SELECTED", metadata: { phase: "submission", ...kitMetadata } },
     ];
     if (issue || actionTried || result) events.push({ ...common, type: "TROUBLESHOOTING_ATTEMPTED", outcome: "RECORDED", skillId: debuggingSkill?.id, metadata: { hasIssue: Boolean(issue), hasAction: Boolean(actionTried), hasResult: Boolean(result) } });
     if (codeSnippet) events.push({ ...common, type: "CODE_SUBMISSION", outcome: "RECORDED", skillId: programmingSkill?.id, metadata: { characters: codeSnippet.length } });
