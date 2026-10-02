@@ -119,6 +119,15 @@ npm run dev
 
 The seed script creates only synthetic records prefixed/labeled as **DEMO**.
 
+
+## Learning engineering v0.2
+
+STEMBuild now includes a structured learner-event layer for meaningful learning actions such as lesson starts/completions, quiz answers, practical attempts, evidence uploads, rubric scoring, hints, troubleshooting, code submissions and hardware selections. Teacher and learner analytics are calculated from these stored events rather than page views or fabricated AI insights.
+
+The platform also uses a controlled 12-skill taxonomy covering electronics fundamentals, circuit building, microcontroller programming, digital I/O, analog input, sensors, motors, communication protocols, debugging, IoT, robotics and problem solving.
+
+See `docs/LEARNING_DATA.md` for the event schema, analytics rules, privacy model and future education-research guidance.
+
 ## Security notes
 
 - No plaintext passwords are stored.
@@ -127,3 +136,18 @@ The seed script creates only synthetic records prefixed/labeled as **DEMO**.
 - Student evidence is restricted to image/PDF MIME types, size-limited, and stored in private Blob storage.
 - Private dashboard pages use `no-store` patterns and are excluded from service-worker caching.
 - Practical grades remain teacher-owned; the assistant can explain/troubleshoot but does not issue final practical scores.
+
+
+## STEMBuild AI Lab Coach
+
+The student dashboard includes an evidence-grounded AI Lab Coach. It follows **OBSERVE → REASON → PLAN → GUIDE → CHECK → ADAPT**, uses stored learner evidence, clearly labels AI-generated guidance, and logs recommendations for later evaluation. It never marks practical work as passed and has no capability to control physical hardware. See `docs/AI_LAB_COACH.md`.
+
+## Low-bandwidth PWA and shared-kit support
+
+STEMBuild now includes a selective low-bandwidth mode for schools with unstable internet, limited mobile data, affordable Android devices, shared computers and limited robotics kits.
+
+Learners can explicitly download a sanitized lesson package, read it offline, save unfinished notes/code/checkpoints locally, and synchronize those drafts when the same learner reconnects. Authenticated dashboards, quizzes, final evidence submission, AI coaching and teacher assessment remain online-only so offline support does not weaken privacy or assessment integrity.
+
+Large learner evidence images are compressed on-device when useful before upload. Shared physical robotics kits are represented separately from learner records: several learners can use the same registered kit while retaining individual attempts, events, evidence and teacher assessments.
+
+See `docs/LOW_BANDWIDTH_PWA.md` for the caching policy, background-sync rules, shared-device isolation model and offline security boundaries.

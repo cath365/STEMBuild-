@@ -1,0 +1,22 @@
+import { notFound } from "next/navigation";
+import { getTeacherLearningAnalytics } from "@/lib/analytics";
+import { db } from "@/lib/db";
+import { formatDate, percentRatio } from "@/lib/format";
+import { requireRole } from "@/lib/session";
+import { addStudentToClass, assignLesson } from "@/lib/teacher-actions";
+
+export default async function ClassDetail({ params }: { params: Promise<{ classId: string }> }) {
+  const teacher = await requireRole("TEACHER");
+  const { classId } = await params;
+  const classroom = await db.classroom.findUnique({ where: { id: classId }, include: { enrollments: { where: { status: "ACTIVE" }, include: { student: true } }, lessons: { include: { lesson: { include: { module: true } } }, orderBy: { createdAt: "desc" } } } });
+  if (!classroom || classroom.teacherId !== teacher.id) notFound();
+  const [lessons, analytics] = await Promise.all([
+    db.lesson.findMany({ where: { status: "PUBLISHED" }, include: { module: true }, orderBy: [{ module: { order: "asc" } }, { order: "asc" }] }),
+    getTeacherLearningAnalytics(teacher.id, classId),
+  ]);
+  if (!analytics) notFound();
+
+  return <><div className="topbar"><div className="page-title"><div className="eyebrow">Class</div><h1 style={{fontSize:38}}>{classroom.name}</h1><div className="muted">Join code {classroom.joinCode}</div></div></div><div className="grid grid-2"><div className="card"><h2 style={{fontSize:24}}>Add existing student</h2><form action={addStudentToClass.bind(null, classroom.id)} className="form" style={{marginTop:12}}><div className="field"><label>Student email</label><input className="input" type="email" name="email" required/></div><button className="btn">Add student</button></form></div><div className="card"><h2 style={{fontSize:24}}>Assign lesson</h2><form action={assignLesson.bind(null, classroom.id)} className="form" style={{marginTop:12}}><div className="field"><label>Lesson</label><select className="select" name="lessonId">{lessons.map((l) => <option key={l.id} value={l.id}>{l.module.title} — {l.title}</option>)}</select></div><div className="field"><label>Due date (optional)</label><input className="input" type="date" name="dueAt"/></div><button className="btn btn-primary">Assign lesson</button></form></div></div>
+  <section className="section"><h2>Learning engineering snapshot</h2><p className="muted">Only events generated inside this class are included.</p><div className="table-wrap" style={{marginTop:14}}><table><thead><tr><th>Learner</th><th>Practical mastery</th><th>Hints</th><th>Debug attempts</th><th>Failed/revision</th><th>Trend</th><th>Attention</th></tr></thead><tbody>{analytics.learnerRows.map((row) => <tr key={row.id}><td><strong>{row.displayName}</strong></td><td>{percentRatio(row.practicalMastery)}</td><td>{row.hints}</td><td>{row.troubleshooting}</td><td>{row.failedOutcomes}</td><td>{row.trend.label}</td><td>{row.needsAttention ? <span className="badge badge-yellow">Review evidence</span> : <span className="badge badge-green">No flag</span>}</td></tr>)}</tbody></table></div></section>
+  <section><h2>Learners</h2><div className="table-wrap" style={{marginTop:14}}><table><thead><tr><th>Name</th><th>Email</th><th>Status</th></tr></thead><tbody>{classroom.enrollments.map((e) => <tr key={e.id}><td>{e.student.displayName}</td><td>{e.student.email}</td><td>{e.status}</td></tr>)}</tbody></table></div></section><section className="section"><h2>Assigned lessons</h2><div className="table-wrap" style={{marginTop:14}}><table><thead><tr><th>Module</th><th>Lesson</th><th>Due</th><th>Status</th></tr></thead><tbody>{classroom.lessons.map((a) => <tr key={a.id}><td>{a.lesson.module.title}</td><td>{a.lesson.title}</td><td>{formatDate(a.dueAt)}</td><td>{a.status}</td></tr>)}</tbody></table></div></section></>;
+}
