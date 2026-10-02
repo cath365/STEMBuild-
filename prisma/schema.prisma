@@ -287,6 +287,7 @@ model Lesson {
   moduleId            String
   title               String
   slug                String
+  concept             String                  @default("")
   objective           String
   theory              String
   safetyNotes         String
