@@ -45,6 +45,11 @@ export function ShowcaseLearningJourney({
     <div className="eyebrow">Showcase learning journey</div>
     <h2 style={{fontSize:28,margin:"8px 0"}}>Smart Environment Monitor · 12-step build path</h2>
     <p className="muted">The journey separates instructions from evidence. Opening a step does not mark it successful; quizzes, submissions and teacher review create the authoritative records.</p>
+    <div className="grid grid-3" style={{marginTop:14}}>
+      <div className="card card-muted"><div className="eyebrow">Measure</div><strong>Temperature + humidity</strong><div className="small muted">Read real environmental sensor values.</div></div>
+      <div className="card card-muted"><div className="eyebrow">Interpret</div><strong>Turn data into information</strong><div className="small muted">Use serial output and simple LED indicators.</div></div>
+      <div className="card card-muted"><div className="eyebrow">Evidence</div><strong>Verify what actually happened</strong><div className="small muted">Readings, photos, troubleshooting and teacher review.</div></div>
+    </div>
     <div className="journey-grid" style={{marginTop:16}}>
       {steps.map(([title, description], index) => {
         const state = status(index);
