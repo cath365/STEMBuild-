@@ -4,6 +4,7 @@ import { AiHelp } from "@/components/ai-help";
 import { CompressedEvidenceInput } from "@/components/compressed-evidence-input";
 import { OfflineLessonDownload } from "@/components/offline-lesson-download";
 import { HardwareVariantSelector, type HardwareVariantOption } from "@/components/hardware-variant-selector";
+import { ShowcaseLearningJourney } from "@/components/showcase-learning-journey";
 import type { OfflineLessonPackage } from "@/lib/offline-types";
 import { db } from "@/lib/db";
 import { percent } from "@/lib/format";
@@ -64,6 +65,9 @@ export default async function LessonPage({ params }: { params: Promise<{ lessonI
     troubleshooting: variant.troubleshooting,
   }));
   const checkpointByTask = new Map(offlineCheckpoints.filter((item) => item.practicalTaskId).map((item) => [item.practicalTaskId!, item]));
+  const showcaseEvidenceSubmitted = lesson.practicalTasks.some((task) => task.submissions.some((submission) => ["SUBMITTED", "NEEDS_REVISION", "ASSESSED"].includes(submission.status)));
+  const showcaseTeacherReviewed = lesson.practicalTasks.some((task) => task.submissions.some((submission) => Boolean(submission.assessment)));
+  const showcaseQuizAttempted = Boolean(lesson.quiz?.attempts.length);
   const offlineLesson: OfflineLessonPackage = {
     version: 1,
     ownerId: user.id,
@@ -103,6 +107,7 @@ export default async function LessonPage({ params }: { params: Promise<{ lessonI
 
   return <>
     <div className="topbar"><div className="page-title"><div className="eyebrow">{lesson.module.course.title} / {lesson.module.title}</div><h1 style={{fontSize:38}}>{lesson.title}</h1><div className="inline"><span className="badge">{lesson.difficulty}</span><span className="badge">~{lesson.estimatedMinutes} min</span><span className={progress === "COMPLETED" ? "badge badge-green" : "badge badge-yellow"}>{progress.replaceAll("_", " ")}</span></div></div><Link className="btn" href="/dashboard/student/learning-path">Back to path</Link></div>
+    {lesson.slug === "smart-environment-monitor" ? <ShowcaseLearningJourney lessonStarted={progress !== "NOT_STARTED"} quizAttempted={showcaseQuizAttempted} evidenceSubmitted={showcaseEvidenceSubmitted} teacherReviewed={showcaseTeacherReviewed}/> : null}
     <div className="lesson-layout">
       <div className="stack">
         <div className="card"><div className="eyebrow">Core concept</div><h2 style={{fontSize:28,marginTop:8}}>{lesson.concept || lesson.title}</h2><div className="eyebrow" style={{marginTop:18}}>Learning objective</div><h3 style={{fontSize:22,marginTop:8}}>{lesson.objective}</h3><p className="lead" style={{fontSize:16}}>{lesson.theory}</p><div className="inline">{lesson.outcomes.map(({outcome}) => <span className="badge" key={outcome.id}>{outcome.code}: {outcome.title}{outcome.skill ? ` · ${outcome.skill.name}` : ""}</span>)}</div></div>

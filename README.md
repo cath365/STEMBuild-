@@ -160,3 +160,12 @@ STEMBuild stores each educational lesson once and attaches board-specific implem
 Projects use the same pattern through `ProjectHardware`. Learners choose a compatible board when an attempt starts, and the platform adapts wiring, GPIO mappings, programming language/framework, source code, upload steps and troubleshooting while keeping the project assessment unchanged.
 
 Administrators can add new hardware platforms from **Admin → Hardware** and attach them to lessons/projects from **Admin → Board variants**. No React or server-action rewrite is required for a new board. See `docs/MULTI_MICROCONTROLLER.md`.
+
+
+## Showcase: Smart Environment Monitor
+
+The DEMO curriculum includes a polished **SMART ENVIRONMENT MONITOR** lesson/project for Arduino Uno and ESP32. It walks learners through introduction, components, safety, wiring, code, testing, recording real readings, troubleshooting, assessment, evidence upload, teacher rubric review and analytics updates.
+
+The ESP32 variant includes an optional collapsed advanced-mode explanation for future authenticated dashboard telemetry, but the MVP does not pretend that telemetry has already been received. Practical completion still depends on learner evidence and/or teacher validation.
+
+See `docs/SMART_ENVIRONMENT_MONITOR.md`.

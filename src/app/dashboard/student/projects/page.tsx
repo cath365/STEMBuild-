@@ -4,6 +4,7 @@ import { formatDate, percent } from "@/lib/format";
 import { startProject, submitProject } from "@/lib/learning-actions";
 import { CompressedEvidenceInput } from "@/components/compressed-evidence-input";
 import { HardwareVariantSelector, type HardwareVariantOption } from "@/components/hardware-variant-selector";
+import { ShowcaseLearningJourney } from "@/components/showcase-learning-journey";
 
 export default async function StudentProjects() {
   const user = await requireRole("STUDENT");
@@ -31,6 +32,15 @@ export default async function StudentProjects() {
         select: { projectId: true, attemptNo: true, hardwarePlatformId: true },
       })
     : [];
+  const showcaseCourseId = assignments.find((assignment) => assignment.project.slug === "smart-environment-monitor")?.project.courseId;
+  const showcaseLesson = showcaseCourseId ? await db.lesson.findFirst({
+    where: { slug: "smart-environment-monitor", module: { courseId: showcaseCourseId } },
+    include: {
+      progress: { where: { studentId: user.id } },
+      quiz: { include: { attempts: { where: { studentId: user.id } } } },
+      practicalTasks: { include: { submissions: { where: { studentId: user.id }, include: { assessment: true } } } },
+    },
+  }) : null;
 
   return <>
     <div className="topbar"><div className="page-title"><div className="eyebrow">Projects</div><h1 style={{fontSize:38}}>Practical integration projects</h1><div className="muted">Choose a compatible board when you start. STEMBuild keeps the project objective and assessment fixed while adapting the implementation instructions.</div></div></div>
@@ -48,14 +58,20 @@ export default async function StudentProjects() {
         uploadProcedure: variant.uploadProcedure,
         expectedOutput: variant.expectedOutput,
         troubleshooting: variant.troubleshooting,
+        advancedExtension: variant.hardwarePlatform.slug === "esp32" ? variant.notes : null,
       }));
       const lockedVariant = started?.hardwarePlatformId
         ? variants.find((variant) => variant.hardwarePlatformId === started.hardwarePlatformId)
         : null;
 
+      const showcaseLessonStarted = (showcaseLesson?.progress[0]?.status ?? "NOT_STARTED") !== "NOT_STARTED";
+      const showcaseQuizAttempted = Boolean(showcaseLesson?.quiz?.attempts.length);
+      const showcaseEvidenceSubmitted = Boolean(a.project.submissions.length || showcaseLesson?.practicalTasks.some((task) => task.submissions.length));
+      const showcaseTeacherReviewed = Boolean(a.project.submissions.some((submission) => submission.assessment) || showcaseLesson?.practicalTasks.some((task) => task.submissions.some((submission) => submission.assessment)));
       return <div className="card" key={a.id}>
         <div className="inline"><span className="badge">{a.classroom.name}</span><span className="badge">Due {formatDate(a.dueAt)}</span></div>
         <h2 style={{fontSize:28,marginTop:12}}>{a.project.title}</h2>
+        {a.project.slug === "smart-environment-monitor" ? <><div className="notice" style={{marginTop:12}}><strong>Showcase build:</strong> measure first, interpret second, and only claim success when evidence or teacher validation supports it.</div><ShowcaseLearningJourney lessonStarted={showcaseLessonStarted} quizAttempted={showcaseQuizAttempted} evidenceSubmitted={showcaseEvidenceSubmitted} teacherReviewed={showcaseTeacherReviewed}/></> : null}
         <p className="muted">{a.project.description}</p>
         <p>{a.project.instructions}</p>
         <div className="small"><strong>Success criteria:</strong> {a.project.successCriteria}</div>
@@ -69,7 +85,7 @@ export default async function StudentProjects() {
         </form> : <form action={submitProject.bind(null, a.project.id)} className="form" encType="multipart/form-data">
           <HardwareVariantSelector variants={lockedVariant ? [lockedVariant] : variants} defaultId={started.hardwarePlatformId} label="Board selected for this attempt"/>
           <CompressedEvidenceInput label="Project evidence photo or PDF"/>
-          <div className="field"><label>Build notes</label><textarea className="textarea" name="studentNotes" required/></div>
+          <div className="field"><label>{a.project.slug === "smart-environment-monitor" ? "Recorded readings + build notes" : "Build notes"}</label><textarea className="textarea" name="studentNotes" required placeholder={a.project.slug === "smart-environment-monitor" ? "Record at least three readings, for example: 24.8°C / 58%, 24.9°C / 57%, 25.0°C / 57%. Then describe what the LEDs indicated." : undefined}/>{a.project.slug === "smart-environment-monitor" ? <span className="small muted">Do not invent readings. Enter only values you actually observed, or explain that valid readings were not obtained.</span> : null}</div>
           <div className="field"><label>Code</label><textarea className="textarea" name="codeSnippet"/></div>
           <div className="field"><label>Troubleshooting attempts</label><textarea className="textarea" name="troubleshootingNotes" placeholder="Describe a fault, what you tested, and what changed." required/></div>
           <button className="btn btn-primary">Submit project</button>
