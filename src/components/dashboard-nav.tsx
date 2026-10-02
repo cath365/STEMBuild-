@@ -11,7 +11,7 @@ const links = {
     ["Overview", "/dashboard/teacher"], ["Classes", "/dashboard/teacher/classes"], ["Reviews", "/dashboard/teacher/reviews"], ["Analytics", "/dashboard/teacher/analytics"],
   ],
   ADMIN: [
-    ["Overview", "/dashboard/admin"], ["Users", "/dashboard/admin/users"], ["Schools", "/dashboard/admin/schools"], ["Curriculum", "/dashboard/admin/curriculum"], ["Hardware", "/dashboard/admin/hardware"], ["Rubrics", "/dashboard/admin/rubrics"], ["Skills", "/dashboard/admin/skills"], ["Outcomes", "/dashboard/admin/outcomes"],
+    ["Overview", "/dashboard/admin"], ["Users", "/dashboard/admin/users"], ["Schools", "/dashboard/admin/schools"], ["Curriculum", "/dashboard/admin/curriculum"], ["Hardware", "/dashboard/admin/hardware"], ["Board variants", "/dashboard/admin/hardware/variants"], ["Rubrics", "/dashboard/admin/rubrics"], ["Skills", "/dashboard/admin/skills"], ["Outcomes", "/dashboard/admin/outcomes"],
   ],
 } as const;
 
