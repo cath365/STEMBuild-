@@ -13,6 +13,7 @@ export type HardwareVariantOption = {
   uploadProcedure: string;
   expectedOutput: string;
   troubleshooting: string;
+  components?: string[];
 };
 
 export function HardwareVariantSelector({
@@ -58,6 +59,7 @@ export function HardwareVariantSelector({
         <span className="badge">{selected.codeLanguage || "Code"}</span>
         {selected.programmingFramework ? <span className="badge">{selected.programmingFramework}</span> : null}
       </div>
+      {selected.components?.length ? <><h3 style={{marginTop:12}}>Components</h3><ul className="list">{selected.components.map((item)=><li key={item}>{item}</li>)}</ul></> : null}
       <h3 style={{marginTop:12}}>Wiring</h3>
       <p className="muted">{selected.wiringInstructions || "No wiring instructions configured yet."}</p>
       {selected.gpioMappings ? <><h3>GPIO / pin mapping</h3><pre className="code">{selected.gpioMappings}</pre></> : null}
