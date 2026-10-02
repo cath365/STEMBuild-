@@ -151,3 +151,12 @@ Learners can explicitly download a sanitized lesson package, read it offline, sa
 Large learner evidence images are compressed on-device when useful before upload. Shared physical robotics kits are represented separately from learner records: several learners can use the same registered kit while retaining individual attempts, events, evidence and teacher assessments.
 
 See `docs/LOW_BANDWIDTH_PWA.md` for the caching policy, background-sync rules, shared-device isolation model and offline security boundaries.
+
+
+## Multi-microcontroller architecture
+
+STEMBuild stores each educational lesson once and attaches board-specific implementation records through `LessonHardwareVariant`. The same concept, objective, assessment and skills can therefore support Arduino Uno, Arduino Nano, ESP32, Raspberry Pi Pico, BBC micro:bit, STM32 and future boards without duplicating lesson content.
+
+Projects use the same pattern through `ProjectHardware`. Learners choose a compatible board when an attempt starts, and the platform adapts wiring, GPIO mappings, programming language/framework, source code, upload steps and troubleshooting while keeping the project assessment unchanged.
+
+Administrators can add new hardware platforms from **Admin → Hardware** and attach them to lessons/projects from **Admin → Board variants**. No React or server-action rewrite is required for a new board. See `docs/MULTI_MICROCONTROLLER.md`.

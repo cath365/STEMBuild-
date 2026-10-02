@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { AiHelp } from "@/components/ai-help";
 import { CompressedEvidenceInput } from "@/components/compressed-evidence-input";
 import { OfflineLessonDownload } from "@/components/offline-lesson-download";
+import { HardwareVariantSelector, type HardwareVariantOption } from "@/components/hardware-variant-selector";
 import type { OfflineLessonPackage } from "@/lib/offline-types";
 import { db } from "@/lib/db";
 import { percent } from "@/lib/format";
@@ -49,6 +50,19 @@ export default async function LessonPage({ params }: { params: Promise<{ lessonI
   ]);
   const progress = lesson.progress[0]?.status ?? "NOT_STARTED";
   const hardwareOptions = lesson.hardwareVariants.map((v) => ({ id: v.hardwarePlatform.id, name: v.hardwarePlatform.name }));
+  const hardwareVariantsForSelector: HardwareVariantOption[] = lesson.hardwareVariants.map((variant) => ({
+    hardwarePlatformId: variant.hardwarePlatformId,
+    hardwarePlatform: variant.hardwarePlatform.name,
+    components: variant.components.map((item) => `${item.quantity}× ${item.component.name}${item.notes ? ` — ${item.notes}` : ""}`),
+    wiringInstructions: variant.wiringInstructions,
+    gpioMappings: variant.gpioMappings,
+    codeLanguage: variant.codeLanguage,
+    programmingFramework: variant.programmingFramework,
+    sourceCode: variant.codeSnippet,
+    uploadProcedure: variant.uploadProcedure,
+    expectedOutput: variant.expectedOutput,
+    troubleshooting: variant.troubleshooting,
+  }));
   const checkpointByTask = new Map(offlineCheckpoints.filter((item) => item.practicalTaskId).map((item) => [item.practicalTaskId!, item]));
   const offlineLesson: OfflineLessonPackage = {
     version: 1,
@@ -59,6 +73,7 @@ export default async function LessonPage({ params }: { params: Promise<{ lessonI
     courseTitle: lesson.module.course.title,
     moduleTitle: lesson.module.title,
     title: lesson.title,
+    concept: lesson.concept || lesson.title,
     difficulty: lesson.difficulty,
     estimatedMinutes: lesson.estimatedMinutes,
     objective: lesson.objective,
@@ -72,7 +87,11 @@ export default async function LessonPage({ params }: { params: Promise<{ lessonI
       hardwarePlatform: variant.hardwarePlatform.name,
       components: variant.components.map((item) => ({ quantity: item.quantity, name: item.component.name, notes: item.notes })),
       wiringInstructions: variant.wiringInstructions,
+      gpioMappings: variant.gpioMappings,
+      codeLanguage: variant.codeLanguage,
+      programmingFramework: variant.programmingFramework,
       codeSnippet: variant.codeSnippet,
+      uploadProcedure: variant.uploadProcedure,
       expectedOutput: variant.expectedOutput,
       troubleshooting: variant.troubleshooting,
     })),
@@ -86,9 +105,9 @@ export default async function LessonPage({ params }: { params: Promise<{ lessonI
     <div className="topbar"><div className="page-title"><div className="eyebrow">{lesson.module.course.title} / {lesson.module.title}</div><h1 style={{fontSize:38}}>{lesson.title}</h1><div className="inline"><span className="badge">{lesson.difficulty}</span><span className="badge">~{lesson.estimatedMinutes} min</span><span className={progress === "COMPLETED" ? "badge badge-green" : "badge badge-yellow"}>{progress.replaceAll("_", " ")}</span></div></div><Link className="btn" href="/dashboard/student/learning-path">Back to path</Link></div>
     <div className="lesson-layout">
       <div className="stack">
-        <div className="card"><div className="eyebrow">Learning objective</div><h2 style={{fontSize:28,marginTop:8}}>{lesson.objective}</h2><p className="lead" style={{fontSize:16}}>{lesson.theory}</p><div className="inline">{lesson.outcomes.map(({outcome}) => <span className="badge" key={outcome.id}>{outcome.code}: {outcome.title}{outcome.skill ? ` · ${outcome.skill.name}` : ""}</span>)}</div></div>
+        <div className="card"><div className="eyebrow">Core concept</div><h2 style={{fontSize:28,marginTop:8}}>{lesson.concept || lesson.title}</h2><div className="eyebrow" style={{marginTop:18}}>Learning objective</div><h3 style={{fontSize:22,marginTop:8}}>{lesson.objective}</h3><p className="lead" style={{fontSize:16}}>{lesson.theory}</p><div className="inline">{lesson.outcomes.map(({outcome}) => <span className="badge" key={outcome.id}>{outcome.code}: {outcome.title}{outcome.skill ? ` · ${outcome.skill.name}` : ""}</span>)}</div></div>
         <div className="notice"><strong>Safety:</strong> {lesson.safetyNotes}</div>
-        <div className="card"><h2 style={{fontSize:26}}>Hardware-specific instructions</h2><p className="muted">Choose the variant that matches the actual board used. The learning objective and rubric stay the same.</p><div className="stack" style={{marginTop:14}}>{lesson.hardwareVariants.map((variant) => <details key={variant.id} className="card card-muted" open={lesson.hardwareVariants.length <= 2}><summary><strong>{variant.hardwarePlatform.name}</strong></summary><div style={{marginTop:14}}><h3>Components</h3><ul className="list">{variant.components.length ? variant.components.map((x) => <li key={x.id}>{x.quantity}× {x.component.name}{x.notes ? ` — ${x.notes}` : ""}</li>) : <li>No programmable-board components required for this activity.</li>}</ul><h3 style={{marginTop:16}}>Wiring</h3><p className="muted">{variant.wiringInstructions}</p><h3 style={{marginTop:16}}>Starter code</h3><pre className="code">{variant.codeSnippet}</pre><h3 style={{marginTop:16}}>Expected output</h3><p className="muted">{variant.expectedOutput}</p><h3 style={{marginTop:16}}>Troubleshooting</h3><p className="muted">{variant.troubleshooting}</p></div></details>)}</div></div>
+        <div className="card"><h2 style={{fontSize:26}}>Choose your board</h2><p className="muted">The concept, objective, assessment and skills stay the same. Only the implementation details below change for the selected board.</p><HardwareVariantSelector variants={hardwareVariantsForSelector} label="Compatible hardware"/></div>
         <div className="card"><div className="eyebrow">Practical challenge</div><h2 style={{fontSize:26,marginTop:8}}>{lesson.practicalChallenge}</h2><p className="muted"><strong>Expected result:</strong> {lesson.expectedOutput}</p>{progress === "NOT_STARTED" ? <form action={startLesson.bind(null, lesson.id)}><button className="btn btn-primary">Start practical lesson</button></form> : null}</div>
 
         {lesson.practicalTasks.map((task) => {

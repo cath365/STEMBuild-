@@ -287,6 +287,7 @@ model Lesson {
   moduleId            String
   title               String
   slug                String
+  concept             String                  @default("")
   objective           String
   theory              String
   safetyNotes         String
@@ -353,18 +354,21 @@ model Component {
 }
 
 model LessonHardwareVariant {
-  id                 String             @id @default(cuid())
-  lessonId           String
-  hardwarePlatformId String
-  title              String
-  wiringInstructions String
-  codeLanguage       String
-  codeSnippet        String
-  expectedOutput     String
-  troubleshooting    String
-  lesson             Lesson             @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  hardwarePlatform   HardwarePlatform   @relation(fields: [hardwarePlatformId], references: [id], onDelete: Restrict)
-  components         VariantComponent[]
+  id                   String             @id @default(cuid())
+  lessonId             String
+  hardwarePlatformId   String
+  title                String
+  wiringInstructions   String
+  gpioMappings         String             @default("")
+  codeLanguage         String
+  programmingFramework String             @default("")
+  codeSnippet          String
+  uploadProcedure      String             @default("")
+  expectedOutput       String
+  troubleshooting      String
+  lesson               Lesson             @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  hardwarePlatform     HardwarePlatform   @relation(fields: [hardwarePlatformId], references: [id], onDelete: Restrict)
+  components           VariantComponent[]
 
   @@unique([lessonId, hardwarePlatformId])
   @@index([hardwarePlatformId])
@@ -627,13 +631,22 @@ model Project {
 }
 
 model ProjectHardware {
-  projectId          String
-  hardwarePlatformId String
-  notes              String?
-  project            Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  hardwarePlatform   HardwarePlatform @relation(fields: [hardwarePlatformId], references: [id], onDelete: Restrict)
+  projectId             String
+  hardwarePlatformId    String
+  notes                 String?
+  wiringInstructions    String           @default("")
+  gpioMappings          String           @default("")
+  codeLanguage          String           @default("")
+  programmingFramework  String           @default("")
+  sourceCode            String           @default("")
+  uploadProcedure       String           @default("")
+  expectedOutput        String           @default("")
+  troubleshooting       String           @default("")
+  project               Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  hardwarePlatform      HardwarePlatform @relation(fields: [hardwarePlatformId], references: [id], onDelete: Restrict)
 
   @@id([projectId, hardwarePlatformId])
+  @@index([hardwarePlatformId])
 }
 
 model ProjectAssignment {

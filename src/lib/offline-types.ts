@@ -7,6 +7,7 @@ export type OfflineLessonPackage = {
   courseTitle: string;
   moduleTitle: string;
   title: string;
+  concept: string;
   difficulty: string;
   estimatedMinutes: number;
   objective: string;
@@ -20,7 +21,11 @@ export type OfflineLessonPackage = {
     hardwarePlatform: string;
     components: Array<{ quantity: number; name: string; notes: string | null }>;
     wiringInstructions: string;
+    gpioMappings: string;
+    codeLanguage: string;
+    programmingFramework: string;
     codeSnippet: string;
+    uploadProcedure: string;
     expectedOutput: string;
     troubleshooting: string;
   }>;

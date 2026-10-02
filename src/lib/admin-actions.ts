@@ -85,6 +85,116 @@ export async function createCourse(formData: FormData) {
   revalidatePath("/dashboard/admin/curriculum");
 }
 
+export async function upsertLessonHardwareVariant(formData: FormData) {
+  await requireRole("ADMIN");
+  const lessonId = String(formData.get("lessonId") ?? "");
+  const hardwarePlatformId = String(formData.get("hardwarePlatformId") ?? "");
+  const title = String(formData.get("title") ?? "").trim();
+  const wiringInstructions = String(formData.get("wiringInstructions") ?? "").trim();
+  const gpioMappings = String(formData.get("gpioMappings") ?? "").trim();
+  const codeLanguage = String(formData.get("codeLanguage") ?? "").trim();
+  const programmingFramework = String(formData.get("programmingFramework") ?? "").trim();
+  const codeSnippet = String(formData.get("sourceCode") ?? "").trim();
+  const uploadProcedure = String(formData.get("uploadProcedure") ?? "").trim();
+  const expectedOutput = String(formData.get("expectedOutput") ?? "").trim();
+  const troubleshooting = String(formData.get("troubleshooting") ?? "").trim();
+
+  if (!lessonId || !hardwarePlatformId || !wiringInstructions || !codeLanguage || !codeSnippet || !expectedOutput || !troubleshooting) {
+    throw new Error("Lesson, board, wiring, language, source code, expected output and troubleshooting are required.");
+  }
+
+  const [lesson, hardware] = await Promise.all([
+    db.lesson.findUnique({ where: { id: lessonId }, select: { id: true, title: true } }),
+    db.hardwarePlatform.findUnique({ where: { id: hardwarePlatformId }, select: { id: true, name: true, active: true } }),
+  ]);
+  if (!lesson || !hardware || !hardware.active) throw new Error("Lesson or active hardware platform was not found.");
+
+  await db.lessonHardwareVariant.upsert({
+    where: { lessonId_hardwarePlatformId: { lessonId, hardwarePlatformId } },
+    create: {
+      lessonId,
+      hardwarePlatformId,
+      title: title || `${lesson.title} — ${hardware.name}`,
+      wiringInstructions,
+      gpioMappings,
+      codeLanguage,
+      programmingFramework,
+      codeSnippet,
+      uploadProcedure,
+      expectedOutput,
+      troubleshooting,
+    },
+    update: {
+      title: title || `${lesson.title} — ${hardware.name}`,
+      wiringInstructions,
+      gpioMappings,
+      codeLanguage,
+      programmingFramework,
+      codeSnippet,
+      uploadProcedure,
+      expectedOutput,
+      troubleshooting,
+    },
+  });
+  revalidatePath("/dashboard/admin/hardware/variants");
+  revalidatePath(`/dashboard/student/lessons/${lessonId}`);
+}
+
+export async function upsertProjectHardwareVariant(formData: FormData) {
+  await requireRole("ADMIN");
+  const projectId = String(formData.get("projectId") ?? "");
+  const hardwarePlatformId = String(formData.get("hardwarePlatformId") ?? "");
+  const notes = String(formData.get("notes") ?? "").trim() || null;
+  const wiringInstructions = String(formData.get("wiringInstructions") ?? "").trim();
+  const gpioMappings = String(formData.get("gpioMappings") ?? "").trim();
+  const codeLanguage = String(formData.get("codeLanguage") ?? "").trim();
+  const programmingFramework = String(formData.get("programmingFramework") ?? "").trim();
+  const sourceCode = String(formData.get("sourceCode") ?? "").trim();
+  const uploadProcedure = String(formData.get("uploadProcedure") ?? "").trim();
+  const expectedOutput = String(formData.get("expectedOutput") ?? "").trim();
+  const troubleshooting = String(formData.get("troubleshooting") ?? "").trim();
+
+  if (!projectId || !hardwarePlatformId || !wiringInstructions || !codeLanguage || !sourceCode || !expectedOutput || !troubleshooting) {
+    throw new Error("Project, board, wiring, language, source code, expected output and troubleshooting are required.");
+  }
+
+  const [project, hardware] = await Promise.all([
+    db.project.findUnique({ where: { id: projectId }, select: { id: true } }),
+    db.hardwarePlatform.findUnique({ where: { id: hardwarePlatformId }, select: { id: true, active: true } }),
+  ]);
+  if (!project || !hardware || !hardware.active) throw new Error("Project or active hardware platform was not found.");
+
+  await db.projectHardware.upsert({
+    where: { projectId_hardwarePlatformId: { projectId, hardwarePlatformId } },
+    create: {
+      projectId,
+      hardwarePlatformId,
+      notes,
+      wiringInstructions,
+      gpioMappings,
+      codeLanguage,
+      programmingFramework,
+      sourceCode,
+      uploadProcedure,
+      expectedOutput,
+      troubleshooting,
+    },
+    update: {
+      notes,
+      wiringInstructions,
+      gpioMappings,
+      codeLanguage,
+      programmingFramework,
+      sourceCode,
+      uploadProcedure,
+      expectedOutput,
+      troubleshooting,
+    },
+  });
+  revalidatePath("/dashboard/admin/hardware/variants");
+  revalidatePath("/dashboard/student/projects");
+}
+
 export async function toggleUserActive(userId: string) {
   await requireRole("ADMIN");
   const user = await db.user.findUnique({ where: { id: userId } });
