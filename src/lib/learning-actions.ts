@@ -273,6 +273,9 @@ export async function submitPractical(formData: FormData) {
   const prior = await db.practicalSubmission.count({ where: { taskId, studentId: user.id } });
   const attemptNo = prior + 1;
   const started = await latestOpenStart({ learnerId: user.id, type: "PRACTICAL_TASK_STARTED", practicalTaskId: taskId, attemptNo });
+  if (started?.hardwarePlatformId && started.hardwarePlatformId !== hardwarePlatformId) {
+    throw new Error("Use the same board selected when this practical attempt started.");
+  }
   const startedKitId = metadataString(started?.metadata, "kitId");
   if (startedKitId && requestedKitId && startedKitId !== requestedKitId) throw new Error("Use the same shared kit selected when this attempt started.");
   const roboticsKitId = startedKitId ?? requestedKitId;
@@ -434,6 +437,9 @@ export async function submitProject(projectId: string, formData: FormData) {
   const prior = await db.projectSubmission.count({ where: { projectId, studentId: user.id } });
   const attemptNo = prior + 1;
   const started = await latestOpenStart({ learnerId: user.id, type: "PROJECT_STARTED", projectId, attemptNo });
+  if (started?.hardwarePlatformId && started.hardwarePlatformId !== hardwarePlatformId) {
+    throw new Error("Use the same board selected when this project attempt started.");
+  }
   const submittedAt = new Date();
   const durationMs = clampDurationMs(started ? submittedAt.getTime() - started.occurredAt.getTime() : null);
   const [programmingSkill, debuggingSkill] = await Promise.all([
