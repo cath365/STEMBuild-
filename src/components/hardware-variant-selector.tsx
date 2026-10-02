@@ -14,6 +14,7 @@ export type HardwareVariantOption = {
   expectedOutput: string;
   troubleshooting: string;
   components?: string[];
+  advancedExtension?: string | null;
 };
 
 export function HardwareVariantSelector({
@@ -68,6 +69,7 @@ export function HardwareVariantSelector({
       {selected.uploadProcedure ? <><h3>Upload procedure</h3><p className="muted">{selected.uploadProcedure}</p></> : null}
       {selected.expectedOutput ? <><h3>Expected result</h3><p className="muted">{selected.expectedOutput}</p></> : null}
       {selected.troubleshooting ? <><h3>Troubleshooting</h3><p className="muted">{selected.troubleshooting}</p></> : null}
+      {selected.advancedExtension ? <div className="notice" style={{marginTop:16}}><div className="eyebrow">Advanced extension</div><p style={{marginBottom:0}}>{selected.advancedExtension}</p></div> : null}
     </div> : null}
   </div>;
 }
