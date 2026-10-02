@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { logout } from "@/lib/auth-actions";
 import { Brand } from "@/components/brand";
+import { SharedDeviceSignOut } from "@/components/shared-device-signout";
+import { PwaInstallButton } from "@/components/pwa-install-button";
 
 const links = {
   STUDENT: [
@@ -14,13 +15,13 @@ const links = {
   ],
 } as const;
 
-export function DashboardNav({ role, name }: { role: keyof typeof links; name: string }) {
+export function DashboardNav({ role, name, learnerId }: { role: keyof typeof links; name: string; learnerId?: string }) {
   return <aside className="sidebar">
     <Brand />
     <nav className="nav">{links[role].map(([label, href]) => <Link key={href} href={href}>{label}</Link>)}</nav>
     <div className="sidebar-footer">
-      <div className="small muted" style={{marginBottom:10}}>{name}<br />{role.toLowerCase()}</div>
-      <form action={logout}><button className="btn" style={{width:"100%"}}>Sign out</button></form>
+      <PwaInstallButton /><div className="small muted" style={{marginBottom:10}}>{name}<br />{role.toLowerCase()}</div>
+      <SharedDeviceSignOut learnerId={learnerId}/>
     </div>
   </aside>;
 }
