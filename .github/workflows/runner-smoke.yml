@@ -1,0 +1,14 @@
+name: Runner Smoke Test
+
+on:
+  push:
+    paths:
+      - ".github/workflows/runner-smoke.yml"
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Confirm runner execution
+        run: echo "GitHub-hosted runner started successfully"
