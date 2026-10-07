@@ -152,3 +152,51 @@
 .component-coverage-item{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:12px;border:1px solid var(--border);border-radius:8px;background:#fff;font-size:12px}
 @media(max-width:900px){.component-coverage-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:700px){.component-admin-media{grid-template-columns:1fr}.component-admin-media>img{height:260px}.component-learning-gallery,.component-coverage-grid{grid-template-columns:1fr}}
+
+/* Reviewed board-specific build guides */
+.verified-guide{margin-top:10px}
+.verified-guide-status{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:12px 14px;border:1px solid #b9dfc8;border-radius:8px;background:#f1f9f4}
+.verified-guide-status p{margin:0}
+.verified-guide-board{display:grid;grid-template-columns:150px minmax(0,1fr);gap:18px;align-items:center;padding:16px;border:1px solid var(--border);border-radius:10px;background:#fff}
+.verified-guide-board>.component-visual-compact{width:150px;margin:0}
+.verified-guide-board>.component-visual-compact .component-visual-image{height:110px;min-height:110px}
+.verified-guide-board>.component-visual-compact .component-visual-image img{height:94px;max-height:94px}
+.wiring-map{display:grid;gap:9px;margin-top:12px}
+.wiring-map-row{display:grid;grid-template-columns:minmax(130px,.8fr) 30px minmax(150px,1fr) minmax(160px,1.1fr);gap:10px;align-items:center;padding:10px;border:1px solid var(--border);border-radius:8px;background:#fff}
+.wiring-node{display:grid;gap:3px;padding:9px;border-radius:7px;background:#f7f9fb}
+.wiring-node span{font-size:9px;font-weight:800;letter-spacing:.08em;color:var(--muted)}
+.wiring-node strong{font-size:12px;line-height:1.35}
+.wiring-node.from{border-left:3px solid var(--primary)}
+.wiring-node.to{border-left:3px solid #2d8a5b}
+.wiring-arrow{text-align:center;font-weight:900;color:var(--primary);font-size:20px}
+.wiring-purpose{font-size:12px;line-height:1.5;color:var(--muted)}
+.wiring-caution{margin-top:5px;padding:6px 8px;border-radius:6px;background:#fff3dd;color:#875c13;font-size:11px}
+.verified-code{overflow:auto;max-height:520px;padding:18px;border-radius:9px;background:#141a22;color:#f3f6f8;font-size:12px;line-height:1.55;tab-size:2}
+.verified-guide-outcomes{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.learning-path-hero{padding:52px 0 34px;background:linear-gradient(180deg,#f1f7fb 0%,#fff 100%);border-bottom:1px solid var(--border)}
+.learning-path-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:12px}
+.learning-path-stage{display:grid;grid-template-columns:58px 120px minmax(0,1fr) auto;gap:16px;align-items:center;padding:16px;border:1px solid var(--border);border-radius:10px;background:#fff}
+.learning-path-stage-number{display:grid;place-items:center;width:46px;height:46px;border-radius:50%;background:var(--primary);color:#fff;font-size:18px;font-weight:900}
+.learning-path-stage>.component-visual-compact{width:120px;margin:0}
+.learning-path-stage>.component-visual-compact .component-visual-image{height:86px;min-height:86px}
+.learning-path-stage>.component-visual-compact .component-visual-image img{height:72px;max-height:72px}
+.learning-path-stage h3{font-size:20px;margin:0 0 6px}
+.learning-path-stage p{margin:0;color:var(--muted);font-size:13px;line-height:1.55}
+.learning-path-stage .stage-action{min-width:130px}
+@media(max-width:850px){
+  .wiring-map-row{grid-template-columns:1fr 24px 1fr}
+  .wiring-purpose{grid-column:1/-1;padding-left:4px}
+  .learning-path-stage{grid-template-columns:50px 96px minmax(0,1fr)}
+  .learning-path-stage .stage-action{grid-column:2/-1}
+}
+@media(max-width:600px){
+  .verified-guide-board{grid-template-columns:1fr}
+  .verified-guide-board>.component-visual-compact{width:100%}
+  .wiring-map-row{grid-template-columns:1fr}
+  .wiring-arrow{transform:rotate(90deg)}
+  .verified-guide-outcomes{grid-template-columns:1fr}
+  .learning-path-stage{grid-template-columns:44px minmax(0,1fr)}
+  .learning-path-stage>.component-visual-compact{grid-column:1/-1;width:100%}
+  .learning-path-stage .stage-copy{grid-column:1/-1}
+  .learning-path-stage .stage-action{grid-column:1/-1;width:100%}
+}
