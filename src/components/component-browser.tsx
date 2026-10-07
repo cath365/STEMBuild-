@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { buildProjects, componentCatalog, componentCategories } from "@/lib/build-catalog";
+import { ComponentVisualCard } from "@/components/component-visual-card";
 
 const STORAGE_KEY = "stembuild-my-components-v1";
 
@@ -76,6 +77,7 @@ export function ComponentBrowser() {
       {filtered.map((item) => {
         const selected = owned.includes(item.slug);
         return <article className="card component-card" key={item.slug}>
+          <ComponentVisualCard slug={item.slug} compact />
           <div className="component-card-top"><span className="badge">{item.category}</span><button type="button" className={selected ? "component-own selected" : "component-own"} aria-pressed={selected} onClick={() => toggle(item.slug)}>{selected ? "✓ I have this" : "+ I have this"}</button></div>
           <h3>{item.name}</h3>
           <p className="muted">{item.summary}</p>
