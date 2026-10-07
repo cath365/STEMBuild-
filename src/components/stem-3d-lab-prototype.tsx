@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { componentVisualFor } from "@/lib/component-visuals";
 import { compileUnoFirmware, startUnoFirmwareSimulation, type AVRSimulation } from "@/lib/avr-browser-engine";
 import { Stem3DWebGLWorkbench } from "@/components/stem-3d-webgl-workbench";
 import {
@@ -14,7 +13,9 @@ import {
 } from "@/lib/lab3d";
 
 function partImage(slug: string) {
-  return componentVisualFor(slug)?.src ?? null;
+  return ["arduino-uno", "breadboard", "resistor-330", "led", "push-button"].includes(slug)
+    ? `/circuit-models/${slug}.svg`
+    : null;
 }
 
 function storageKey(project: Lab3DProject) {
@@ -386,7 +387,7 @@ function LabProjectSession({projectSlug,onProjectChange}: {projectSlug:Lab3DProj
             </svg>
           </div>
 
-          <p className="small muted">This preview is intentionally lightweight for phones. It shows every part as soon as you press Place. Launch 3D only when you want rotation, zoom and clickable 3D pin nodes.</p>
+          <p className="small muted">This preview is intentionally lightweight for phones. It uses circuit illustrations rather than photos and shows every part as soon as you press Place. Launch 3D only when you want rotation, zoom and clickable 3D pin nodes.</p>
         </div>
       </section>
     )}
