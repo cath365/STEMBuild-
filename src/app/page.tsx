@@ -60,7 +60,7 @@ export default function Home() {
             <div className={styles.heroGrid}>
               <div className={styles.heroCopy}>
                 <p className={styles.kicker}>LEARN BY BUILDING REAL THINGS</p>
-                <h1 id="hero-title">What do you want to<br/><span>build today?</span></h1>
+                <h1 id="hero-title"><span className={styles.heroLine}>What do you</span>{" "}<span className={styles.heroLine}>want to</span>{" "}<span className={`${styles.heroLine} ${styles.heroAccent}`}>build today?</span></h1>
                 <p>Choose a project. STEMBuild helps you understand the parts, connect them safely, write the code, test what happens and fix problems one step at a time.</p>
                 <div className="inline"><Link className={styles.primaryButton} href="/learning-paths/first-robot">Follow the First Robot Path <span aria-hidden="true">→</span></Link><Link className="btn" href="/projects">Choose any project</Link><Link className="btn" href="/components">I already have components</Link></div>
                 <div className={styles.heroNote}>Beginner friendly <span aria-hidden="true">·</span> Real hardware <span aria-hidden="true">·</span> Honest evidence <span aria-hidden="true">·</span> Teacher support</div>
