@@ -45,10 +45,13 @@ export type FirmwareCompileResult = {
 export async function compileUnoFirmware(source: string): Promise<FirmwareCompileResult> {
   const started = performance.now();
   let module: RemoteModule;
+  // Arduino IDE preprocessing implicitly provides Arduino.h for .ino sketches.
+  // The WASM compiler consumes C++ directly, so mirror that standard step when needed.
+  const compileSource = /#\s*include\s*[<"]Arduino\.h[>"]/.test(source) ? source : `#include <Arduino.h>\n${source}`;
   try {
     module = await remoteImport(`${COMPILER_BASE}index.js`);
     const result = await module.compile({
-      source,
+      source: compileSource,
       sensors: [],
       assetsBase: COMPILER_BASE,
     });
@@ -64,7 +67,7 @@ export async function compileUnoFirmware(source: string): Promise<FirmwareCompil
     try {
       module = await remoteImport(`${COMPILER_BASE}firmware-builder.js`);
       const result = await module.buildFirmware({
-        source,
+        source: compileSource,
         sensors: [],
         assetsBase: COMPILER_BASE,
       });
