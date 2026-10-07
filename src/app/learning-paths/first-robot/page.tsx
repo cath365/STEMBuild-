@@ -31,7 +31,8 @@ export default function FirstRobotLearningPathPage() {
           <h1>From your first LED<br/><span>to a working robot.</span></h1>
           <p className="lead">Nine practical builds. Each one teaches a skill needed by the next, so beginners do not have to jump from a simple circuit straight into a complicated robot.</p>
           <div className="inline" style={{marginTop:18}}>
-            <Link className="btn btn-primary" href="/build/first-led">Start with the LED</Link>
+            <Link className="btn btn-primary" href="/3d-lab">Try the LED in 3D</Link>
+            <Link className="btn" href="/build/first-led">Open the normal LED build</Link>
             <Link className="btn" href="/components">Check my components</Link>
           </div>
         </div>

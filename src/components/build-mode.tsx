@@ -99,7 +99,7 @@ export function BuildMode({ project, components }: Props) {
 
   return <div className="build-mode">
     <section className="card build-setup">
-      <div><div className="eyebrow">Build setup</div><h2>{project.title}</h2><p className="muted">Choose the board in your hands and how much guidance you want.</p></div>
+      <div><div className="eyebrow">Build setup</div><h2>{project.title}</h2><p className="muted">Choose the board in your hands and how much guidance you want.</p>{project.slug === "first-led" ? <Link className="text-link" href="/3d-lab">Try this project in the 3D Lab →</Link> : null}</div>
       <div className="build-setup-controls">
         <label className="field"><span>Your board</span><select className="select" value={board} onChange={(event) => setBoard(event.target.value)}>{project.boards.map((item) => <option key={item}>{item}</option>)}</select></label>
         <label className="field"><span>Your experience</span><select className="select" value={level} onChange={(event) => setLevel(event.target.value as LearningLevel)}>{levels.map((item) => <option key={item}>{item}</option>)}</select></label>
