@@ -5,6 +5,10 @@ import { PublicHeader } from "@/components/public-header";
 import { PublicFooter } from "@/components/public-footer";
 import { ComponentVisualCard } from "@/components/component-visual-card";
 import { componentBySlug, componentCatalog, projectsUsingComponent } from "@/lib/build-catalog";
+import { db } from "@/lib/db";
+import type { ComponentVisual } from "@/lib/component-visuals";
+
+export const dynamic = "force-dynamic";
 
 export function generateStaticParams() {
   return componentCatalog.map((item) => ({ slug: item.slug }));
@@ -22,6 +26,25 @@ export default async function ComponentDetailPage({ params }: { params: Promise<
   const item = componentBySlug(slug);
   if (!item) notFound();
   const projects = projectsUsingComponent(item.slug);
+  const uploadedMedia = await db.componentMedia.findMany({
+    where: { componentSlug: item.slug, verified: true },
+    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+  });
+  const uploadedPhoto = uploadedMedia.find((media) => media.kind === "PHOTO");
+  const uploadedVisual: ComponentVisual | null = uploadedPhoto ? {
+    slug: item.slug,
+    src: `/api/component-media/${uploadedPhoto.id}`,
+    alt: uploadedPhoto.altText,
+    caption: uploadedPhoto.caption,
+    credit: uploadedPhoto.credit ?? undefined,
+    license: uploadedPhoto.licenseName ?? undefined,
+    licenseUrl: uploadedPhoto.licenseUrl ?? undefined,
+    sourceUrl: uploadedPhoto.sourceUrl ?? undefined,
+    kind: "photo",
+    verified: true,
+    local: true,
+  } : null;
+  const learningVisuals = uploadedMedia.filter((media) => media.kind !== "PHOTO");
 
   return <div>
     <PublicHeader />
@@ -43,7 +66,7 @@ export default async function ComponentDetailPage({ params }: { params: Promise<
           <section className="card component-recognition-card">
             <div className="eyebrow">Recognise it in real life</div>
             <h2 style={{marginTop:8}}>What should I look for?</h2>
-            <ComponentVisualCard slug={item.slug} />
+            <ComponentVisualCard slug={item.slug} visual={uploadedVisual} />
             <p className="small muted">This is a recognition aid, not a substitute for the markings or datasheet on the exact component in your hand. Clones and revisions can look different.</p>
           </section>
 
@@ -63,6 +86,17 @@ export default async function ComponentDetailPage({ params }: { params: Promise<
             </div>
             <div className="notice" style={{marginTop:18}}><strong>Safety:</strong> {item.safety}</div>
           </section>
+
+          {learningVisuals.length ? <section className="card">
+            <div className="eyebrow">Visual learning aids</div>
+            <h2 style={{marginTop:8}}>See the pinout, wiring and expected result</h2>
+            <div className="component-learning-gallery">
+              {learningVisuals.map((media) => <figure key={media.id} className="component-learning-visual">
+                <img src={`/api/component-media/${media.id}`} alt={media.altText} loading="lazy"/>
+                <figcaption><span className="badge">{media.kind.replaceAll("_"," ")}</span><p>{media.caption}</p></figcaption>
+              </figure>)}
+            </div>
+          </section> : null}
 
           <section className="card">
             <div className="eyebrow">Beginner guidance</div>
