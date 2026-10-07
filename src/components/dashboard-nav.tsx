@@ -8,7 +8,7 @@ import { PwaInstallButton } from "@/components/pwa-install-button";
 
 const links = {
   STUDENT: [
-    ["Overview", "/dashboard/student"], ["Learning path", "/dashboard/student/learning-path"], ["AI Lab Coach", "/dashboard/student/ai-lab-coach"], ["Projects", "/dashboard/student/projects"], ["Progress", "/dashboard/student/progress"],
+    ["Overview", "/dashboard/student"], ["Learning path", "/dashboard/student/learning-path"], ["Build library", "/projects"], ["Components", "/components"], ["AI Lab Coach", "/dashboard/student/ai-lab-coach"], ["Projects", "/dashboard/student/projects"], ["Progress", "/dashboard/student/progress"],
   ],
   TEACHER: [
     ["Overview", "/dashboard/teacher"], ["Classes", "/dashboard/teacher/classes"], ["Reviews", "/dashboard/teacher/reviews"], ["Analytics", "/dashboard/teacher/analytics"],
