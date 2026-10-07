@@ -50,8 +50,8 @@ export function parseRobotBuilderSnapshot(value: unknown): RobotBuilderSnapshot 
 
 export function parseSavedRobotProject(value: unknown): SavedRobotProject {
   if (!isObject(value) || value.version !== 1 || !Array.isArray(value.blocks) ||
-      value.blocks.length > 20 || !Number.isInteger(value.threshold) ||
-      (value.threshold as number) < 15 || (value.threshold as number) > 50 ||
+      value.blocks.length > 20 || !finite(value.threshold) || !Number.isInteger(value.threshold) ||
+      value.threshold < 15 || value.threshold > 50 ||
       typeof value.updatedAt !== "string" || !Number.isFinite(Date.parse(value.updatedAt))) {
     throw Error("Saved robot project has an unsupported format.");
   }
@@ -66,7 +66,7 @@ export function parseSavedRobotProject(value: unknown): SavedRobotProject {
     version: 1,
     builder: parseRobotBuilderSnapshot(value.builder),
     blocks,
-    threshold: value.threshold as number,
+    threshold: value.threshold,
     updatedAt: value.updatedAt,
   };
 }
