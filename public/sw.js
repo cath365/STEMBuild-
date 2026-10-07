@@ -1,6 +1,7 @@
-const SHELL_CACHE = "stembuild-shell-v5";
-const STATIC_CACHE = "stembuild-static-v5";
-const SHELL_URLS = ["/", "/offline", "/offline-lesson.html", "/icon-192.png", "/icon-512.png"];
+const SHELL_CACHE = "stembuild-shell-v6";
+const STATIC_CACHE = "stembuild-static-v6";
+const PUBLIC_PAGES = ["/", "/offline", "/offline-lesson.html", "/showcase/smart-environment-monitor", "/teachers", "/about"];
+const SHELL_URLS = [...PUBLIC_PAGES, "/icon-192.png", "/icon-512.png", "/lessons/smart-monitor-uno.ino", "/lessons/smart-monitor-esp32.ino", "/lessons/reading-log.csv", "/lessons/pilot-planning-brief.md"];
 const DB_NAME = "stembuild_offline_v1";
 const DB_VERSION = 2;
 
@@ -103,23 +104,23 @@ self.addEventListener("fetch", (event) => {
   const imageSource = url.searchParams.get("url") || "";
   const publicBoardPhoto = url.pathname.startsWith("/hardware/") || url.pathname === "/electronics-workbench.jpg" ||
     (url.pathname === "/_next/image" && (imageSource.startsWith("/hardware/") || imageSource === "/electronics-workbench.jpg"));
-  if (url.pathname.startsWith("/_next/static/") || publicBoardPhoto) {
+  if (url.pathname.startsWith("/_next/static/") || publicBoardPhoto || SHELL_URLS.includes(url.pathname) && url.pathname.startsWith("/lessons/")) {
     event.respondWith(caches.open(STATIC_CACHE).then(async (cache) => {
       const cached = await cache.match(request);
       if (cached) return cached;
       const response = await fetch(request);
-      if (response.ok) cache.put(request, response.clone());
+      if (response.ok) await cache.put(request, response.clone());
       return response;
     }));
     return;
   }
 
-  if (url.pathname === "/offline-lesson.html" || url.pathname === "/offline" || url.pathname === "/") {
+  if (PUBLIC_PAGES.includes(url.pathname)) {
     event.respondWith((async () => {
       const cache = await caches.open(SHELL_CACHE);
       try {
         const response = await fetch(request);
-        if (response.ok) cache.put(request, response.clone());
+        if (response.ok) await cache.put(request, response.clone());
         return response;
       } catch {
         return (await cache.match(url.pathname)) || (await cache.match("/offline"));

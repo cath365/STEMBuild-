@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { Brand } from "@/components/brand";
+import { PublicFooter } from "@/components/public-footer";
 import { BoardGallery } from "@/components/board-gallery";
 import styles from "./home.module.css";
 
@@ -47,7 +48,7 @@ export default function Home() {
                 <p className={styles.kicker}>HANDS-ON STEM LEARNING</p>
                 <h1 id="hero-title">Learn it.<br /><span>Build it.</span></h1>
                 <p>Learn electronics, programming and robotics through practical projects. Follow the wiring, write the code and see what you can build.</p>
-                <a className={styles.primaryButton} href="#topics">Explore learning areas <span aria-hidden="true">→</span></a>
+                <a className={styles.primaryButton} href="#topics">Explore learning areas <span aria-hidden="true">→</span></a><Link className={styles.sampleLink} href="/showcase/smart-environment-monitor">Try a complete sample lesson →</Link>
                 <div className={styles.heroNote}>Step-by-step lessons <span aria-hidden="true">·</span> Teacher-reviewed projects</div>
               </div>
               <figure className={styles.heroFigure}>
@@ -65,15 +66,15 @@ export default function Home() {
           <p className={styles.resultCount} role="status">{filtered.length} learning {filtered.length === 1 ? "area" : "areas"}{query ? ` matching “${query}”` : ""}</p>
           <div className={styles.topicGrid}>{filtered.map((topic) => <article key={topic.title} className={styles.topicCard}>
             <div className={`${styles.topicBanner} ${styles[topic.className]}`}><span>{topic.category}</span><span className={styles.topicNumber} aria-hidden="true">0{topics.indexOf(topic) + 1}</span><span className={styles.topicTag}>{topic.tag}</span></div>
-            <div className={styles.topicBody}><h3>{topic.title}</h3><p>{topic.description}</p><details className={styles.outline}><summary>View learning outline <span aria-hidden="true">+</span></summary><ul>{topic.lessons.map((lesson) => <li key={lesson}>{lesson}</li>)}</ul></details><Link href="/login" aria-label={`Sign in to learn about ${topic.title}`}>Sign in to learn <span aria-hidden="true">→</span></Link></div>
+            <div className={styles.topicBody}><h3>{topic.title}</h3><p>{topic.description}</p><details className={styles.outline}><summary>View learning outline <span aria-hidden="true">+</span></summary><ul>{topic.lessons.map((lesson) => <li key={lesson}>{lesson}</li>)}</ul></details><Link href={topic.category === "IoT & sensors" ? "/showcase/smart-environment-monitor" : "/login"} aria-label={topic.category === "IoT & sensors" ? "Try the Smart Environment Monitor sample lesson" : `Sign in to learn about ${topic.title}`}>{topic.category === "IoT & sensors" ? "Try the sample lesson" : "Sign in to learn"} <span aria-hidden="true">→</span></Link></div>
           </article>)}</div>
           {filtered.length === 0 && <div className={styles.emptyState}><h3>No topics found</h3><p>Try “Arduino”, “sensors” or “circuits”, or clear your search.</p><button type="button" onClick={() => { setQuery(""); setCategory("All topics"); }}>Show all learning areas</button></div>}
         </section>
         <BoardGallery />
         <section id="how" className={styles.howSection} aria-labelledby="how-title"><div className={styles.container}><div className={styles.sectionHeading}><div><p className={styles.kicker}>A PRACTICAL WAY TO LEARN</p><h2 id="how-title">Make. Test. Understand.</h2></div></div><div className={styles.steps}>{[["01", "Follow the lesson", "Understand the components, check the safety notes and follow the wiring for your board."], ["02", "Build and test", "Run your code, record what happens and work through any problems."], ["03", "Show your work", "Submit evidence and receive teacher feedback on your practical skills."]].map(([number, title, description]) => <div key={number}><span>{number}</span><h3>{title}</h3><p>{description}</p></div>)}</div></div></section>
-        <section id="teachers" className={`${styles.container} ${styles.teacherSection}`} aria-labelledby="teacher-title"><div><p className={styles.kicker}>FOR TEACHERS &amp; SCHOOLS</p><h2 id="teacher-title">See how your learners<br />are progressing.</h2><p>Review project evidence, give feedback and spot where a learner needs help with wiring, coding or troubleshooting.</p><Link className={styles.primaryButton} href="/login">Open your dashboard <span aria-hidden="true">→</span></Link></div><div className={styles.teacherFeatures}>{[["Practical assessment", "Review the build using clear assessment criteria."], ["Learning analytics", "See attempts, quiz results and areas of difficulty."], ["AI Lab Coach", "Help learners work through questions and next steps."], ["Offline lesson access", "Keep previously saved lessons available when the connection drops."]].map(([title, description]) => <div key={title}><h3>{title}</h3><p>{description}</p></div>)}</div></section>
+        <section id="teachers" className={`${styles.container} ${styles.teacherSection}`} aria-labelledby="teacher-title"><div><p className={styles.kicker}>FOR TEACHERS &amp; SCHOOLS</p><h2 id="teacher-title">See how your learners<br />are progressing.</h2><p>Review project evidence, give feedback and spot where a learner needs help with wiring, coding or troubleshooting.</p><Link className={styles.primaryButton} href="/teachers">Teacher setup guide <span aria-hidden="true">→</span></Link></div><div className={styles.teacherFeatures}>{[["Practical assessment", "Review the build using clear assessment criteria."], ["Learning analytics", "See attempts, quiz results and areas of difficulty."], ["AI Lab Coach", "Help learners work through questions and next steps."], ["Offline lesson access", "Keep previously saved lessons available when the connection drops."]].map(([title, description]) => <div key={title}><h3>{title}</h3><p>{description}</p></div>)}</div></section>
       </main>
-      <footer className={styles.footer}><div className={styles.container}><div><Brand /><p>Practical learning in robotics, electronics and IoT.</p></div><nav aria-label="Footer navigation"><a href="#topics">Learning areas</a><a href="#how">How it works</a><Link href="/login">Sign in</Link></nav></div></footer>
+      <PublicFooter />
     </div>
   );
 }

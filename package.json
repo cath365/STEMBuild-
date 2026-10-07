@@ -16,7 +16,8 @@
     "db:seed": "node --import tsx prisma/seed.ts",
     "test": "node --import tsx --test tests/unit/*.test.ts",
     "test:e2e": "playwright test",
-    "verify:local": "node scripts/verify-local.mjs"
+    "verify:local": "node scripts/verify-local.mjs",
+    "verify:public": "npm run build && node scripts/verify-public.mjs"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.10.0",

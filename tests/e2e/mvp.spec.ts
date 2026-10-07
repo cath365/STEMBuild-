@@ -24,7 +24,9 @@ test('complete learner-to-teacher flow, authorization, AI fallback and offline r
   const task = await one('SELECT id, "rubricId" FROM "PracticalTask" WHERE "lessonId"=$1', [lesson.id]);
   const board = await one('SELECT id FROM "HardwarePlatform" WHERE slug=$1', ['arduino-uno']);
   const project = await one('SELECT id FROM "Project" WHERE slug=$1', ['smart-environment-monitor']);
-  const classroom = await one('SELECT id FROM "Classroom" LIMIT 1');
+  // Isolate the new classroom journey from assignments in the synthetic seed.
+  await pool.query('UPDATE "LessonAssignment" SET status=$1 WHERE "lessonId"=$2', ["CLOSED",lesson.id]);
+  await pool.query('UPDATE "ProjectAssignment" SET status=$1 WHERE "projectId"=$2', ["CLOSED",project.id]);
   const studentContext = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const teacherContext = await browser.newContext();
   const adminContext = await browser.newContext();
@@ -35,10 +37,21 @@ test('complete learner-to-teacher flow, authorization, AI fallback and offline r
   page.on('pageerror', (e) => runtimeErrors.push(e.message));
   teacher.on('pageerror', (e) => runtimeErrors.push(e.message));
   await login(teacher, 'teacher');
-  await teacher.goto(`/dashboard/teacher/classes/${classroom.id}`);
+  await teacher.goto('/dashboard/teacher/classes');
+  await teacher.getByLabel('Class name').fill('Workflow validation class');
+  await clickAndWait(teacher, 'Create class');
+  const createdClass = await one('SELECT id FROM "Classroom" WHERE name=$1', ['Workflow validation class']);
+  expect(createdClass?.id).toBeTruthy();
+  await teacher.goto(`/dashboard/teacher/classes/${createdClass.id}`);
+  await teacher.getByLabel('Student email').fill('demo.student@stembuild.local');
+  await clickAndWait(teacher, 'Add student');
+  await teacher.getByLabel('Lesson', {exact:true}).selectOption(lesson.id);
+  await clickAndWait(teacher, 'Assign lesson');
+  expect((await one('SELECT count(*)::int n FROM "LessonAssignment" WHERE "classroomId"=$1 AND "lessonId"=$2', [createdClass.id,lesson.id])).n).toBe(1);
   await teacher.locator('select[name="projectId"]').selectOption(project.id);
   await clickAndWait(teacher, 'Assign project');
   await expect(teacher.getByText('Assigned projects', { exact:true })).toBeVisible();
+  expect((await one('SELECT count(*)::int n FROM "ProjectAssignment" WHERE "classroomId"=$1 AND "projectId"=$2', [createdClass.id,project.id])).n).toBe(1);
 
   await login(page, 'student');
   await page.goto('/dashboard/admin');
@@ -67,8 +80,9 @@ test('complete learner-to-teacher flow, authorization, AI fallback and offline r
   await form.locator('[name=actionTried]').fill('Checked common ground with power off.');
   await form.locator('[name=result]').fill('Reviewed wiring before testing.');
   await clickAndWait(page, 'Submit practical evidence');
-  const submission = await one('SELECT id, status FROM "PracticalSubmission" WHERE "studentId"=$1 AND "taskId"=$2', [student.id,task.id]);
+  const submission = await one('SELECT id, status, "classroomId" FROM "PracticalSubmission" WHERE "studentId"=$1 AND "taskId"=$2', [student.id,task.id]);
   expect(submission.status).toBe('SUBMITTED');
+  expect(submission.classroomId).toBe(createdClass.id);
   expect((await one('SELECT status FROM "LessonProgress" WHERE "studentId"=$1 AND "lessonId"=$2', [student.id,lesson.id])).status).toBe('IN_PROGRESS');
   const asset = await one('SELECT id FROM "EvidenceAsset" WHERE "practicalSubmissionId"=$1', [submission.id]);
   expect((await page.request.get(`/api/evidence/${asset.id}`)).status()).toBe(200);
