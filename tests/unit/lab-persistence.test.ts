@@ -21,7 +21,7 @@ test("circuit backup restores only reviewed parts, wires and code",()=>{
  assert.deepEqual(parseLabProjectBackup(base),base);
  assert.throws(()=>parseLabProjectBackup({...base,slug:"unknown"}),/Unsupported/);
  assert.throws(()=>parseLabProjectBackup({...base,placed:["arduino","fake-part"]}),/unknown/);
- assert.throws(()=>parseLabProjectBackup({...base,placed:["arduino","resistor","led"]}),/missing parts/);
+ assert.throws(()=>parseLabProjectBackup({...base,placed:["arduino","breadboard","led"]}),/missing parts/);
  assert.throws(()=>parseLabProjectBackup({...base,connected:["evil-wire"]}),/unknown/);
  assert.throws(()=>parseLabProjectBackup({...base,code:"x".repeat(50001)}),/Unsupported/);
 });
