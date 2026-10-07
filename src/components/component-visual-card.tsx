@@ -1,13 +1,15 @@
-import { componentVisualFor } from "@/lib/component-visuals";
+import { componentVisualFor, type ComponentVisual } from "@/lib/component-visuals";
 
 export function ComponentVisualCard({
   slug,
   compact = false,
+  visual: providedVisual,
 }: {
   slug: string;
   compact?: boolean;
+  visual?: ComponentVisual | null;
 }) {
-  const visual = componentVisualFor(slug);
+  const visual = providedVisual ?? componentVisualFor(slug);
 
   if (!visual) {
     return (
