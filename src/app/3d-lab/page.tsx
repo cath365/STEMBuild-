@@ -17,7 +17,7 @@ export default function ThreeDLabPage() {
         <div className="container">
           <div className="eyebrow">STEMBUILD 3D LAB · REAL ENGINE PREVIEW</div>
           <h1>Build it in 3D.<br/><span>Run the firmware. Take it outside.</span></h1>
-          <p className="lead">The lab now combines a true WebGL workbench with dimensioned 3D parts and two simulation choices: a fast low-data learning engine, or an opt-in Full Firmware Mode that compiles Arduino Uno source to real AVR machine code and executes it in an ATmega328P emulator.</p>
+          <p className="lead">The lab now uses a movable WebGL electronics bench. Learners can drag real-world parts, snap LED and resistor legs into a 30-column breadboard, run jumper wires from Arduino pins into breadboard holes, then choose Fast Simulation or opt-in Full Firmware Mode.</p>
           <div className="inline" style={{marginTop:18}}>
             <a className="btn btn-primary" href="#workbench">Open the 3D workbench</a>
             <Link className="btn" href="/learning-paths/first-robot">First Robot Path</Link>
@@ -33,7 +33,7 @@ export default function ThreeDLabPage() {
         <div className="card">
           <div className="eyebrow">ENGINE BOUNDARIES</div>
           <h2 style={{marginTop:8}}>Real firmware does not mean imaginary hardware is perfect.</h2>
-          <p className="muted">The Arduino Uno model uses the official 68.6 × 53.4 mm board footprint. Generic breadboards, LEDs, resistors and tactile buttons use dimensioned educational geometry and can vary between manufacturers. Full Firmware Mode executes compiled ATmega328P machine code, but a physical build can still differ because of battery condition, loose wires, component tolerances, motor load and module revisions.</p>
+          <p className="muted">The Arduino Uno model uses the official 68.6 × 53.4 mm board footprint. The breadboard uses 2.54 mm terminal pitch and models a–j terminal strips across 30 columns. Generic breadboards, LEDs, resistors and tactile buttons can still vary between manufacturers. Full Firmware Mode executes compiled ATmega328P machine code, but a physical build can still differ because of battery condition, loose wires, component tolerances, motor load and module revisions.</p>
         </div>
       </section>
     </main>
