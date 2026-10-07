@@ -3,9 +3,13 @@ import {useEffect,useRef,useState} from 'react';
 import {createRobotModels} from '@/lib/robot-models';
 import {cadNames,defaultAssembly,editCADPart,parseAssembly,type CADAssembly} from '@/lib/robot-cad';
 
-export function RobotCADWorkspace(){
+export function RobotCADWorkspace({active=true}:{active?:boolean}){
  const [history,setHistory]=useState<{past:CADAssembly[];current:CADAssembly;future:CADAssembly[]}>({past:[],current:defaultAssembly(),future:[]});
  const [selected,setSelected]=useState(1),[enabled,setEnabled]=useState(false),[mode,setMode]=useState<'translate'|'rotate'>('translate');
+ // The edits remain in React state when another workspace is selected.
+ // Unmount the active WebGL renderer to avoid wasting GPU/battery on phones.
+ useEffect(()=>{if(!active)setEnabled(false);},[active]);
+
  const [status,setStatus]=useState('Launch 3D to edit the assembly directly.'),[snap,setSnap]=useState(true);
  const mount=useRef<HTMLDivElement>(null),latest=useRef({assembly:history.current,selected,mode,snap});
  const commitRef=useRef<(a:CADAssembly)=>void>(()=>{}),selectRef=useRef(setSelected);

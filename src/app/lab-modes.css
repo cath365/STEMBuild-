@@ -1,0 +1,32 @@
+/* The existing workbenches stay mounted so switching tabs preserves edits.
+   Inactive panels and their WebGL renderers are hidden or stopped explicitly. */
+.lab-modes { min-width: 0; }
+.lab-modes-heading { max-width: 750px; margin: 0 0 22px; }
+.lab-modes-heading h2 { font-size: clamp(27px, 3vw, 42px); line-height: 1.12; letter-spacing: -.035em; margin-top: 6px; }
+.lab-modes-heading > p:last-child { color: var(--muted); line-height: 1.65; margin: 12px 0 0; font-size: 15px; }
+.lab-modes-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-bottom: 23px; }
+.lab-mode-tab { display: flex; min-width: 0; flex-direction: column; gap: 12px; text-align: left; min-height: 174px; padding: 20px; background: #fff; border: 1px solid #d7dfe7; border-radius: 14px; color: #232b38; transition: border-color .15s ease, box-shadow .15s ease, background .15s ease; }
+.lab-mode-tab:hover { border-color: #0b3d91; }
+.lab-mode-tab.selected { background: #f2f7fe; border-color: #0b3d91; box-shadow: inset 0 0 0 1px #0b3d91; }
+.lab-mode-tab:focus-visible { outline: 3px solid #0b3d91; outline-offset: 3px; }
+.lab-mode-top { display: flex; gap: 8px; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 800; letter-spacing: .08em; color: #4d5f78; }
+.lab-mode-tag { letter-spacing: 0; font-size: 11px; color: #0b3d91; background: #e5efff; padding: 5px 9px; border-radius: 50px; }
+.lab-mode-tab strong { font-size: clamp(18px, 1.7vw, 24px); line-height: 1.15; letter-spacing: -.025em; }
+.lab-mode-description { font-size: 13px; line-height: 1.6; color: #555f6c; }
+.lab-mode-panel { min-width: 0; }
+.lab-mode-panel[hidden] { display: none !important; }
+.lab-mode-panel:focus-visible { outline: 3px solid #0b3d91; outline-offset: 4px; }
+.lab-mode-panel .robot-lab, .lab-mode-panel .robot-cad { margin-top: 0; padding-top: 0; border-top: 0; }
+@media (max-width: 760px) {
+  .lab-modes-tabs { grid-template-columns: 1fr; gap: 9px; }
+  .lab-mode-tab { min-height: 0; padding: 14px 16px; gap: 7px; }
+  .lab-mode-top { font-size: 11px; }
+  .lab-mode-tab strong { font-size: 19px; }
+  .lab-mode-description { font-size: 12px; }
+  .lab3d-hero { padding: 38px 0 30px; }
+  .lab3d-hero h1 { font-size: clamp(34px, 9vw, 54px); line-height: 1.05; overflow-wrap: break-word; }
+  .public-header nav { min-width: 0; max-width: 100%; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; padding-bottom: 10px; scrollbar-width: thin; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lab-mode-tab { transition: none; }
+}

@@ -24,13 +24,13 @@ function storageKey(project: Lab3DProject) {
 
 type EngineMode = "fast" | "firmware";
 
-export function Stem3DLabPrototype() {
+export function Stem3DLabPrototype({ active = true }: { active?: boolean }) {
   const [projectSlug, setProjectSlug] = useState<Lab3DProject["slug"]>("led-blink");
   // A separate session per project prevents cross-project saves and stale runs.
-  return <LabProjectSession key={projectSlug} projectSlug={projectSlug} onProjectChange={setProjectSlug} />;
+  return <LabProjectSession key={projectSlug} projectSlug={projectSlug} onProjectChange={setProjectSlug} active={active} />;
 }
 
-function LabProjectSession({projectSlug,onProjectChange}: {projectSlug:Lab3DProject["slug"];onProjectChange:(slug:Lab3DProject["slug"])=>void}) {
+function LabProjectSession({projectSlug,onProjectChange,active}: {projectSlug:Lab3DProject["slug"];onProjectChange:(slug:Lab3DProject["slug"])=>void;active:boolean}) {
   const project = useMemo(() => lab3dProject(projectSlug), [projectSlug]);
 
   const [placed, setPlaced] = useState<string[]>([]);
@@ -62,6 +62,19 @@ function LabProjectSession({projectSlug,onProjectChange}: {projectSlug:Lab3DProj
     setFirmwareStatus("idle");
     if (nextMessage) setMessage(nextMessage);
   }
+
+  // A hidden workspace must not keep WebGL or AVR execution running in the background.
+  // Part placement, wiring and edited code remain mounted and unchanged.
+  useEffect(() => {
+    if (active) return;
+    runVersion.current += 1;
+    avrRef.current?.stop();
+    avrRef.current = null;
+    setRunning(false);
+    setLedOn(false);
+    setFirmwareStatus("idle");
+    setWebglEnabled(false);
+  }, [active]);
 
   useEffect(() => {
     let cancelled = false;

@@ -4,7 +4,7 @@ import {createRobotModels} from '@/lib/robot-models';
 import {useEffect,useRef,useState} from 'react';
 import {collides,initialRobot,robotParts,robotSketch,stepRobot,type Obstacle} from '@/lib/robot-arena';
 
-export function RobotArena(){
+export function RobotArena({active=true}:{active?:boolean}){
  const [parts,setParts]=useState<string[]>([]),[wiringReady,setWiringReady]=useState(false);
  const [blocks,setBlocks]=useState<Obstacle[]>([{id:1,x:0,z:0,size:22}]);
  const [running,setRunning]=useState(false),[threshold,setThreshold]=useState(25);
@@ -13,6 +13,8 @@ export function RobotArena(){
  const [message,setMessage]=useState('Assemble the robot, review its wiring, then start the arena.');
  const inspect=useRef<(()=>void)|null>(null);
  const mount=useRef<HTMLDivElement>(null),latest=useRef({robot,blocks,parts});
+ // Preserve mounted assembly, but stop movement and free 3D resources while hidden.
+ useEffect(()=>{if(!active){setRunning(false);setShow3D(false);}},[active]);
  useEffect(()=>{latest.current={robot,blocks,parts};},[robot,blocks,parts]);
  const ready=parts.length===robotParts.length&&wiringReady;
  useEffect(()=>{

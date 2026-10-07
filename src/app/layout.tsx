@@ -3,6 +3,7 @@ import { Archivo_Black } from "next/font/google";
 import "./globals.css";
 import "./brand.css";
 import "./learn.css";
+import "./lab-modes.css";
 import { PwaRegister } from "@/components/pwa-register";
 import { ConnectivityStatus } from "@/components/connectivity-status";
 
