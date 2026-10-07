@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
+import { HardwareImage } from "@/components/hardware-image";
 
 export type HardwareVariantOption = {
   hardwarePlatformId: string;
@@ -49,11 +51,12 @@ export function HardwareVariantSelector({
         {variants.map((variant) => <button
           key={variant.hardwarePlatformId}
           type="button"
-          className={variant.hardwarePlatformId === selected.hardwarePlatformId ? "btn btn-primary" : "btn"}
+          className={`board-choice ${variant.hardwarePlatformId === selected.hardwarePlatformId ? "board-choice-selected" : ""}`}
           aria-pressed={variant.hardwarePlatformId === selected.hardwarePlatformId}
           onClick={() => setSelectedId(variant.hardwarePlatformId)}
-        >{variant.hardwarePlatform}</button>)}
+        ><HardwareImage name={variant.hardwarePlatform} decorative /><span>{variant.hardwarePlatform}</span></button>)}
       </div>
+      <Link className="small muted" href="/#boards">Board photo credits and example models</Link>
     </div>
     {!compact ? <div className="card card-muted">
       <div className="inline">

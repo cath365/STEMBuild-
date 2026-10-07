@@ -1,0 +1,68 @@
+[
+  {
+    "id": "arduino-uno",
+    "name": "Arduino Uno",
+    "description": "Electronics and your first circuits.",
+    "model": "Arduino Uno example board",
+    "image": "/hardware/arduino-uno.jpg",
+    "artist": "Arduino",
+    "license": "CC BY-SA 2.5",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.5",
+    "source": "https://commons.wikimedia.org/wiki/File:Arduino_UNO_microcontroller.jpg"
+  },
+  {
+    "id": "arduino-nano",
+    "name": "Arduino Nano",
+    "description": "Compact projects and breadboard builds.",
+    "model": "Arduino Nano example board",
+    "image": "/hardware/arduino-nano.jpg",
+    "artist": "MakeMagazinDE",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Arduino_nano.jpg"
+  },
+  {
+    "id": "esp32",
+    "name": "ESP32",
+    "description": "Connected sensors and IoT projects.",
+    "model": "ESP32 example board",
+    "image": "/hardware/esp32.jpg",
+    "artist": "Ubahnverleih",
+    "license": "CC0",
+    "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+    "source": "https://commons.wikimedia.org/wiki/File:ESP32_Espressif_ESP-WROOM-32_Dev_Board.jpg"
+  },
+  {
+    "id": "raspberry-pi-pico",
+    "name": "Raspberry Pi Pico",
+    "description": "Microcontroller programming and GPIO.",
+    "model": "Raspberry Pi Pico example board",
+    "image": "/hardware/raspberry-pi-pico.jpg",
+    "artist": "Laserlicht",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Raspberry_pi_pico_(cropped)_top.jpg"
+  },
+  {
+    "id": "bbc-microbit",
+    "name": "BBC micro:bit",
+    "description": "Interactive projects and creative coding.",
+    "model": "BBC micro:bit example board",
+    "image": "/hardware/bbc-microbit.jpg",
+    "artist": "SimonWaldherr",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Microbit_board.jpg"
+  },
+  {
+    "id": "stm32",
+    "name": "STM32",
+    "description": "Embedded systems and board-specific projects.",
+    "model": "STM32 Blue Pill example",
+    "image": "/hardware/stm32.jpg",
+    "artist": "Avandalen",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Blue_Pill.jpg"
+  }
+]

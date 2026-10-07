@@ -10,10 +10,10 @@
 .home :global(.brand-mark) { background:#b52163; color:#fff; border-radius:6px; width:32px; height:32px; font-size:20px; }
 .explore { display:flex; gap:17px; align-items:center; font-size:14px; font-weight:700; padding:11px 18px; border:1px solid #c6c7cd; border-radius:30px; }
 .explore:hover { border-color:#b52163; color:#b52163; }
-.search { display:flex; align-items:center; gap:10px; background:#f4f4f6; border:1px solid #e1e1e7; border-radius:30px; padding:11px 15px; flex:1; max-width:310px; }
+.search { display:flex; align-items:center; gap:10px; background:#f4f4f6; border:1px solid #e1e1e7; border-radius:30px; padding:11px 15px; flex:1; max-width:280px; }
 .search input { background:transparent; border:0; outline:0; min-width:0; width:100%; color:#222a35; font-size:13px; }
 .search input::placeholder { color:#656973; }
-.desktopNav { display:flex; align-items:center; gap:23px; margin-left:auto; font-size:14px; font-weight:600; white-space:nowrap; }
+.desktopNav { display:flex; align-items:center; gap:18px; margin-left:auto; font-size:14px; font-weight:600; white-space:nowrap; }
 .desktopNav a:hover,.footer nav a:hover { color:#b52163; }
 .signIn { border:1px solid #222a35; border-radius:30px; font-size:14px; font-weight:700; padding:12px 24px; white-space:nowrap; }
 .signIn:hover { background:#222a35; color:#fff; }

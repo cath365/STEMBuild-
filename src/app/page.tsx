@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { Brand } from "@/components/brand";
+import { BoardGallery } from "@/components/board-gallery";
 import styles from "./home.module.css";
 
 const topics = [
@@ -32,9 +33,9 @@ export default function Home() {
             <input id="topic-search" placeholder="What do you want to learn?" value={query} onChange={(event) => setQuery(event.target.value)} type="search" />
             <button type="submit" className={styles.srOnly}>Search topics</button>
           </form>
-          <nav className={styles.desktopNav} aria-label="Main navigation"><a href="#topics">Learning areas</a><a href="#teachers">For teachers</a></nav>
+          <nav className={styles.desktopNav} aria-label="Main navigation"><a href="#topics">Learning areas</a><a href="#boards">Our boards</a><a href="#teachers">For teachers</a></nav>
           <Link className={styles.signIn} href="/login">Sign in</Link>
-          <details className={styles.mobileMenu}><summary>Menu</summary><nav aria-label="Mobile navigation"><a href="#topics">Learning areas</a><a href="#teachers">For teachers</a><a href="#how">How it works</a></nav></details>
+          <details className={styles.mobileMenu}><summary>Menu</summary><nav aria-label="Mobile navigation"><a href="#topics">Learning areas</a><a href="#boards">Our boards</a><a href="#teachers">For teachers</a><a href="#how">How it works</a></nav></details>
         </div>
       </header>
       <main id="main">
@@ -68,6 +69,7 @@ export default function Home() {
           </article>)}</div>
           {filtered.length === 0 && <div className={styles.emptyState}><h3>No topics found</h3><p>Try “Arduino”, “sensors” or “circuits”, or clear your search.</p><button type="button" onClick={() => { setQuery(""); setCategory("All topics"); }}>Show all learning areas</button></div>}
         </section>
+        <BoardGallery />
         <section id="how" className={styles.howSection} aria-labelledby="how-title"><div className={styles.container}><div className={styles.sectionHeading}><div><p className={styles.kicker}>A PRACTICAL WAY TO LEARN</p><h2 id="how-title">Make. Test. Understand.</h2></div></div><div className={styles.steps}>{[["01", "Follow the lesson", "Understand the components, check the safety notes and follow the wiring for your board."], ["02", "Build and test", "Run your code, record what happens and work through any problems."], ["03", "Show your work", "Submit evidence and receive teacher feedback on your practical skills."]].map(([number, title, description]) => <div key={number}><span>{number}</span><h3>{title}</h3><p>{description}</p></div>)}</div></div></section>
         <section id="teachers" className={`${styles.container} ${styles.teacherSection}`} aria-labelledby="teacher-title"><div><p className={styles.kicker}>FOR TEACHERS &amp; SCHOOLS</p><h2 id="teacher-title">See how your learners<br />are progressing.</h2><p>Review project evidence, give feedback and spot where a learner needs help with wiring, coding or troubleshooting.</p><Link className={styles.primaryButton} href="/login">Open your dashboard <span aria-hidden="true">→</span></Link></div><div className={styles.teacherFeatures}>{[["Practical assessment", "Review the build using clear assessment criteria."], ["Learning analytics", "See attempts, quiz results and areas of difficulty."], ["AI Lab Coach", "Help learners work through questions and next steps."], ["Offline lesson access", "Keep previously saved lessons available when the connection drops."]].map(([title, description]) => <div key={title}><h3>{title}</h3><p>{description}</p></div>)}</div></section>
       </main>

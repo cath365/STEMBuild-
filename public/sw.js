@@ -1,5 +1,5 @@
-const SHELL_CACHE = "stembuild-shell-v4";
-const STATIC_CACHE = "stembuild-static-v4";
+const SHELL_CACHE = "stembuild-shell-v5";
+const STATIC_CACHE = "stembuild-static-v5";
 const SHELL_URLS = ["/", "/offline", "/offline-lesson.html", "/icon-192.png", "/icon-512.png"];
 const DB_NAME = "stembuild_offline_v1";
 const DB_VERSION = 2;
@@ -100,7 +100,10 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(request.url);
   if (request.method !== "GET" || url.origin !== self.location.origin || request.headers.get("RSC") === "1") return;
 
-  if (url.pathname.startsWith("/_next/static/")) {
+  const imageSource = url.searchParams.get("url") || "";
+  const publicBoardPhoto = url.pathname.startsWith("/hardware/") || url.pathname === "/electronics-workbench.jpg" ||
+    (url.pathname === "/_next/image" && (imageSource.startsWith("/hardware/") || imageSource === "/electronics-workbench.jpg"));
+  if (url.pathname.startsWith("/_next/static/") || publicBoardPhoto) {
     event.respondWith(caches.open(STATIC_CACHE).then(async (cache) => {
       const cached = await cache.match(request);
       if (cached) return cached;

@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Brand } from "@/components/brand";
 import { SharedDeviceSignOut } from "@/components/shared-device-signout";
 import { PwaInstallButton } from "@/components/pwa-install-button";
@@ -16,9 +19,15 @@ const links = {
 } as const;
 
 export function DashboardNav({ role, name, learnerId }: { role: keyof typeof links; name: string; learnerId?: string }) {
+  const pathname = usePathname();
+  const activeHref = links[role].find(([, href]) => pathname === href)?.[1] ?? [...links[role]].reverse().find(([label, href]) => label !== "Overview" && pathname.startsWith(`${href}/`))?.[1];
   return <aside className="sidebar">
     <Brand />
-    <nav className="nav">{links[role].map(([label, href]) => <Link key={href} href={href}>{label}</Link>)}</nav>
+    <div className="workspace-label">{role === "STUDENT" ? "Learner workspace" : role === "TEACHER" ? "Teacher workspace" : "Administration"}</div>
+    <nav className="nav" aria-label="Workspace navigation">{links[role].map(([label, href]) => {
+      const active = activeHref === href;
+      return <Link key={href} href={href} aria-current={active ? "page" : undefined}>{label}</Link>;
+    })}</nav>
     <div className="sidebar-footer">
       <PwaInstallButton />
       <div className="small muted" style={{marginBottom:10}}>{name}<br />{role.toLowerCase()}</div>

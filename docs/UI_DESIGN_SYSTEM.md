@@ -1,0 +1,7 @@
+# STEMBuild interface
+
+The shared interface uses white surfaces, charcoal text, a berry accent (#b52163), restrained borders and Arial/system typography. The public homepage, sign-in screen, learner/teacher/admin workspaces, offline fallback and saved-lesson viewer share these foundations. Workspace navigation identifies the current page; form focus, disabled buttons, status badges and board selections use consistent states.
+
+Board photographs are stored locally in public/hardware and rendered proportionally with Next Image. The public gallery, configured lesson/project selectors and administrator hardware list reuse the same image catalogue. src/lib/hardware-images.json retains each creator, source page and licence; the gallery exposes credit links. Images illustrate example boards, not universal wiring diagrams. Unknown hardware names receive no misleading substitute photo. Public hardware and workbench images may be cached offline; private pages, evidence and APIs remain uncached.
+
+Validation for this refresh: TypeScript, lint, production compilation and all five existing unit tests passed. The authenticated end-to-end suite could not launch because the Chromium download failed in this execution environment. That test was not reported as passing. Public rendering and image checks are performed against the deployment; authenticated production testing still requires a provisioned account.
