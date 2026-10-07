@@ -1,9 +1,14 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
+
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { hashPassword } from "@/lib/password";
 import { requireRole } from "@/lib/session";
+import { componentBySlug } from "@/lib/build-catalog";
+import { deleteEvidence, storeEvidence } from "@/lib/evidence-storage";
+import { evidenceSignature } from "@/lib/validation";
 
 function slugify(value: string) { return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""); }
 
@@ -242,4 +247,90 @@ export async function createRubric(formData: FormData) {
   });
   await db.rubric.create({ data: { name, description, criteria: { create: criteria } } });
   revalidatePath("/dashboard/admin/rubrics");
+}
+
+
+const COMPONENT_MEDIA_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+const COMPONENT_MEDIA_KINDS = new Set(["PHOTO", "PINOUT", "WIRING", "EXPECTED_RESULT", "COMMON_MISTAKE"]);
+
+async function assertComponentMediaFile(value: FormDataEntryValue | null) {
+  if (!(value instanceof File) || value.size === 0) throw new Error("Choose a JPG, PNG or WEBP image.");
+  if (!COMPONENT_MEDIA_TYPES.has(value.type)) throw new Error("Component media must be JPG, PNG or WEBP.");
+  if (value.size > 3_500_000) throw new Error("Component media must be 3.5 MB or smaller.");
+  if (!evidenceSignature(new Uint8Array(await value.slice(0, 12).arrayBuffer()), value.type)) throw new Error("Image content does not match its file type.");
+  return value;
+}
+
+export async function uploadComponentMedia(formData: FormData) {
+  await requireRole("ADMIN");
+  const componentSlug = String(formData.get("componentSlug") ?? "").trim();
+  const kind = String(formData.get("kind") ?? "PHOTO");
+  const altText = String(formData.get("altText") ?? "").trim();
+  const caption = String(formData.get("caption") ?? "").trim();
+  const credit = String(formData.get("credit") ?? "").trim() || null;
+  const licenseName = String(formData.get("licenseName") ?? "").trim() || null;
+  const licenseUrl = String(formData.get("licenseUrl") ?? "").trim() || null;
+  const sourceUrl = String(formData.get("sourceUrl") ?? "").trim() || null;
+  const sortOrder = Math.max(0, Math.min(999, Number(formData.get("sortOrder") ?? 0) || 0));
+  const file = await assertComponentMediaFile(formData.get("media"));
+
+  if (!componentBySlug(componentSlug)) throw new Error("Unknown public component slug.");
+  if (!COMPONENT_MEDIA_KINDS.has(kind)) throw new Error("Invalid component media kind.");
+  if (altText.length < 3 || altText.length > 220) throw new Error("Alt text must be 3–220 characters.");
+  if (caption.length < 3 || caption.length > 600) throw new Error("Caption must be 3–600 characters.");
+
+  for (const [label, url] of [["License URL", licenseUrl], ["Source URL", sourceUrl]] as const) {
+    if (url && !/^https:\/\//i.test(url)) throw new Error(`${label} must use HTTPS.`);
+  }
+
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
+  const pathname = `component-media/${componentSlug}/${randomUUID()}-${safeName}`;
+  const stored = await storeEvidence(pathname, file);
+
+  try {
+    await db.componentMedia.create({
+      data: {
+        componentSlug,
+        kind: kind as "PHOTO" | "PINOUT" | "WIRING" | "EXPECTED_RESULT" | "COMMON_MISTAKE",
+        storagePath: stored.pathname,
+        originalName: file.name,
+        mimeType: file.type,
+        sizeBytes: file.size,
+        altText,
+        caption,
+        credit,
+        licenseName,
+        licenseUrl,
+        sourceUrl,
+        sortOrder,
+        verified: false,
+      },
+    });
+  } catch (error) {
+    await deleteEvidence(stored.pathname).catch(() => undefined);
+    throw error;
+  }
+
+  revalidatePath("/dashboard/admin/hardware/visuals");
+  revalidatePath(`/components/${componentSlug}`);
+}
+
+export async function setComponentMediaVerified(mediaId: string, formData: FormData) {
+  await requireRole("ADMIN");
+  const verified = String(formData.get("verified") ?? "false") === "true";
+  const media = await db.componentMedia.findUnique({ where: { id: mediaId }, select: { componentSlug: true } });
+  if (!media) throw new Error("Component media not found.");
+  await db.componentMedia.update({ where: { id: mediaId }, data: { verified } });
+  revalidatePath("/dashboard/admin/hardware/visuals");
+  revalidatePath(`/components/${media.componentSlug}`);
+}
+
+export async function deleteComponentMedia(mediaId: string) {
+  await requireRole("ADMIN");
+  const media = await db.componentMedia.findUnique({ where: { id: mediaId } });
+  if (!media) throw new Error("Component media not found.");
+  await db.componentMedia.delete({ where: { id: mediaId } });
+  await deleteEvidence(media.storagePath).catch(() => undefined);
+  revalidatePath("/dashboard/admin/hardware/visuals");
+  revalidatePath(`/components/${media.componentSlug}`);
 }
