@@ -415,3 +415,19 @@
   .lab3d-engine-choice{grid-template-columns:1fr}
   .lab3d-firmware-result{align-items:flex-start;flex-direction:column}
 }
+
+/* 3D Lab safe mobile launch */
+.lab3d-safe-launch{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(220px,.8fr);gap:18px;align-items:center;padding:20px;border:1px solid #cbd8e2;border-radius:13px;background:linear-gradient(135deg,#f7fbfe,#eef5fa)}
+.lab3d-safe-launch h2{margin:6px 0 8px;font-size:28px}
+.lab3d-safe-launch p{margin:0}
+.lab3d-safe-status{display:grid;gap:8px}
+.lab3d-safe-status span{display:block;padding:10px 12px;border:1px solid #cfe0d6;border-radius:8px;background:#f3faf6;color:#2f6e49;font-size:11px;font-weight:700}
+.lab3d-webgl-launch-wrap{display:grid;gap:10px}
+.lab3d-webgl-launch-actions{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:11px 13px;border:1px solid var(--border);border-radius:10px;background:#fff}
+.lab3d-webgl-launch-actions strong{display:block;font-size:12px;margin-top:3px}
+@media(max-width:760px){
+  .lab3d-safe-launch{grid-template-columns:1fr;padding:15px}
+  .lab3d-safe-launch h2{font-size:23px}
+  .lab3d-webgl-launch-actions{align-items:flex-start;flex-direction:column}
+  .lab3d-webgl-launch-actions .btn{width:100%}
+}
