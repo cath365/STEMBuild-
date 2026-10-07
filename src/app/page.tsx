@@ -47,9 +47,9 @@ export default function Home() {
             <input id="topic-search" placeholder="Search learning topics" value={query} onChange={(event) => setQuery(event.target.value)} type="search" />
             <button type="submit" className={styles.srOnly}>Search topics</button>
           </form>
-          <nav className={styles.desktopNav} aria-label="Main navigation"><Link href="/learning-paths/first-robot">First robot path</Link><Link href="/projects">Projects</Link><Link href="/components">Components</Link><a href="#teachers">Teachers</a></nav>
+          <nav className={styles.desktopNav} aria-label="Main navigation"><Link href="/3d-lab">3D Lab</Link><Link href="/learning-paths/first-robot">First robot path</Link><Link href="/projects">Projects</Link><Link href="/components">Components</Link><a href="#teachers">Teachers</a></nav>
           <Link className={styles.signIn} href="/login">Sign in</Link>
-          <details className={styles.mobileMenu}><summary>Menu</summary><nav aria-label="Mobile navigation"><Link href="/learning-paths/first-robot">First robot path</Link><Link href="/projects">Projects</Link><Link href="/components">Components</Link><a href="#topics">Learning areas</a><a href="#teachers">For teachers</a></nav></details>
+          <details className={styles.mobileMenu}><summary>Menu</summary><nav aria-label="Mobile navigation"><Link href="/3d-lab">3D Lab</Link><Link href="/learning-paths/first-robot">First robot path</Link><Link href="/projects">Projects</Link><Link href="/components">Components</Link><a href="#topics">Learning areas</a><a href="#teachers">For teachers</a></nav></details>
         </div>
       </header>
 
@@ -62,7 +62,7 @@ export default function Home() {
                 <p className={styles.kicker}>LEARN BY BUILDING REAL THINGS</p>
                 <h1 id="hero-title"><span className={styles.heroLine}>What do you</span>{" "}<span className={styles.heroLine}>want to</span>{" "}<span className={`${styles.heroLine} ${styles.heroAccent}`}>build today?</span></h1>
                 <p>Choose a project. STEMBuild helps you understand the parts, connect them safely, write the code, test what happens and fix problems one step at a time.</p>
-                <div className="inline"><Link className={styles.primaryButton} href="/learning-paths/first-robot">Follow the First Robot Path <span aria-hidden="true">→</span></Link><Link className="btn" href="/projects">Choose any project</Link><Link className="btn" href="/components">I already have components</Link></div>
+                <div className="inline"><Link className={styles.primaryButton} href="/3d-lab">Launch 3D Lab <span aria-hidden="true">→</span></Link><Link className="btn" href="/learning-paths/first-robot">First Robot Path</Link><Link className="btn" href="/projects">Explore Projects</Link></div>
                 <div className={styles.heroNote}>Beginner friendly <span aria-hidden="true">·</span> Real hardware <span aria-hidden="true">·</span> Honest evidence <span aria-hidden="true">·</span> Teacher support</div>
               </div>
               <figure className={styles.heroFigure}>
@@ -74,6 +74,23 @@ export default function Home() {
         </section>
 
         <div className={styles.boardStrip}><div className={styles.container}><span>Learn with the board you have</span><div>Arduino Uno <span>Arduino Nano</span> ESP32 <span>Raspberry Pi Pico</span> BBC micro:bit <span>STM32</span></div></div></div>
+
+        <section className={styles.labSpotlight} aria-labelledby="lab-spotlight-title">
+          <div className={styles.container}>
+            <div className={styles.spotlightCopy}>
+              <p className={styles.kicker}>YOUR VIRTUAL ELECTRONICS WORKSHOP</p>
+              <h2 id="lab-spotlight-title">Build. Wire. Code. Test.</h2>
+              <p>Try Arduino circuits, assemble an obstacle-avoiding robot, or position parts in a CAD-style workspace. Start in low-data mode; launch 3D only when you need it.</p>
+              <Link href="/3d-lab" className={styles.spotlightLink}>Explore all three workspaces <span aria-hidden="true">→</span></Link>
+            </div>
+            <div className={styles.spotlightSteps} aria-label="3D Lab learning steps">
+              <span><strong>01</strong> Assemble</span>
+              <span><strong>02</strong> Wire</span>
+              <span><strong>03</strong> Program</span>
+              <span><strong>04</strong> Test &amp; improve</span>
+            </div>
+          </div>
+        </section>
 
         <section id="build" className="home-build-section">
           <div className={styles.container}>
