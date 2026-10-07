@@ -109,6 +109,7 @@ export function Stem3DWebGLWorkbench({
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [error, setError] = useState("");
   const [physicalPendingNode, setPhysicalPendingNode] = useState<string | null>(null);
+  const physicalPendingNodeRef = useRef<string | null>(null);
 
   const sceneState = useRef<{
     THREE: any;
@@ -142,6 +143,7 @@ export function Stem3DWebGLWorkbench({
   useEffect(() => { messageCallbackRef.current = onWorkbenchMessage; }, [onWorkbenchMessage]);
   useEffect(() => { placementRef.current = physicalPlacements; }, [physicalPlacements]);
   useEffect(() => { jumperRef.current = physicalJumpers; }, [physicalJumpers]);
+  useEffect(() => { physicalPendingNodeRef.current = physicalPendingNode; }, [physicalPendingNode]);
 
   useEffect(() => {
     let cancelled = false;
@@ -415,29 +417,33 @@ export function Stem3DWebGLWorkbench({
             return;
           }
 
-          if(!physicalPendingNode){
+          if(!physicalPendingNodeRef.current){
+            physicalPendingNodeRef.current=nodeId;
             setPhysicalPendingNode(nodeId);
             const label=nodeId.startsWith("bb-")?nodeId.replace("bb-","").toUpperCase():nodeId.replace("uno-","Arduino ").toUpperCase();
             messageCallbackRef.current?.(`${label} selected. Tap a destination node.`);
             return;
           }
-          if(physicalPendingNode===nodeId){
+          if(physicalPendingNodeRef.current===nodeId){
+            physicalPendingNodeRef.current=null;
             setPhysicalPendingNode(null);
             messageCallbackRef.current?.("Jumper selection cancelled.");
             return;
           }
 
-          const oneArduino=physicalPendingNode.startsWith("uno-")!==nodeId.startsWith("uno-");
-          const oneBreadboard=physicalPendingNode.startsWith("bb-")!==nodeId.startsWith("bb-");
+          const oneArduino=physicalPendingNodeRef.current!.startsWith("uno-")!==nodeId.startsWith("uno-");
+          const oneBreadboard=physicalPendingNodeRef.current!.startsWith("bb-")!==nodeId.startsWith("bb-");
           if(!oneArduino||!oneBreadboard){
+            physicalPendingNodeRef.current=null;
             setPhysicalPendingNode(null);
             messageCallbackRef.current?.("For this LED lab, a jumper must connect one Arduino pin to one breadboard hole.");
             return;
           }
 
-          const from=physicalPendingNode.startsWith("uno-")?physicalPendingNode:nodeId;
-          const to=physicalPendingNode.startsWith("bb-")?physicalPendingNode:nodeId;
+          const from=physicalPendingNodeRef.current!.startsWith("uno-")?physicalPendingNodeRef.current!:nodeId;
+          const to=physicalPendingNodeRef.current!.startsWith("bb-")?physicalPendingNodeRef.current!:nodeId;
           if(from!=="uno-d8"&&from!=="uno-gnd"){
+            physicalPendingNodeRef.current=null;
             setPhysicalPendingNode(null);
             messageCallbackRef.current?.("Use Arduino D8 or GND for this LED project.");
             return;
@@ -454,7 +460,8 @@ export function Stem3DWebGLWorkbench({
           jumperRef.current=next;
           jumperCallbackRef.current?.(next);
           rebuildPhysicalWires();
-          setPhysicalPendingNode(null);
+          physicalPendingNodeRef.current=null;
+            setPhysicalPendingNode(null);
           messageCallbackRef.current?.(`Jumper connected: ${from==="uno-d8"?"Arduino D8":"Arduino GND"} → breadboard ${to.replace("bb-","").toUpperCase()}.`);
         }
 
