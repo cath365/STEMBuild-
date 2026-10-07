@@ -1,0 +1,17 @@
+node_modules
+.next
+.env
+.env.local
+.env.*.local
+.vercel
+coverage
+src/generated/prisma
+*.log
+.DS_Store
+
+*.tsbuildinfo
+
+.local-evidence/
+.test-db/
+playwright-report/
+test-results/

@@ -1,0 +1,166 @@
+import { test, expect, type Page } from '@playwright/test';
+import pg from 'pg';
+
+const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, max: 1 });
+async function one(sql: string, values: unknown[] = []) { return (await pool.query(sql, values)).rows[0]; }
+async function login(page: Page, role: 'admin' | 'teacher' | 'student') {
+  await page.goto('/login');
+  await page.getByLabel('Email').fill(`demo.${role}@stembuild.local`);
+  await page.getByLabel('Password').fill(`ChangeMe-${role[0].toUpperCase()+role.slice(1)}-2026!`);
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await expect(page).toHaveURL(new RegExp(`/dashboard/${role}$`));
+}
+async function clickAndWait(page: Page, name: string) {
+  const response = page.waitForResponse((r) => r.request().method() === 'POST');
+  await page.getByRole('button', { name, exact: true }).click();
+  expect((await response).status()).toBeLessThan(400);
+}
+
+test.afterAll(async () => { await pool.end(); });
+
+test('complete learner-to-teacher flow, authorization, AI fallback and offline recovery', async ({ browser }) => {
+  const student = await one('SELECT id FROM "User" WHERE email=$1', ['demo.student@stembuild.local']);
+  const lesson = await one('SELECT id, title FROM "Lesson" WHERE slug=$1', ['smart-environment-monitor']);
+  const task = await one('SELECT id, "rubricId" FROM "PracticalTask" WHERE "lessonId"=$1', [lesson.id]);
+  const board = await one('SELECT id FROM "HardwarePlatform" WHERE slug=$1', ['arduino-uno']);
+  const project = await one('SELECT id FROM "Project" WHERE slug=$1', ['smart-environment-monitor']);
+  const classroom = await one('SELECT id FROM "Classroom" LIMIT 1');
+  const studentContext = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const teacherContext = await browser.newContext();
+  const adminContext = await browser.newContext();
+  const page = await studentContext.newPage();
+  const teacher = await teacherContext.newPage();
+  const admin = await adminContext.newPage();
+  const runtimeErrors: string[] = [];
+  page.on('pageerror', (e) => runtimeErrors.push(e.message));
+  teacher.on('pageerror', (e) => runtimeErrors.push(e.message));
+  await login(teacher, 'teacher');
+  await teacher.goto(`/dashboard/teacher/classes/${classroom.id}`);
+  await teacher.locator('select[name="projectId"]').selectOption(project.id);
+  await clickAndWait(teacher, 'Assign project');
+  await expect(teacher.getByText('Assigned projects', { exact:true })).toBeVisible();
+
+  await login(page, 'student');
+  await page.goto('/dashboard/admin');
+  await expect(page).toHaveURL(/\/dashboard\/student$/);
+  await page.goto(`/dashboard/student/lessons/${lesson.id}`);
+  await expect(page.getByRole('heading', { level:1 })).toContainText('Environment');
+  await page.getByRole('button', { name: 'ESP32', exact:true }).click();
+  await expect(page.locator('pre').first()).toContainText('GPIO');
+  await page.getByRole('button', { name: 'Arduino Uno', exact:true }).click();
+  await page.getByRole('button', { name: 'Start practical lesson', exact:true }).click();
+  await page.locator('form:has(button:text-is("Start practical task")) select[name="hardwarePlatformId"]').selectOption(board.id);
+  await page.getByRole('button', { name:'Start practical task', exact:true }).click();
+  await expect(page.getByRole('button', { name:'Submit practical evidence', exact:true })).toBeVisible();
+  await expect.poll(async () => (await one('SELECT status FROM "LessonProgress" WHERE "studentId"=$1 AND "lessonId"=$2', [student.id,lesson.id])).status).toBe('IN_PROGRESS');
+  await page.getByRole('button', { name:'Start quiz attempt 1', exact:true }).click();
+  const questions = (await pool.query('SELECT q.id, q."correctAnswer" FROM "QuizQuestion" q JOIN "Quiz" z ON z.id=q."quizId" WHERE z."lessonId"=$1', [lesson.id])).rows;
+  await expect(page.getByRole('button', { name:'Submit quiz', exact:true })).toBeVisible();
+  for (const q of questions) await page.locator(`input[name="q_${q.id}"][value=${JSON.stringify(q.correctAnswer)}]`).check();
+  await page.getByRole('button', { name:'Submit quiz', exact:true }).click();
+  await expect.poll(async () => (await one('SELECT count(*)::int n FROM "QuizAttempt" WHERE "studentId"=$1 AND passed=true', [student.id])).n).toBe(1);
+  const form = page.locator('form:has(button:text-is("Submit practical evidence"))');
+  await form.locator('input[type=file]').setInputFiles({ name:'circuit.png', mimeType:'image/png', buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a1ioAAAAASUVORK5CYII=', 'base64') });
+  await form.locator('[name=studentNotes]').fill('Synthetic test evidence: readings recorded for workflow validation only.');
+  await form.locator('[name=codeSnippet]').fill('void setup() {} void loop() {}');
+  await form.locator('[name=issue]').fill('No initial reading.');
+  await form.locator('[name=actionTried]').fill('Checked common ground with power off.');
+  await form.locator('[name=result]').fill('Reviewed wiring before testing.');
+  await clickAndWait(page, 'Submit practical evidence');
+  const submission = await one('SELECT id, status FROM "PracticalSubmission" WHERE "studentId"=$1 AND "taskId"=$2', [student.id,task.id]);
+  expect(submission.status).toBe('SUBMITTED');
+  expect((await one('SELECT status FROM "LessonProgress" WHERE "studentId"=$1 AND "lessonId"=$2', [student.id,lesson.id])).status).toBe('IN_PROGRESS');
+  const asset = await one('SELECT id FROM "EvidenceAsset" WHERE "practicalSubmissionId"=$1', [submission.id]);
+  expect((await page.request.get(`/api/evidence/${asset.id}`)).status()).toBe(200);
+  expect((await teacher.request.get(`/api/evidence/${asset.id}`)).status()).toBe(200);
+  const anon = await browser.newContext();
+  expect((await anon.request.get(`http://127.0.0.1:3000/api/evidence/${asset.id}`)).status()).toBe(401);
+  await anon.close();
+
+  await teacher.goto('/dashboard/teacher/reviews');
+  const review = teacher.locator('form:has(button:text-is("Save assessment"))');
+  for (const input of await review.locator('input[type=number]').all()) await input.fill(await input.getAttribute('max') || '0');
+  await review.locator('[name=feedback]').fill('Synthetic workflow validation: rubric reviewed against test evidence.');
+  await clickAndWait(teacher, 'Save assessment');
+  await expect.poll(async () => (await one('SELECT status FROM "LessonProgress" WHERE "studentId"=$1 AND "lessonId"=$2', [student.id,lesson.id])).status).toBe('COMPLETED');
+  expect((await one('SELECT count(*)::int n FROM "Certificate" WHERE "studentId"=$1', [student.id])).n).toBe(0);
+  await teacher.goto('/dashboard/teacher/analytics');
+  await expect(teacher.getByRole('heading', {level:1})).toBeVisible();
+  expect((await one('SELECT count(*)::int n FROM "LearningEvent" WHERE "learnerId"=$1 AND type=$2', [student.id,'RUBRIC_SCORED'])).n).toBeGreaterThan(0);
+
+  await page.goto('/dashboard/student/projects');
+  const projectCard = page.locator('.card').filter({ has: page.getByRole('heading', { name: /SMART ENVIRONMENT MONITOR/i, exact:true }) }).first();
+  await projectCard.getByRole('button', { name:'ESP32', exact:true }).click();
+  await projectCard.getByRole('button', { name:'Start project attempt', exact:true }).click();
+  await expect(projectCard.getByRole('button', { name:'Submit project', exact:true })).toBeVisible();
+  await projectCard.locator('input[type=file]').setInputFiles({ name:'project.pdf', mimeType:'application/pdf', buffer: Buffer.from('%PDF-1.4\nSynthetic workflow evidence\n%%EOF') });
+  await projectCard.locator('[name=studentNotes]').fill('Synthetic workflow test; no claim of physical validation.');
+  await projectCard.locator('[name=troubleshootingNotes]').fill('Tested the application submission workflow.');
+  await projectCard.getByRole('button', { name:'Submit project', exact:true }).click();
+  await expect.poll(async () => (await one('SELECT count(*)::int n FROM "ProjectSubmission" WHERE "projectId"=$1 AND "studentId"=$2', [project.id,student.id])).n).toBe(1);
+  await teacher.goto('/dashboard/teacher/reviews');
+  const projectReview = teacher.locator('form:has(button:text-is("Save project assessment"))');
+  for (const input of await projectReview.locator('input[type=number]').all()) await input.fill(await input.getAttribute('max') || '0');
+  await projectReview.locator('[name=feedback]').fill('Synthetic test review.');
+  await clickAndWait(teacher, 'Save project assessment');
+  expect((await one('SELECT count(*)::int n FROM "ProjectAssessment"')).n).toBe(1);
+
+  await page.goto(`/dashboard/student/ai-lab-coach?lesson=${lesson.id}`);
+  await page.getByRole('button', { name:"Create next-step learning plan", exact:true }).click();
+  await expect(page).toHaveURL(/session=/);
+  await expect(page.getByText('Rules-based safety fallback', {exact:true}).first()).toBeVisible();
+  expect((await one('SELECT status FROM "LessonProgress" WHERE "studentId"=$1 AND "lessonId"=$2', [student.id,lesson.id])).status).toBe('COMPLETED');
+
+  await page.goto(`/dashboard/student/lessons/${lesson.id}`);
+  await page.getByRole('button', { name:'Download lesson', exact:true }).click();
+  await expect(page.getByRole('button', { name:'Lesson saved offline' })).toBeVisible();
+  await page.getByRole('link', { name:'Open offline copy' }).click();
+  await expect(page.locator('h1')).toContainText('Environment');
+  await page.evaluate(async () => { await navigator.serviceWorker.ready; });
+  await studentContext.setOffline(true);
+  await page.reload();
+  await expect(page.locator('h1')).toContainText('Environment');
+  await page.locator('#lesson-notes').fill('Offline draft for test.');
+  await page.getByRole('button', { name:'Save checkpoint', exact:true }).click();
+  await expect(page.locator('#message')).toContainText('Saved on this device');
+  await studentContext.setOffline(false);
+  await page.evaluate(async () => { const registration=await navigator.serviceWorker.ready; registration.active?.postMessage({type:'SYNC_NOW'}); });
+  await expect.poll(async () => (await one('SELECT notes FROM "OfflineLessonCheckpoint" WHERE "learnerId"=$1 AND "lessonId"=$2 AND "practicalTaskId" IS NULL', [student.id,lesson.id]))?.notes).toBe('Offline draft for test.');
+  const operation = (notes: string, date: string, ownerId=student.id) => ({id:crypto.randomUUID(),ownerId,type:'CHECKPOINT_UPSERT',payload:{lessonId:lesson.id,notes,clientUpdatedAt:date,completedSections:[]}});
+  const newer = new Date().toISOString();
+  const sync = (operations: unknown[]) => page.request.post('/api/offline/sync', {headers:{Origin:'http://127.0.0.1:3000'},data:{operations}});
+  expect((await sync([operation('New draft',newer)])).status()).toBe(200);
+  await sync([operation('Old draft','2026-01-01T00:00:00Z')]);
+  expect((await one('SELECT notes FROM "OfflineLessonCheckpoint" WHERE "learnerId"=$1 AND "lessonId"=$2 AND "practicalTaskId" IS NULL', [student.id,lesson.id])).notes).toBe('New draft');
+  expect((await page.request.post('/api/offline/sync', {headers:{Origin:'https://foreign.example'},data:{operations:[]}})).status()).toBe(403);
+  const foreign = await sync([operation('Wrong learner',newer,'foreign')]);
+  expect((await foreign.json()).rejected).toHaveLength(1);
+
+  await login(admin,'admin');
+  await admin.goto('/dashboard/admin/curriculum');
+  await expect(admin.getByRole('heading', {name:'Build your learning pathway'})).toBeVisible();
+  const moduleDetails = admin.locator('details').filter({has:admin.getByText('Add module',{exact:true})}).first();
+  await moduleDetails.locator('summary').click();
+  await moduleDetails.locator('[name=title]').fill('Workflow Test Module');
+  await moduleDetails.locator('[name=description]').fill('Synthetic curriculum authoring verification.');
+  await moduleDetails.getByRole('button', {name:'Add module',exact:true}).click();
+  await expect.poll(async () => (await one('SELECT count(*)::int n FROM "Module" WHERE title=$1',['Workflow Test Module'])).n).toBe(1);
+  const lessonDetails=admin.locator('details').filter({has:admin.locator('summary:text-is("Create lesson, quiz and practical task")')}).first();
+  await lessonDetails.locator('summary').click();
+  const moduleRow=await one('SELECT id FROM "Module" WHERE title=$1',['Workflow Test Module']);
+  await lessonDetails.locator('[name=moduleId]').selectOption(moduleRow.id);
+  for (const name of ['title','objective','theory','safetyNotes','practicalChallenge','expectedOutput','generalTroubleshoot','evidencePrompt']) await lessonDetails.locator(`[name=${name}]`).fill(name==='title'?'Workflow Test Lesson':'Synthetic safe lesson authoring test.');
+  await lessonDetails.getByLabel('Question', {exact:true}).fill('Safe rewiring?');
+  await lessonDetails.getByLabel('Option 1', {exact:true}).fill('Power off');
+  await lessonDetails.getByLabel('Option 2', {exact:true}).fill('Power on');
+  await lessonDetails.getByLabel('Teaching explanation', {exact:true}).fill('Disconnect power before changing connections.');
+  await lessonDetails.getByRole('button',{name:'Create draft lesson',exact:true}).click();
+  await expect.poll(async () => (await one('SELECT status FROM "Lesson" WHERE title=$1',['Workflow Test Lesson']))?.status).toBe('DRAFT');
+
+  await page.goto('/dashboard/student/progress');
+  await page.screenshot({path:'test-results/student-progress-mobile.png',fullPage:true});
+  await teacher.goto('/dashboard/teacher/analytics');
+  await teacher.screenshot({path:'test-results/teacher-analytics.png',fullPage:true});
+  expect(runtimeErrors).toEqual([]);
+  await studentContext.close(); await teacherContext.close(); await adminContext.close();
+});

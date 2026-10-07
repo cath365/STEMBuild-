@@ -110,14 +110,23 @@ See `prisma/schema.prisma` for the complete implementation.
 
 ```bash
 cp .env.example .env
-npm install
+npm ci
 npm run db:generate
-npm run db:migrate
+npm run db:deploy
 npm run db:seed
 npm run dev
 ```
 
 The seed script creates only synthetic records prefixed/labeled as **DEMO**.
+
+
+## Learning engineering v0.2
+
+STEMBuild now includes a structured learner-event layer for meaningful learning actions such as lesson starts/completions, quiz answers, practical attempts, evidence uploads, rubric scoring, hints, troubleshooting, code submissions and hardware selections. Teacher and learner analytics are calculated from these stored events rather than page views or fabricated AI insights.
+
+The platform also uses a controlled 12-skill taxonomy covering electronics fundamentals, circuit building, microcontroller programming, digital I/O, analog input, sensors, motors, communication protocols, debugging, IoT, robotics and problem solving.
+
+See `docs/LEARNING_DATA.md` for the event schema, analytics rules, privacy model and future education-research guidance.
 
 ## Security notes
 
@@ -127,3 +136,45 @@ The seed script creates only synthetic records prefixed/labeled as **DEMO**.
 - Student evidence is restricted to image/PDF MIME types, size-limited, and stored in private Blob storage.
 - Private dashboard pages use `no-store` patterns and are excluded from service-worker caching.
 - Practical grades remain teacher-owned; the assistant can explain/troubleshoot but does not issue final practical scores.
+
+
+## STEMBuild AI Lab Coach
+
+The student dashboard includes an evidence-grounded AI Lab Coach. It follows **OBSERVE → REASON → PLAN → GUIDE → CHECK → ADAPT**, uses stored learner evidence, clearly labels AI-generated guidance, and logs recommendations for later evaluation. It never marks practical work as passed and has no capability to control physical hardware. See `docs/AI_LAB_COACH.md`.
+
+## Low-bandwidth PWA and shared-kit support
+
+STEMBuild now includes a selective low-bandwidth mode for schools with unstable internet, limited mobile data, affordable Android devices, shared computers and limited robotics kits.
+
+Learners can explicitly download a sanitized lesson package, read it offline, save unfinished notes/code/checkpoints locally, and synchronize those drafts when the same learner reconnects. Authenticated dashboards, quizzes, final evidence submission, AI coaching and teacher assessment remain online-only so offline support does not weaken privacy or assessment integrity.
+
+Large learner evidence images are compressed on-device when useful before upload. Shared physical robotics kits are represented separately from learner records: several learners can use the same registered kit while retaining individual attempts, events, evidence and teacher assessments.
+
+See `docs/LOW_BANDWIDTH_PWA.md` for the caching policy, background-sync rules, shared-device isolation model and offline security boundaries.
+
+
+## Multi-microcontroller architecture
+
+STEMBuild stores each educational lesson once and attaches board-specific implementation records through `LessonHardwareVariant`. The same concept, objective, assessment and skills can therefore support Arduino Uno, Arduino Nano, ESP32, Raspberry Pi Pico, BBC micro:bit, STM32 and future boards without duplicating lesson content.
+
+Projects use the same pattern through `ProjectHardware`. Learners choose a compatible board when an attempt starts, and the platform adapts wiring, GPIO mappings, programming language/framework, source code, upload steps and troubleshooting while keeping the project assessment unchanged.
+
+Administrators can add new hardware platforms from **Admin → Hardware** and attach them to lessons/projects from **Admin → Board variants**. No React or server-action rewrite is required for a new board. See `docs/MULTI_MICROCONTROLLER.md`.
+
+
+## Showcase: Smart Environment Monitor
+
+The DEMO curriculum includes a polished **SMART ENVIRONMENT MONITOR** lesson/project for Arduino Uno and ESP32. It walks learners through introduction, components, safety, wiring, code, testing, recording real readings, troubleshooting, assessment, evidence upload, teacher rubric review and analytics updates.
+
+The ESP32 variant includes an optional collapsed advanced-mode explanation for future authenticated dashboard telemetry, but the MVP does not pretend that telemetry has already been received. Practical completion still depends on learner evidence and/or teacher validation.
+
+See `docs/SMART_ENVIRONMENT_MONITOR.md`.
+
+
+## MVP validation
+
+Run `npm test`, `npm run typecheck`, `npm run lint` and `npm run build` for the code checks. Install Chromium with `npx playwright install chromium`, then run `npm run verify:local` for an isolated synthetic learner/teacher/admin workflow with a disposable PostgreSQL-compatible database. For standard PostgreSQL, apply the migration, seed a test database and run `npm run test:e2e` instead. Never point the browser workflow at a database containing real school data.
+
+Private evidence uses Vercel Blob by default. `EVIDENCE_STORAGE=local` is available only in development for isolated verification. AI coaching has a labelled rules-based fallback when model access is unavailable; `AI_COACH_DISABLE_MODEL=true` makes this deterministic for tests. Production seeding requires explicit `ALLOW_DEMO_SEED=true` and creates synthetic accounts, so it is intended only for a demo environment.
+
+See `docs/MVP_VALIDATION.md` for verified coverage and release requirements.
