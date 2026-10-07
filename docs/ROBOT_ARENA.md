@@ -30,3 +30,9 @@ Before a real build, match supply voltage/current to the motors, battery and dri
 ## Checks
 
 Unit coverage tests ray geometry, obstacle avoidance, collision/frame limits and generated code. Browser coverage verifies assembly gating, actual WebGL canvas creation using version-matched local Three.js, obstacle controls, moving coordinates, Stop/Reset and `.ino` download. Existing Lab suites remain included. Software rendering is not a physical phone performance benchmark.
+
+## Recognisable hardware models
+
+The robot now uses detailed procedural models with USB/DC connectors and headers on Uno, a heatsink and screw terminals on the driver, twin ultrasonic transducers, TT-style geared motors, wheel hubs/caster and a generic battery holder. Labels identify the firmware's pins. Inspect robot parts changes the camera to a close view; orbit/zoom remains available. Textures are released with scene cleanup.
+
+Uno's PCB footprint is based on Arduino's published 68.6 × 53.4 mm specification: https://store.arduino.cc/products/arduino-uno-rev3-smd . The ST L298 datasheet describes the IC, not a standardised breakout board: https://www.st.com/resource/en/datasheet/l298.pdf . Breakout, sensor, motor, battery and chassis geometry is illustrative. Pin positions, hole spacing, motor ratings and module variants are not manufacturing CAD or bench-validated electrical twins.

@@ -1,4 +1,5 @@
 "use client";
+import {createRobotModels} from '@/lib/robot-models';
 import {useEffect,useRef,useState} from 'react';
 import {collides,initialRobot,robotParts,robotSketch,robotWires,stepRobot,type Obstacle} from '@/lib/robot-arena';
 
@@ -9,6 +10,7 @@ export function RobotArena(){
  const [robot,setRobot]=useState(initialRobot),[view,setView]=useState('Top view · low-data mode');
  const [show3D,setShow3D]=useState(false),[blockX,setBlockX]=useState(40),[blockZ,setBlockZ]=useState(-30);
  const [message,setMessage]=useState('Assemble the robot, review its wiring, then start the arena.');
+ const inspect=useRef<(()=>void)|null>(null);
  const mount=useRef<HTMLDivElement>(null),latest=useRef({robot,blocks,parts});
  useEffect(()=>{latest.current={robot,blocks,parts};},[robot,blocks,parts]);
  const ready=parts.length===robotParts.length&&wires.length===robotWires.length;
@@ -29,21 +31,14 @@ export function RobotArena(){
    scene=new T.Scene();scene.background=new T.Color(0xf0f4f8);
    renderer=new T.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));mount.current.replaceChildren(renderer.domElement);
    const camera=new T.PerspectiveCamera(45,1,.1,1000);camera.position.set(160,240,230);
-   controls=new O.OrbitControls(camera,renderer.domElement);controls.enableDamping=true;
+   controls=new O.OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.minDistance=20;controls.maxDistance=450;
+   inspect.current=()=>{const r=latest.current.robot;camera.position.set(r.x+28,32,r.z+38);controls.target.set(r.x,7,r.z);controls.update();};
    scene.add(new T.HemisphereLight(0xffffff,0x64748b,3));
    function box(w:number,h:number,d:number,color:number,x=0,y=0,z=0,parent=scene){const m=new T.Mesh(new T.BoxGeometry(w,h,d),new T.MeshStandardMaterial({color}));m.position.set(x,y,z);parent.add(m);return m;}
    box(200,1,200,0xe1e8ef,0,-1,0);scene.add(new T.GridHelper(200,20,0x8ca2b8,0xc4d1dd));
    for(const [w,d,x,z] of [[204,3,0,-102],[204,3,0,102],[3,200,-102,0],[3,200,102,0]])box(w,10,d,0x7c8fa3,x,4,z);
    const car=new T.Group();scene.add(car);
-   objects.push(box(17,3,25,0xd9a441,0,7,0,car));
-   objects.push(box(10,2,12,0x168197,0,10,0,car));
-   objects.push(box(7,3,6,0xb93f39,0,10,7,car));
-   objects.push(box(10,3,5,0x213043,0,10,-8,car));
-   const sensor=new T.Group();car.add(sensor);box(13,4,2,0x168197,0,12,12,sensor);
-   for(const x of [-4,4]){const m=new T.Mesh(new T.CylinderGeometry(2.2,2.2,2,20),new T.MeshStandardMaterial({color:0xc5cdd5}));m.rotation.x=Math.PI/2;m.position.set(x,12,14);sensor.add(m);}objects.push(sensor);
-   const wheels=new T.Group();car.add(wheels);
-   for(const x of [-11,11]){const m=new T.Mesh(new T.CylinderGeometry(5,5,3,24),new T.MeshStandardMaterial({color:0x263447}));m.rotation.z=Math.PI/2;m.position.set(x,5,0);wheels.add(m);}objects.push(wheels);
-   const motors=new T.Group();car.add(motors);box(4,3,8,0xf6c344,-8,5,0,motors);box(4,3,8,0xf6c344,8,5,0,motors);objects.push(motors);
+   objects.push(...createRobotModels(T,car));
    const blockGroup=new T.Group();scene.add(blockGroup);let key='';
    function resize(){if(!mount.current)return;const {width,height}=mount.current.getBoundingClientRect();renderer.setSize(width,height);camera.aspect=width/height;camera.updateProjectionMatrix();}
    observer=new ResizeObserver(resize);observer.observe(mount.current);resize();setView('3D arena');
@@ -53,7 +48,7 @@ export function RobotArena(){
     controls.update();renderer.render(scene,camera);raf=requestAnimationFrame(draw);
    }draw();
   }catch{if(!dead)setView('Top view · 3D unavailable on this device');}}
-  void boot();return ()=>{dead=true;cancelAnimationFrame(raf);observer?.disconnect();controls?.dispose();scene?.traverse((o:any)=>{o.geometry?.dispose();o.material?.dispose();});renderer?.dispose();renderer?.domElement?.remove();};
+  void boot();return ()=>{dead=true;inspect.current=null;cancelAnimationFrame(raf);observer?.disconnect();controls?.dispose();scene?.traverse((o:any)=>{o.geometry?.dispose();o.material?.map?.dispose();o.material?.dispose();});renderer?.dispose();renderer?.domElement?.remove();};
  },[show3D]);
  function addBlock(x:number,z:number){if(running)return;if(!Number.isFinite(x)||!Number.isFinite(z)){setMessage('Enter valid block coordinates.');return;}if(blocks.length>=20){setMessage('Maximum 20 obstacles. Remove one to add another.');return;}x=Math.max(-78,Math.min(78,x));z=Math.max(-78,Math.min(78,z));if(blocks.some(b=>Math.abs(b.x-x)<23&&Math.abs(b.z-z)<23)){setMessage('Choose a clear position for the new block.');return;}if(collides(robot.x,robot.z,[{id:0,x,z,size:22}])){setMessage('Keep blocks clear of the robot.');return;}setBlocks(b=>[...b,{id:Date.now(),x,z,size:22}]);}
  function download(){const url=URL.createObjectURL(new Blob([robotSketch(threshold)],{type:'text/plain'}));const a=document.createElement('a');a.href=url;a.download='stembuild-obstacle-robot.ino';a.click();URL.revokeObjectURL(url);}
@@ -61,9 +56,9 @@ export function RobotArena(){
   <div className="eyebrow">ROBOTICS · BUILD AND TEST</div><h2>Obstacle-avoiding robot</h2>
   <p>Assemble a two-wheel Uno robot and add blocks to its test arena. This model tests the generated avoidance logic; arbitrary Arduino code execution and motor electronics are not connected to this arena yet.</p>
   <div className="robot-lab-grid"><aside className="card"><h3>1. Assemble</h3>{robotParts.map(p=><label className="robot-check" key={p}><input type="checkbox" checked={parts.includes(p)} disabled={running} onChange={e=>setParts(a=>e.target.checked?[...a,p]:a.filter(v=>v!==p))}/>{p}</label>)}
-  <h3>2. Review connections</h3>{robotWires.map(p=><label className="robot-check" key={p}><input type="checkbox" checked={wires.includes(p)} disabled={running} onChange={e=>setWires(a=>e.target.checked?[...a,p]:a.filter(v=>v!==p))}/>{p}</label>)}
+  <p className="small muted">Models show recognisable hardware features. Uno uses its published PCB footprint; motor, battery, chassis and module layouts are generic kit variants.</p><h3>2. Review connections</h3>{robotWires.map(p=><label className="robot-check" key={p}><input type="checkbox" checked={wires.includes(p)} disabled={running} onChange={e=>setWires(a=>e.target.checked?[...a,p]:a.filter(v=>v!==p))}/>{p}</label>)}
   <p className="small muted">These checks record your review; they do not electrically validate a circuit. Use a motor supply matched to your motors and driver. Motors must not draw power from Uno GPIO.</p></aside>
-  <div><button className="btn" onClick={()=>{setShow3D(s=>!s);setView(show3D?"Top view · low-data mode":"Loading 3D…");}}>{show3D?"Close robot 3D":"Launch robot 3D"}</button>{show3D?<div className="robot-view" ref={mount} aria-label="3D robot arena"/>:null}<p className="small muted">{view} · orbit and zoom in 3D. Place obstacles using the top view below.</p>
+  <div><button className="btn" onClick={()=>{setShow3D(s=>!s);setView(show3D?"Top view · low-data mode":"Loading 3D…");}}>{show3D?"Close robot 3D":"Launch robot 3D"}</button>{show3D?<button className="btn" onClick={()=>inspect.current?.()}>Inspect robot parts</button>:null}{show3D?<div className="robot-view" ref={mount} aria-label="3D robot arena"/>:null}<p className="small muted">{view} · orbit and zoom in 3D. Place obstacles using the top view below.</p>
   <svg className="robot-map" viewBox="-100 -100 200 200" role="img" aria-label="Robot top view: click to place an obstacle" onClick={e=>{const r=e.currentTarget.getBoundingClientRect();addBlock((e.clientX-r.left)/r.width*200-100,(e.clientY-r.top)/r.height*200-100);}}>
    <rect x="-99" y="-99" width="198" height="198" fill="#edf2f7" stroke="#64748b"/>{blocks.map(b=><rect key={b.id} x={b.x-b.size/2} y={b.z-b.size/2} width={b.size} height={b.size} fill="#da7650"/>)}
    <g transform={`translate(${robot.x} ${robot.z}) rotate(${-robot.heading*180/Math.PI})`}><rect x="-8" y="-12" width="16" height="24" rx="3" fill="#167b91"/><path d={`M0 12V${Math.min(robot.distance+10,75)}`} stroke="#177c55" strokeWidth="2" strokeDasharray="3 2"/></g>
