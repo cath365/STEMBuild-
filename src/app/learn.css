@@ -200,3 +200,10 @@
   .learning-path-stage .stage-copy{grid-column:1/-1}
   .learning-path-stage .stage-action{grid-column:1/-1;width:100%}
 }
+
+.pinout-visual{display:grid;gap:9px;margin-top:16px}
+.pinout-row{display:grid;grid-template-columns:minmax(120px,.4fr) minmax(0,1fr);gap:12px;align-items:start;padding:12px;border:1px solid var(--border);border-radius:8px;background:#fff}
+.pinout-label{font-size:13px;font-weight:800;color:var(--primary);padding:7px 9px;background:#f1f7fb;border-radius:6px}
+.pinout-role{font-size:13px;line-height:1.55;color:var(--muted)}
+.pinout-caution{margin-top:6px;padding:7px 9px;border-radius:6px;background:#fff3dd;color:#875c13;font-size:11px}
+@media(max-width:560px){.pinout-row{grid-template-columns:1fr}}
