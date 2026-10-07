@@ -2,6 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { Lab3DProject } from "@/lib/lab3d";
+import {
+  breadboardHoleGrid,
+  type BreadboardJumper,
+  type BreadboardPlacement,
+} from "@/lib/breadboard-circuit";
 
 type Props = {
   project: Lab3DProject;
@@ -10,6 +15,11 @@ type Props = {
   ledOn: boolean;
   pendingTerminal: string | null;
   onTerminalSelect: (terminalId: string) => void;
+  physicalPlacements?: Record<string, BreadboardPlacement | undefined>;
+  physicalJumpers?: BreadboardJumper[];
+  onPhysicalPlacementChange?: (partId: string, placement: BreadboardPlacement) => void;
+  onPhysicalJumpersChange?: (jumpers: BreadboardJumper[]) => void;
+  onWorkbenchMessage?: (message: string) => void;
 };
 
 type RemoteModule = Record<string, any>;
@@ -23,25 +33,34 @@ const THREE_URL = "https://esm.sh/three@0.180.0";
 const GLTF_URL = "https://esm.sh/three@0.180.0/examples/jsm/loaders/GLTFLoader.js";
 const ORBIT_URL = "https://esm.sh/three@0.180.0/examples/jsm/controls/OrbitControls.js";
 
-const MODEL_LAYOUT: Record<string, { path?: string; position: [number, number, number]; scale?: number }> = {
-  arduino: { path:"/models/arduino-uno-r3.gltf", position:[-46, 1.5, 0], scale:0.82 },
-  breadboard: { path:"/models/breadboard-830.gltf", position:[36, 3.8, 0], scale:0.78 },
-  resistor: { position:[25, 10, 0] },
-  led: { position:[51, 9, -6] },
-  button: { position:[15, 9, -15] },
+const MODEL_LAYOUT: Record<string, { path?: string; position: [number, number, number]; scale?: number; y: number }> = {
+  arduino: { path:"/models/arduino-uno-r3.gltf", position:[-48, 1.5, 0], scale:0.82, y:1.5 },
+  breadboard: { path:"/models/breadboard-830.gltf", position:[35, 3.8, 0], scale:0.78, y:3.8 },
+  resistor: { position:[-8, 11, 46], y:11 },
+  led: { position:[15, 12, 46], y:12 },
+  button: { position:[36, 9, 46], y:9 },
 };
 
-const TERMINAL_POINTS: Record<string, [number, number, number]> = {
-  "uno-d8":[-38, 9, -17],
-  "uno-d2":[-47, 9, -17],
-  "uno-gnd":[-29, 9, 19],
-  "r-in":[18, 13, 0],
-  "r-out":[32, 13, 0],
-  "led-a":[48, 13, -6],
-  "led-k":[54, 13, -6],
-  "button-sig":[10, 13, -15],
-  "button-gnd":[20, 13, -15],
+const ARDUINO_TERMINALS: Record<string, [number, number, number]> = {
+  "uno-d8":[9, 8, -20],
+  "uno-d2":[-2, 8, -20],
+  "uno-gnd":[17, 8, 20],
 };
+
+const BREADBOARD_TOP_Y = 4.2;
+const breadboardHoles = breadboardHoleGrid();
+
+function holeLocalPosition(holeId: string): [number, number, number] | null {
+  const hole = breadboardHoles.find((item) => item.id === holeId);
+  if (!hole) return null;
+  const x = -27 + (hole.column - 1) * 6;
+  const topRows = ["a","b","c","d","e"];
+  const bottomRows = ["f","g","h","i","j"];
+  const topIndex = topRows.indexOf(hole.row);
+  const bottomIndex = bottomRows.indexOf(hole.row);
+  const z = topIndex >= 0 ? -15 + topIndex * 2.7 : 4.2 + bottomIndex * 2.7;
+  return [x, BREADBOARD_TOP_Y, z];
+}
 
 function disposeObject(object: any) {
   object?.traverse?.((child: any) => {
@@ -51,6 +70,22 @@ function disposeObject(object: any) {
   });
 }
 
+function findPartId(object: any) {
+  let current = object;
+  while (current) {
+    if (current.userData?.partId) return current.userData.partId as string;
+    current = current.parent;
+  }
+  return null;
+}
+
+function colorForJumper(color: BreadboardJumper["color"]) {
+  if (color === "black") return 0x252a2e;
+  if (color === "red") return 0xe44444;
+  if (color === "green") return 0x2f9b60;
+  return 0x2979ff;
+}
+
 export function Stem3DWebGLWorkbench({
   project,
   placed,
@@ -58,29 +93,55 @@ export function Stem3DWebGLWorkbench({
   ledOn,
   pendingTerminal,
   onTerminalSelect,
+  physicalPlacements = {},
+  physicalJumpers = [],
+  onPhysicalPlacementChange,
+  onPhysicalJumpersChange,
+  onWorkbenchMessage,
 }: Props) {
   const mountRef = useRef<HTMLDivElement>(null);
   const callbackRef = useRef(onTerminalSelect);
+  const placementCallbackRef = useRef(onPhysicalPlacementChange);
+  const jumperCallbackRef = useRef(onPhysicalJumpersChange);
+  const messageCallbackRef = useRef(onWorkbenchMessage);
+  const placementRef = useRef(physicalPlacements);
+  const jumperRef = useRef(physicalJumpers);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [error, setError] = useState("");
+  const [physicalPendingNode, setPhysicalPendingNode] = useState<string | null>(null);
+
   const sceneState = useRef<{
     THREE: any;
     scene: any;
     camera: any;
     renderer: any;
     controls: any;
+    floor: any;
     partGroup: any;
     wireGroup: any;
+    physicalWireGroup: any;
     terminalGroup: any;
+    holeGroup: any;
     partObjects: Map<string, any>;
     terminalObjects: Map<string, any>;
+    holeObjects: Map<string, any>;
     ledMaterial: any;
+    raycaster: any;
+    pointer: any;
+    drag?: { partId: string; object: any; offsetX: number; offsetZ: number };
     raf: number;
     resize?: ResizeObserver;
-    pointerHandler?: (event: PointerEvent) => void;
+    pointerDown?: (event: PointerEvent) => void;
+    pointerMove?: (event: PointerEvent) => void;
+    pointerUp?: (event: PointerEvent) => void;
   } | null>(null);
 
   useEffect(() => { callbackRef.current = onTerminalSelect; }, [onTerminalSelect]);
+  useEffect(() => { placementCallbackRef.current = onPhysicalPlacementChange; }, [onPhysicalPlacementChange]);
+  useEffect(() => { jumperCallbackRef.current = onPhysicalJumpersChange; }, [onPhysicalJumpersChange]);
+  useEffect(() => { messageCallbackRef.current = onWorkbenchMessage; }, [onWorkbenchMessage]);
+  useEffect(() => { placementRef.current = physicalPlacements; }, [physicalPlacements]);
+  useEffect(() => { jumperRef.current = physicalJumpers; }, [physicalJumpers]);
 
   useEffect(() => {
     let cancelled = false;
@@ -103,7 +164,7 @@ export function Stem3DWebGLWorkbench({
         camera.position.set(0, 125, 155);
 
         const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:false });
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.6));
         renderer.shadowMap.enabled = true;
         renderer.outputColorSpace = THREE.SRGBColorSpace;
         mount.replaceChildren(renderer.domElement);
@@ -128,6 +189,7 @@ export function Stem3DWebGLWorkbench({
         floor.rotation.x = -Math.PI / 2;
         floor.receiveShadow = true;
         floor.position.y = -0.5;
+        floor.userData.workbenchFloor = true;
         scene.add(floor);
 
         const grid = new THREE.GridHelper(200, 20, 0xa8bac8, 0xd2dde5);
@@ -136,8 +198,10 @@ export function Stem3DWebGLWorkbench({
 
         const partGroup = new THREE.Group();
         const wireGroup = new THREE.Group();
+        const physicalWireGroup = new THREE.Group();
         const terminalGroup = new THREE.Group();
-        scene.add(partGroup, wireGroup, terminalGroup);
+        const holeGroup = new THREE.Group();
+        scene.add(partGroup, wireGroup, physicalWireGroup, terminalGroup, holeGroup);
 
         const loader = new gltfModule.GLTFLoader();
         const partObjects = new Map<string, any>();
@@ -192,51 +256,280 @@ export function Stem3DWebGLWorkbench({
         for (const part of project.parts) {
           const layout = MODEL_LAYOUT[part.id];
           if (!layout) continue;
-          let object: any;
+          const wrapper = new THREE.Group();
+          wrapper.name = part.id;
+          wrapper.userData.partId = part.id;
+
+          let model: any;
           if (layout.path) {
             const gltf = await loader.loadAsync(layout.path);
-            object = gltf.scene;
-            // Trimesh exports our models with Z as physical up; convert to Three's Y-up.
-            object.rotation.x = -Math.PI/2;
-            object.scale.setScalar(layout.scale ?? 1);
-          } else if (part.id === "resistor") object = createResistor();
-          else if (part.id === "led") object = createLed();
-          else if (part.id === "button") object = createButton();
-          else object = new THREE.Mesh(new THREE.BoxGeometry(10,5,10),new THREE.MeshStandardMaterial({color:0x8899aa}));
+            model = gltf.scene;
+            model.rotation.x = -Math.PI/2;
+            model.scale.setScalar(layout.scale ?? 1);
+          } else if (part.id === "resistor") model = createResistor();
+          else if (part.id === "led") model = createLed();
+          else if (part.id === "button") model = createButton();
+          else model = new THREE.Mesh(new THREE.BoxGeometry(10,5,10),new THREE.MeshStandardMaterial({color:0x8899aa}));
 
-          object.position.set(...layout.position);
-          object.visible = placed.includes(part.id);
-          object.name = part.id;
-          object.traverse?.((child:any)=>{ if (child.isMesh) { child.castShadow=true; child.receiveShadow=true; } });
-          partGroup.add(object);
-          partObjects.set(part.id,object);
+          model.traverse?.((child:any)=>{
+            child.userData.partId = part.id;
+            if (child.isMesh) { child.castShadow=true; child.receiveShadow=true; }
+          });
+          wrapper.add(model);
+
+          const saved = physicalPlacements[part.id];
+          wrapper.position.set(saved?.x ?? layout.position[0], layout.y, saved?.z ?? layout.position[2]);
+          wrapper.visible = placed.includes(part.id);
+          partGroup.add(wrapper);
+          partObjects.set(part.id,wrapper);
         }
 
         const terminalObjects = new Map<string, any>();
-        for (const terminal of project.terminals) {
-          const point = TERMINAL_POINTS[terminal.id];
-          if (!point) continue;
-          const material = new THREE.MeshStandardMaterial({color:0x0b6bdc,emissive:0x001a3d,emissiveIntensity:.8});
-          const sphere = new THREE.Mesh(new THREE.SphereGeometry(2.2,18,14),material);
-          sphere.position.set(...point);
-          sphere.userData.terminalId=terminal.id;
-          sphere.userData.partId=terminal.partId;
-          sphere.visible=placed.includes(terminal.partId);
-          terminalGroup.add(sphere);
-          terminalObjects.set(terminal.id,sphere);
+        const arduino = partObjects.get("arduino");
+        if (arduino) {
+          for (const terminal of project.terminals.filter((item)=>item.partId==="arduino")) {
+            const point = ARDUINO_TERMINALS[terminal.id];
+            if (!point) continue;
+            const material = new THREE.MeshStandardMaterial({color:0x0b6bdc,emissive:0x001a3d,emissiveIntensity:.8});
+            const sphere = new THREE.Mesh(new THREE.SphereGeometry(2.2,18,14),material);
+            sphere.position.set(...point);
+            sphere.userData.nodeId=terminal.id;
+            sphere.userData.partId="arduino";
+            sphere.userData.nodeType="arduino";
+            sphere.visible=placed.includes("arduino");
+            arduino.add(sphere);
+            terminalObjects.set(terminal.id,sphere);
+          }
+        }
+
+        const holeObjects = new Map<string, any>();
+        const breadboard = partObjects.get("breadboard");
+        if (breadboard) {
+          for (const hole of breadboardHoles) {
+            const point = holeLocalPosition(hole.id);
+            if (!point) continue;
+            const material = new THREE.MeshStandardMaterial({
+              color:0x27313a,
+              metalness:.2,
+              roughness:.7,
+              emissive:0x000000,
+            });
+            const marker = new THREE.Mesh(new THREE.CylinderGeometry(.72,.72,.5,12),material);
+            marker.rotation.x = Math.PI/2;
+            marker.position.set(...point);
+            marker.userData.nodeId=hole.id;
+            marker.userData.partId="breadboard";
+            marker.userData.nodeType="breadboard-hole";
+            marker.visible=placed.includes("breadboard");
+            breadboard.add(marker);
+            holeObjects.set(hole.id,marker);
+          }
         }
 
         const raycaster=new THREE.Raycaster();
         const pointer=new THREE.Vector2();
-        const pointerHandler=(event:PointerEvent)=>{
+
+        function setPointer(event: PointerEvent) {
           const rect=renderer.domElement.getBoundingClientRect();
           pointer.x=((event.clientX-rect.left)/rect.width)*2-1;
           pointer.y=-((event.clientY-rect.top)/rect.height)*2+1;
           raycaster.setFromCamera(pointer,camera);
-          const hit=raycaster.intersectObjects([...terminalObjects.values()].filter((item:any)=>item.visible),false)[0];
-          if(hit?.object?.userData?.terminalId) callbackRef.current(hit.object.userData.terminalId);
+        }
+
+        function worldPointForNode(nodeId: string) {
+          const object = terminalObjects.get(nodeId) ?? holeObjects.get(nodeId);
+          if (!object) return null;
+          return object.getWorldPosition(new THREE.Vector3());
+        }
+
+        function rebuildPhysicalWires() {
+          while(physicalWireGroup.children.length){
+            const child=physicalWireGroup.children.pop();
+            if(child)disposeObject(child);
+          }
+          for (const jumper of jumperRef.current) {
+            const start=worldPointForNode(jumper.from);
+            const end=worldPointForNode(jumper.to);
+            if(!start||!end)continue;
+            const mid=start.clone().lerp(end,.5);
+            mid.y=Math.max(start.y,end.y)+18;
+            const curve=new THREE.CatmullRomCurve3([start,mid,end]);
+            const geometry=new THREE.TubeGeometry(curve,32,.65,8,false);
+            const mesh=new THREE.Mesh(geometry,new THREE.MeshStandardMaterial({color:colorForJumper(jumper.color),roughness:.5}));
+            mesh.userData.jumperId=jumper.id;
+            physicalWireGroup.add(mesh);
+          }
+        }
+
+        function sendPlacement(partId: string, holes?: string[]) {
+          const object=partObjects.get(partId);
+          if(!object)return;
+          placementCallbackRef.current?.(partId,{x:object.position.x,z:object.position.z,holes});
+        }
+
+        function nearestBreadboardSnap(partId: string, object: any) {
+          const board=partObjects.get("breadboard");
+          if(!board||!board.visible)return null;
+          const local=board.worldToLocal(object.getWorldPosition(new THREE.Vector3()).clone());
+          if(Math.abs(local.x)>34||Math.abs(local.z)>21)return null;
+
+          const col=Math.max(1,Math.min(10,Math.round((local.x+27)/6)+1));
+          const topRows=["a","b","c","d","e"];
+          const rowIndex=Math.max(0,Math.min(4,Math.round((local.z+15)/2.7)));
+          const row=topRows[rowIndex];
+
+          if(partId==="resistor"){
+            const startCol=Math.max(1,Math.min(7,col));
+            const holes=[`bb-${row}${startCol}`,`bb-${row}${startCol+3}`];
+            return {holes};
+          }
+          if(partId==="led"){
+            const startCol=Math.max(1,Math.min(9,col));
+            const holes=[`bb-${row}${startCol}`,`bb-${row}${startCol+1}`];
+            return {holes};
+          }
+          if(partId==="button"){
+            const column=Math.max(1,Math.min(10,col));
+            return {holes:[`bb-e${column}`,`bb-f${column}`]};
+          }
+          return null;
+        }
+
+        function snapPartToHoles(partId: string, holes: string[]) {
+          const board=partObjects.get("breadboard");
+          const object=partObjects.get(partId);
+          if(!board||!object)return;
+          const points=holes.map((hole)=>holeLocalPosition(hole)).filter(Boolean) as [number,number,number][];
+          if(!points.length)return;
+          const localX=points.reduce((sum,p)=>sum+p[0],0)/points.length;
+          const localZ=points.reduce((sum,p)=>sum+p[2],0)/points.length;
+          const world=board.localToWorld(new THREE.Vector3(localX,BREADBOARD_TOP_Y,localZ));
+          object.position.set(world.x,MODEL_LAYOUT[partId]?.y ?? 9,world.z);
+          sendPlacement(partId,holes);
+          messageCallbackRef.current?.(`${project.parts.find((part)=>part.id===partId)?.label ?? partId} snapped into breadboard holes ${holes.map((hole)=>hole.replace("bb-","")).join(" and ")}.`);
+        }
+
+        function choosePhysicalNode(nodeId: string) {
+          if(project.slug!=="led-blink") {
+            if(terminalObjects.has(nodeId)) callbackRef.current(nodeId);
+            return;
+          }
+
+          if(!physicalPendingNode){
+            setPhysicalPendingNode(nodeId);
+            const label=nodeId.startsWith("bb-")?nodeId.replace("bb-","").toUpperCase():nodeId.replace("uno-","Arduino ").toUpperCase();
+            messageCallbackRef.current?.(`${label} selected. Tap a destination node.`);
+            return;
+          }
+          if(physicalPendingNode===nodeId){
+            setPhysicalPendingNode(null);
+            messageCallbackRef.current?.("Jumper selection cancelled.");
+            return;
+          }
+
+          const oneArduino=physicalPendingNode.startsWith("uno-")!==nodeId.startsWith("uno-");
+          const oneBreadboard=physicalPendingNode.startsWith("bb-")!==nodeId.startsWith("bb-");
+          if(!oneArduino||!oneBreadboard){
+            setPhysicalPendingNode(null);
+            messageCallbackRef.current?.("For this LED lab, a jumper must connect one Arduino pin to one breadboard hole.");
+            return;
+          }
+
+          const from=physicalPendingNode.startsWith("uno-")?physicalPendingNode:nodeId;
+          const to=physicalPendingNode.startsWith("bb-")?physicalPendingNode:nodeId;
+          if(from!=="uno-d8"&&from!=="uno-gnd"){
+            setPhysicalPendingNode(null);
+            messageCallbackRef.current?.("Use Arduino D8 or GND for this LED project.");
+            return;
+          }
+
+          const withoutSamePin=jumperRef.current.filter((jumper)=>jumper.from!==from&&jumper.to!==from);
+          const jumper:BreadboardJumper={
+            id:`${from}-${to}`,
+            from,
+            to,
+            color:from==="uno-gnd"?"black":"blue",
+          };
+          const next=[...withoutSamePin,jumper];
+          jumperRef.current=next;
+          jumperCallbackRef.current?.(next);
+          rebuildPhysicalWires();
+          setPhysicalPendingNode(null);
+          messageCallbackRef.current?.(`Jumper connected: ${from==="uno-d8"?"Arduino D8":"Arduino GND"} → breadboard ${to.replace("bb-","").toUpperCase()}.`);
+        }
+
+        const pointerDown=(event:PointerEvent)=>{
+          setPointer(event);
+
+          const nodeHits=raycaster.intersectObjects([
+            ...terminalObjects.values(),
+            ...holeObjects.values(),
+          ].filter((item:any)=>item.visible),false);
+          if(nodeHits[0]?.object?.userData?.nodeId){
+            event.preventDefault();
+            choosePhysicalNode(nodeHits[0].object.userData.nodeId);
+            return;
+          }
+
+          const partHits=raycaster.intersectObjects([...partObjects.values()].filter((item:any)=>item.visible),true);
+          if(!partHits.length)return;
+          const partId=findPartId(partHits[0].object);
+          if(!partId)return;
+
+          if(partId==="breadboard" && Object.values(placementRef.current).some((placement)=>placement?.holes?.length)){
+            messageCallbackRef.current?.("Remove breadboard-mounted components before moving the breadboard.");
+            return;
+          }
+
+          const object=partObjects.get(partId);
+          const floorHit=raycaster.intersectObject(floor,false)[0];
+          if(!object||!floorHit)return;
+          controls.enabled=false;
+          renderer.domElement.setPointerCapture?.(event.pointerId);
+          sceneState.current!.drag={
+            partId,
+            object,
+            offsetX:object.position.x-floorHit.point.x,
+            offsetZ:object.position.z-floorHit.point.z,
+          };
+          messageCallbackRef.current?.(`Moving ${project.parts.find((part)=>part.id===partId)?.label ?? partId}. Drag and release to place it.`);
         };
-        renderer.domElement.addEventListener("pointerdown",pointerHandler);
+
+        const pointerMove=(event:PointerEvent)=>{
+          const drag=sceneState.current?.drag;
+          if(!drag)return;
+          setPointer(event);
+          const floorHit=raycaster.intersectObject(floor,false)[0];
+          if(!floorHit)return;
+          drag.object.position.x=floorHit.point.x+drag.offsetX;
+          drag.object.position.z=floorHit.point.z+drag.offsetZ;
+          rebuildPhysicalWires();
+        };
+
+        const pointerUp=(event:PointerEvent)=>{
+          const drag=sceneState.current?.drag;
+          if(!drag)return;
+          sceneState.current!.drag=undefined;
+          controls.enabled=true;
+          renderer.domElement.releasePointerCapture?.(event.pointerId);
+
+          if(["resistor","led","button"].includes(drag.partId)){
+            const snap=nearestBreadboardSnap(drag.partId,drag.object);
+            if(snap){
+              snapPartToHoles(drag.partId,snap.holes);
+              rebuildPhysicalWires();
+              return;
+            }
+          }
+          sendPlacement(drag.partId);
+          messageCallbackRef.current?.(`${project.parts.find((part)=>part.id===drag.partId)?.label ?? drag.partId} placed on the workbench.`);
+          rebuildPhysicalWires();
+        };
+
+        renderer.domElement.addEventListener("pointerdown",pointerDown);
+        renderer.domElement.addEventListener("pointermove",pointerMove);
+        renderer.domElement.addEventListener("pointerup",pointerUp);
+        renderer.domElement.addEventListener("pointercancel",pointerUp);
 
         const resize = new ResizeObserver(()=>{
           const width=Math.max(1,mount.clientWidth);
@@ -255,7 +548,12 @@ export function Stem3DWebGLWorkbench({
         };
         animate();
 
-        sceneState.current={THREE,scene,camera,renderer,controls,partGroup,wireGroup,terminalGroup,partObjects,terminalObjects,ledMaterial,raf,resize,pointerHandler};
+        sceneState.current={
+          THREE,scene,camera,renderer,controls,floor,partGroup,wireGroup,physicalWireGroup,
+          terminalGroup,holeGroup,partObjects,terminalObjects,holeObjects,ledMaterial,
+          raycaster,pointer,raf,resize,pointerDown,pointerMove,pointerUp,
+        };
+        rebuildPhysicalWires();
         setStatus("ready");
       } catch (cause) {
         if (!cancelled) {
@@ -272,7 +570,12 @@ export function Stem3DWebGLWorkbench({
       if(state){
         cancelAnimationFrame(state.raf);
         state.resize?.disconnect();
-        if(state.pointerHandler) state.renderer.domElement.removeEventListener("pointerdown",state.pointerHandler);
+        if(state.pointerDown) state.renderer.domElement.removeEventListener("pointerdown",state.pointerDown);
+        if(state.pointerMove) state.renderer.domElement.removeEventListener("pointermove",state.pointerMove);
+        if(state.pointerUp){
+          state.renderer.domElement.removeEventListener("pointerup",state.pointerUp);
+          state.renderer.domElement.removeEventListener("pointercancel",state.pointerUp);
+        }
         state.controls?.dispose?.();
         disposeObject(state.scene);
         state.renderer?.dispose?.();
@@ -285,13 +588,48 @@ export function Stem3DWebGLWorkbench({
   useEffect(()=>{
     const state=sceneState.current;
     if(!state)return;
-    for(const [id,object] of state.partObjects) object.visible=placed.includes(id);
+    for(const [id,object] of state.partObjects) {
+      object.visible=placed.includes(id);
+      const saved=physicalPlacements[id];
+      const layout=MODEL_LAYOUT[id];
+      if(saved&&layout&&!state.drag){
+        object.position.set(saved.x,layout.y,saved.z);
+      }
+    }
     for(const [,sphere] of state.terminalObjects) sphere.visible=placed.includes(sphere.userData.partId);
-  },[placed]);
+    for(const [,hole] of state.holeObjects) hole.visible=placed.includes("breadboard");
+  },[placed,physicalPlacements]);
 
   useEffect(()=>{
     const state=sceneState.current;
     if(!state)return;
+    jumperRef.current=physicalJumpers;
+    while(state.physicalWireGroup.children.length){
+      const child=state.physicalWireGroup.children.pop();
+      if(child)disposeObject(child);
+    }
+    for(const jumper of physicalJumpers){
+      const start=(state.terminalObjects.get(jumper.from)??state.holeObjects.get(jumper.from))?.getWorldPosition(new state.THREE.Vector3());
+      const end=(state.terminalObjects.get(jumper.to)??state.holeObjects.get(jumper.to))?.getWorldPosition(new state.THREE.Vector3());
+      if(!start||!end)continue;
+      const mid=start.clone().lerp(end,.5); mid.y=Math.max(start.y,end.y)+18;
+      const curve=new state.THREE.CatmullRomCurve3([start,mid,end]);
+      const geometry=new state.THREE.TubeGeometry(curve,32,.65,8,false);
+      const mesh=new state.THREE.Mesh(geometry,new state.THREE.MeshStandardMaterial({color:colorForJumper(jumper.color),roughness:.5}));
+      state.physicalWireGroup.add(mesh);
+    }
+  },[physicalJumpers]);
+
+  useEffect(()=>{
+    const state=sceneState.current;
+    if(!state)return;
+    if(project.slug==="led-blink") {
+      while(state.wireGroup.children.length){
+        const child=state.wireGroup.children.pop();
+        if(child)disposeObject(child);
+      }
+      return;
+    }
     const {THREE,wireGroup}=state;
     while(wireGroup.children.length){
       const child=wireGroup.children.pop();
@@ -299,17 +637,14 @@ export function Stem3DWebGLWorkbench({
     }
     for(const wire of project.connections){
       if(!connected.includes(wire.id))continue;
-      const a=TERMINAL_POINTS[wire.fromTerminal];
-      const b=TERMINAL_POINTS[wire.toTerminal];
+      const a=state.terminalObjects.get(wire.fromTerminal)?.getWorldPosition(new THREE.Vector3());
+      const b=state.terminalObjects.get(wire.toTerminal)?.getWorldPosition(new THREE.Vector3());
       if(!a||!b)continue;
-      const start=new THREE.Vector3(...a);
-      const end=new THREE.Vector3(...b);
-      const mid=start.clone().lerp(end,.5); mid.y+=18;
-      const curve=new THREE.CatmullRomCurve3([start,mid,end]);
+      const mid=a.clone().lerp(b,.5); mid.y+=18;
+      const curve=new THREE.CatmullRomCurve3([a,mid,b]);
       const geometry=new THREE.TubeGeometry(curve,32,.65,8,false);
       const color=wire.wireClass==="wire-red"?0xe44444:wire.wireClass==="wire-black"?0x252a2e:wire.wireClass==="wire-green"?0x2f9b60:0x2979ff;
-      const mesh=new THREE.Mesh(geometry,new THREE.MeshStandardMaterial({color,roughness:.55}));
-      wireGroup.add(mesh);
+      wireGroup.add(new THREE.Mesh(geometry,new THREE.MeshStandardMaterial({color,roughness:.55})));
     }
   },[connected,project]);
 
@@ -325,22 +660,33 @@ export function Stem3DWebGLWorkbench({
     const state=sceneState.current;
     if(!state)return;
     for(const [id,sphere] of state.terminalObjects){
-      const selected=id===pendingTerminal;
+      const selected=(project.slug==="led-blink"?physicalPendingNode:pendingTerminal)===id;
       sphere.material.color.setHex(selected?0x00a7ff:0x0b6bdc);
       sphere.material.emissive.setHex(selected?0x0063a3:0x001a3d);
       sphere.scale.setScalar(selected?1.45:1);
     }
-  },[pendingTerminal]);
+    for(const [id,hole] of state.holeObjects){
+      const selected=physicalPendingNode===id;
+      hole.material.color.setHex(selected?0x00a7ff:0x27313a);
+      hole.material.emissive.setHex(selected?0x0063a3:0x000000);
+      hole.scale.setScalar(selected?1.6:1);
+    }
+  },[pendingTerminal,physicalPendingNode,project.slug]);
 
   return <div className="lab3d-webgl-shell">
     <div className="lab3d-webgl-head">
-      <div><span className="badge badge-green">TRUE WEBGL</span><strong>Dimensioned 3D workbench</strong></div>
-      <span className="small muted">Drag to orbit · pinch/scroll to zoom · tap blue pin nodes to wire</span>
+      <div><span className="badge badge-green">TRUE WEBGL</span><strong>Movable electronics workbench</strong></div>
+      <span className="small muted">Drag a part to move it · drop LED/resistor onto breadboard holes · tap D8/GND then a hole to add a jumper</span>
     </div>
     <div className="lab3d-webgl-canvas" ref={mountRef}>
-      {status==="loading"?<div className="lab3d-webgl-overlay">Loading WebGL engine and CAD models…</div>:null}
-      {status==="error"?<div className="lab3d-webgl-overlay error"><strong>WebGL mode could not load.</strong><span>{error}</span><span>The guided 2D workbench below remains available.</span></div>:null}
+      {status==="loading"?<div className="lab3d-webgl-overlay">Loading WebGL workbench and breadboard holes…</div>:null}
+      {status==="error"?<div className="lab3d-webgl-overlay error"><strong>WebGL mode could not load.</strong><span>{error}</span><span>The lightweight lab remains available below.</span></div>:null}
     </div>
-    <div className="small muted">Arduino Uno model uses the official 68.6 × 53.4 mm board footprint. Generic component geometry is dimensioned for learning and may differ from a specific manufacturer or clone.</div>
+    <div className="lab3d-webgl-help-grid">
+      <span><strong>Move:</strong> drag the component body.</span>
+      <span><strong>Snap:</strong> release LED/resistor over the breadboard.</span>
+      <span><strong>Wire:</strong> tap D8 or GND, then tap a breadboard hole.</span>
+      <span><strong>Orbit:</strong> drag empty space; pinch/scroll to zoom.</span>
+    </div>
   </div>;
 }
