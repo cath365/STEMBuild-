@@ -12,9 +12,9 @@ test("home highlights the 3D Lab and it opens in low-data Circuit Builder mode",
 
   await expect(page).toHaveURL(/3d-lab/);
   await expect(page.getByRole("tab", { name: /Circuit Builder/ })).toHaveAttribute("aria-selected", "true");
-  await expect(page.getByRole("tabpanel", { name: /Circuit Builder/ })).toBeVisible();
-  await expect(page.getByRole("tabpanel", { name: /Robot Builder/ })).toBeHidden();
-  await expect(page.getByRole("tabpanel", { name: /CAD Workspace/ })).toBeHidden();
+  await expect(page.locator("#lab-panel-circuit")).toBeVisible();
+  await expect(page.locator("#lab-panel-robot")).toBeHidden();
+  await expect(page.locator("#lab-panel-cad")).toBeHidden();
   // Explicit launch prevents loading heavy 3D libraries on slow/low-data devices.
   await expect(page.getByRole("button", { name: "Launch 3D Workbench" })).toBeVisible();
   await expect(page.locator(".lab3d-renderer-mount canvas")).toHaveCount(0);
@@ -29,7 +29,7 @@ test("switching workspace retains circuit assembly and preserves robotics and CA
   await expect(page.getByRole("img", { name: "Arduino Uno", exact: true })).toBeVisible();
 
   await page.getByRole("tab", { name: /Robot Builder/ }).click();
-  await expect(page.getByRole("tabpanel", { name: /Robot Builder/ })).toBeVisible();
+  await expect(page.locator("#lab-panel-robot")).toBeVisible();
   await expect(page.locator("#robot-arena")).toBeVisible();
   await page.locator("#robot-arena").getByRole("button", { name: "Arduino Uno", exact: true }).click();
   await page.locator("#robot-arena").getByRole("button", { name: "Attach selected part" }).click();
@@ -42,7 +42,7 @@ test("switching workspace retains circuit assembly and preserves robotics and CA
 
   await page.getByRole("tab", { name: /Circuit Builder/ }).click();
   await expect(page.getByRole("img", { name: "Arduino Uno", exact: true })).toBeVisible();
-  await expect(page.getByRole("tabpanel", { name: /Robot Builder/ })).toBeHidden();
+  await expect(page.locator("#lab-panel-robot")).toBeHidden();
 
   await page.getByRole("tab", { name: /Robot Builder/ }).click();
   await expect(page.locator("#robot-arena")).toContainText("1/7 parts correctly mounted");
