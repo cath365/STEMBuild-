@@ -377,3 +377,41 @@
   .lab3d-run-controls{grid-template-columns:1fr}
   .lab3d-run-controls .btn{width:100%}
 }
+
+/* STEMBuild 3D Lab real engine */
+.lab3d-webgl-shell{display:grid;gap:10px;padding:13px;border:1px solid var(--border);border-radius:13px;background:#fff}
+.lab3d-webgl-head{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
+.lab3d-webgl-head>div{display:flex;align-items:center;gap:9px}
+.lab3d-webgl-head strong{font-size:13px}
+.lab3d-webgl-canvas{position:relative;width:100%;height:590px;border:1px solid #cbd6de;border-radius:11px;overflow:hidden;background:#eef3f6;touch-action:none}
+.lab3d-webgl-canvas canvas{display:block;width:100%;height:100%;cursor:grab}
+.lab3d-webgl-canvas canvas:active{cursor:grabbing}
+.lab3d-webgl-overlay{position:absolute;z-index:4;inset:0;display:grid;place-content:center;gap:7px;text-align:center;padding:24px;background:rgba(241,246,249,.94);font-size:12px;color:var(--muted)}
+.lab3d-webgl-overlay.error{background:rgba(255,248,239,.96);color:#75511d}
+.lab3d-webgl-overlay strong{font-size:15px;color:var(--text)}
+.lab3d-grid-controls{grid-template-columns:260px minmax(0,1fr) 350px}
+.lab3d-engine-choice{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.lab3d-engine-choice button{display:grid;gap:4px;text-align:left;border:1px solid var(--border);border-radius:9px;background:#fff;padding:11px;color:var(--text)}
+.lab3d-engine-choice button.active{border-color:var(--primary);background:#f1f7fc;box-shadow:0 0 0 1px var(--primary)}
+.lab3d-engine-choice strong{font-size:11px}
+.lab3d-engine-choice span{font-size:9px;line-height:1.4;color:var(--muted)}
+.lab3d-firmware-note{margin-top:9px;padding:10px 11px;border:1px solid #ead5ad;border-radius:8px;background:#fff8ea;font-size:10px;line-height:1.5;color:#78551e}
+.lab3d-firmware-result{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-top:9px;padding:9px 10px;border:1px solid #b9dfc8;border-radius:8px;background:#eff9f3}
+.lab3d-firmware-result strong{font-size:10px;color:#247348}
+.lab3d-firmware-result span{font-size:9px;color:#537061}
+@media(max-width:1180px){
+  .lab3d-grid-controls{grid-template-columns:220px minmax(0,1fr)}
+  .lab3d-grid-controls .lab3d-code-panel{grid-column:1/-1}
+}
+@media(max-width:900px){
+  .lab3d-webgl-canvas{height:520px}
+  .lab3d-grid-controls{grid-template-columns:1fr}
+  .lab3d-grid-controls .lab3d-code-panel{grid-column:auto}
+}
+@media(max-width:650px){
+  .lab3d-webgl-shell{padding:8px}
+  .lab3d-webgl-canvas{height:430px}
+  .lab3d-webgl-head{align-items:flex-start;flex-direction:column}
+  .lab3d-engine-choice{grid-template-columns:1fr}
+  .lab3d-firmware-result{align-items:flex-start;flex-direction:column}
+}

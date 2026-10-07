@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { componentVisualFor } from "@/lib/component-visuals";
+import { compileUnoFirmware, startUnoFirmwareSimulation, type AVRSimulation } from "@/lib/avr-browser-engine";
+import { Stem3DWebGLWorkbench } from "@/components/stem-3d-webgl-workbench";
 import {
   connectionForTerminals,
   lab3dProject,
@@ -15,8 +17,10 @@ function partImage(slug: string) {
 }
 
 function storageKey(project: Lab3DProject) {
-  return `stembuild-3d-lab-v02-${project.slug}`;
+  return `stembuild-3d-lab-v03-${project.slug}`;
 }
+
+type EngineMode = "fast" | "firmware";
 
 export function Stem3DLabPrototype() {
   const [projectSlug, setProjectSlug] = useState<Lab3DProject["slug"]>("led-blink");
@@ -28,25 +32,36 @@ export function Stem3DLabPrototype() {
   const [running, setRunning] = useState(false);
   const [ledOn, setLedOn] = useState(false);
   const [buttonPressed, setButtonPressed] = useState(false);
-  const [angle, setAngle] = useState(0);
-  const [tilt, setTilt] = useState(48);
-  const [exploded, setExploded] = useState(false);
   const [pendingTerminal, setPendingTerminal] = useState<string | null>(null);
   const [message, setMessage] = useState("Start by placing the real-world parts onto their matching snap zones.");
   const [hydrated, setHydrated] = useState(false);
-  const stageRef = useRef<HTMLDivElement>(null);
+  const [engineMode, setEngineMode] = useState<EngineMode>("fast");
+  const [firmwareStatus, setFirmwareStatus] = useState<"idle"|"compiling"|"starting"|"running"|"error">("idle");
+  const [firmwareError, setFirmwareError] = useState("");
+  const [firmwareMeta, setFirmwareMeta] = useState<{flashBytes:number;compileMs:number}|null>(null);
+  const avrRef = useRef<AVRSimulation | null>(null);
 
   const readiness = useMemo(() => labReadiness(project, placed, connected, code), [project, placed, connected, code]);
 
-  useEffect(() => {
-    setHydrated(false);
+  function stopSimulation(nextMessage?: string) {
+    avrRef.current?.stop();
+    avrRef.current = null;
     setRunning(false);
     setLedOn(false);
+    setFirmwareStatus("idle");
+    if (nextMessage) setMessage(nextMessage);
+  }
+
+  useEffect(() => {
+    stopSimulation();
+    setHydrated(false);
     setButtonPressed(false);
     setPendingTerminal(null);
     setPlaced([]);
     setConnected([]);
     setCode(project.defaultSketch);
+    setFirmwareError("");
+    setFirmwareMeta(null);
     setMessage(`Loaded ${project.shortTitle}. Assemble the parts first.`);
 
     try {
@@ -63,6 +78,11 @@ export function Stem3DLabPrototype() {
       }
     } catch {}
     setHydrated(true);
+
+    return () => {
+      avrRef.current?.stop();
+      avrRef.current = null;
+    };
   }, [project]);
 
   useEffect(() => {
@@ -73,11 +93,7 @@ export function Stem3DLabPrototype() {
   }, [hydrated, project, placed, connected, code]);
 
   useEffect(() => {
-    if (!running || !readiness.ready) {
-      setLedOn(false);
-      return;
-    }
-
+    if (engineMode !== "fast" || !running || !readiness.ready) return;
     if (project.inputMode === "button") {
       setLedOn(buttonPressed);
       return;
@@ -85,7 +101,6 @@ export function Stem3DLabPrototype() {
 
     let timer: ReturnType<typeof setTimeout>;
     let cancelled = false;
-
     const low = () => {
       if (cancelled) return;
       setLedOn(false);
@@ -96,25 +111,18 @@ export function Stem3DLabPrototype() {
       setLedOn(true);
       timer = setTimeout(low, readiness.sketch.highDelayMs);
     };
-
     high();
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
-  }, [
-    running,
-    readiness.ready,
-    readiness.sketch.highDelayMs,
-    readiness.sketch.lowDelayMs,
-    project.inputMode,
-    buttonPressed,
-  ]);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [engineMode, running, readiness.ready, readiness.sketch.highDelayMs, readiness.sketch.lowDelayMs, project.inputMode, buttonPressed]);
+
+  useEffect(() => {
+    if (engineMode === "firmware") avrRef.current?.setButtonPressed(buttonPressed);
+  }, [buttonPressed, engineMode]);
 
   function placePart(id: string) {
     setPlaced((current) => current.includes(id) ? current : [...current, id]);
     const part = project.parts.find((item) => item.id === id);
-    if (part) setMessage(`${part.label} snapped into position.`);
+    if (part) setMessage(`${part.label} placed on the workbench.`);
   }
 
   function removePart(id: string) {
@@ -124,20 +132,9 @@ export function Stem3DLabPrototype() {
       const wire = project.connections.find((item) => item.id === connectionId);
       return wire ? !terminalIds.has(wire.fromTerminal) && !terminalIds.has(wire.toTerminal) : false;
     }));
-    setRunning(false);
+    stopSimulation();
     setPendingTerminal(null);
-    setMessage("Part removed. Any wires attached to it were removed too.");
-  }
-
-  function handleDrop(event: React.DragEvent<HTMLDivElement>, expectedId: string) {
-    event.preventDefault();
-    const id = event.dataTransfer.getData("text/plain");
-    if (id !== expectedId) {
-      const expected = project.parts.find((part) => part.id === expectedId)?.label;
-      setMessage(`That part does not fit this snap zone. This position is for ${expected}.`);
-      return;
-    }
-    placePart(id);
+    setMessage("Part removed. Attached wires were removed too.");
   }
 
   function connect(id: string) {
@@ -159,7 +156,6 @@ export function Stem3DLabPrototype() {
       setMessage(`${terminal.label} selected. Tap the destination terminal.`);
       return;
     }
-
     if (pendingTerminal === id) {
       setPendingTerminal(null);
       setMessage("Wire selection cancelled.");
@@ -170,44 +166,85 @@ export function Stem3DLabPrototype() {
     if (!wire) {
       const first = project.terminals.find((item) => item.id === pendingTerminal)?.label ?? pendingTerminal;
       setPendingTerminal(null);
-      setMessage(`${first} cannot connect to ${terminal.label} in this project. Try the reviewed wiring path.`);
+      setMessage(`${first} cannot connect to ${terminal.label} in this reviewed project.`);
       return;
     }
-
     connect(wire.id);
     setPendingTerminal(null);
   }
 
   function undoWire() {
-    setConnected((current) => {
-      if (!current.length) return current;
-      const last = current[current.length - 1];
-      const wire = project.connections.find((item) => item.id === last);
-      if (wire) setMessage(`Removed ${wire.from} → ${wire.to}.`);
-      return current.slice(0, -1);
-    });
-    setRunning(false);
+    setConnected((current) => current.slice(0, -1));
+    stopSimulation();
+    setMessage("Last wire removed.");
+  }
+
+  function readinessProblem() {
+    return readiness.missingParts[0] ? `Missing part: ${readiness.missingParts[0]}` :
+      readiness.missingConnections[0] ? `Missing wire: ${readiness.missingConnections[0]}` :
+      readiness.sketch.messages[0] ?? "The project is not ready.";
+  }
+
+  function runFastSimulation() {
+    if (!readiness.ready) {
+      stopSimulation(readinessProblem());
+      return;
+    }
+    avrRef.current?.stop();
+    avrRef.current = null;
+    setFirmwareStatus("idle");
+    setRunning(true);
+    setMessage(project.inputMode === "button"
+      ? "Fast simulation running. Press and hold the virtual button."
+      : "Fast simulation running. The LED follows the mapped Arduino-style sketch.");
+  }
+
+  async function runFirmwareSimulation() {
+    if (!readiness.ready) {
+      stopSimulation(readinessProblem());
+      return;
+    }
+    stopSimulation();
+    setFirmwareError("");
+    setFirmwareMeta(null);
+    setFirmwareStatus("compiling");
+    setMessage("Compiling your Arduino source to real ATmega328P firmware in the browser…");
+
+    try {
+      const compiled = await compileUnoFirmware(code);
+      if (!compiled.fitsTarget) throw new Error(`Firmware uses ${compiled.flashBytes} bytes and exceeds the Uno application flash limit.`);
+      setFirmwareMeta({flashBytes:compiled.flashBytes,compileMs:compiled.compileMs});
+      setFirmwareStatus("starting");
+      setMessage("Compilation passed. Starting the ATmega328P emulator…");
+
+      const simulation = await startUnoFirmwareSimulation(compiled.hex, {
+        buttonProject: project.inputMode === "button",
+        onLedChange: setLedOn,
+      });
+      avrRef.current = simulation;
+      simulation.setButtonPressed(buttonPressed);
+      setRunning(true);
+      setFirmwareStatus("running");
+      setMessage("Full Firmware Mode is running the compiled AVR machine code.");
+    } catch (cause) {
+      avrRef.current?.stop();
+      avrRef.current = null;
+      setRunning(false);
+      setLedOn(false);
+      setFirmwareStatus("error");
+      const text = cause instanceof Error ? cause.message : String(cause);
+      setFirmwareError(text);
+      setMessage("Full Firmware Mode could not start. Fast Simulation remains available.");
+    }
   }
 
   function runSimulation() {
-    if (!readiness.ready) {
-      setRunning(false);
-      const firstProblem =
-        readiness.missingParts[0] ? `Missing part: ${readiness.missingParts[0]}` :
-        readiness.missingConnections[0] ? `Missing wire: ${readiness.missingConnections[0]}` :
-        readiness.sketch.messages[0] ?? "The project is not ready.";
-      setMessage(firstProblem);
-      return;
-    }
-    setRunning(true);
-    setMessage(project.inputMode === "button"
-      ? "Simulation running. Press and hold the virtual button to test the input."
-      : "Simulation running. The virtual LED is following the Arduino-style sketch.");
+    return engineMode === "firmware" ? runFirmwareSimulation() : runFastSimulation();
   }
 
   async function copyCode() {
     await navigator.clipboard.writeText(code);
-    setMessage("Arduino sketch copied. The exported source is the same text shown in the editor.");
+    setMessage("Arduino sketch copied.");
   }
 
   function downloadSketch() {
@@ -224,36 +261,21 @@ export function Stem3DLabPrototype() {
   }
 
   function reset() {
-    setRunning(false);
+    stopSimulation();
     setPlaced([]);
     setConnected([]);
     setCode(project.defaultSketch);
-    setExploded(false);
     setButtonPressed(false);
     setPendingTerminal(null);
+    setFirmwareError("");
+    setFirmwareMeta(null);
     try { window.localStorage.removeItem(storageKey(project)); } catch {}
-    setMessage("Workbench reset. Build it again from the parts tray.");
+    setMessage("Workbench reset.");
   }
 
   function autoAssemble() {
     setPlaced(project.parts.map((part) => part.id));
-    setMessage("Demo assembly complete. Now wire the circuit by tapping terminals or using the reviewed connection list.");
-  }
-
-  async function openFullscreen() {
-    try {
-      if (stageRef.current?.requestFullscreen) {
-        await stageRef.current.requestFullscreen();
-      } else {
-        setMessage("Fullscreen is not supported by this browser.");
-      }
-    } catch {
-      setMessage("Your browser did not allow fullscreen mode.");
-    }
-  }
-
-  function scrollTo(id: string) {
-    document.getElementById(id)?.scrollIntoView({ behavior:"smooth", block:"start" });
+    setMessage("Assembly complete. Wire the project by tapping blue pin nodes in the WebGL scene or using the connection list.");
   }
 
   const progress = Math.round(((placed.length + connected.length + (readiness.sketch.ok ? 1 : 0)) / (project.parts.length + project.connections.length + 1)) * 100);
@@ -266,58 +288,41 @@ export function Stem3DLabPrototype() {
         <p className="small muted">{project.description}</p>
       </div>
       <div className="lab3d-project-buttons">
-        {lab3dProjects.map((item) => <button
-          key={item.slug}
-          type="button"
-          className={item.slug === project.slug ? "btn btn-primary" : "btn"}
-          onClick={() => setProjectSlug(item.slug)}
-        >{item.shortTitle}</button>)}
+        {lab3dProjects.map((item) => <button key={item.slug} type="button" className={item.slug === project.slug ? "btn btn-primary" : "btn"} onClick={() => setProjectSlug(item.slug)}>{item.shortTitle}</button>)}
       </div>
     </div>
 
     <nav className="lab3d-mobile-steps" aria-label="3D Lab steps">
-      <button type="button" onClick={()=>scrollTo("lab-assemble")}>1 Assemble</button>
-      <button type="button" onClick={()=>scrollTo("lab-wire")}>2 Wire</button>
-      <button type="button" onClick={()=>scrollTo("lab-code")}>3 Program</button>
-      <button type="button" onClick={()=>scrollTo("lab-run")}>4 Run</button>
+      <button type="button" onClick={()=>document.getElementById("lab-assemble")?.scrollIntoView({behavior:"smooth"})}>1 Assemble</button>
+      <button type="button" onClick={()=>document.getElementById("lab-wire")?.scrollIntoView({behavior:"smooth"})}>2 Wire</button>
+      <button type="button" onClick={()=>document.getElementById("lab-code")?.scrollIntoView({behavior:"smooth"})}>3 Program</button>
+      <button type="button" onClick={()=>document.getElementById("lab-run")?.scrollIntoView({behavior:"smooth"})}>4 Run</button>
     </nav>
 
     <section className="lab3d-statusbar">
-      <div><span className="lab3d-live-dot" /> Interactive lab v0.2</div>
+      <div><span className="lab3d-live-dot" /> 3D Lab real-engine preview</div>
       <div className="lab3d-progress"><span style={{width:`${progress}%`}} /></div>
       <div>{progress}% ready · saved locally</div>
     </section>
 
-    <div className="lab3d-grid">
+    <Stem3DWebGLWorkbench project={project} placed={placed} connected={connected} ledOn={ledOn} pendingTerminal={pendingTerminal} onTerminalSelect={tapTerminal} />
+
+    <div className="lab3d-grid lab3d-grid-controls">
       <aside id="lab-assemble" className="lab3d-panel lab3d-parts-panel">
         <div className="eyebrow">1 · ASSEMBLE</div>
         <h2>Parts tray</h2>
-        <p className="small muted">Drag on desktop or tap Place on a phone. Parts snap only into their correct zones.</p>
-
+        <p className="small muted">Tap Place. The true WebGL scene above updates immediately.</p>
         <div className="lab3d-parts-list">
           {project.parts.map((part) => {
             const visual = partImage(part.componentSlug);
             const isPlaced = placed.includes(part.id);
-            return <div
-              key={part.id}
-              className={isPlaced ? "lab3d-part-card placed" : "lab3d-part-card"}
-              draggable={!isPlaced}
-              onDragStart={(event) => event.dataTransfer.setData("text/plain", part.id)}
-            >
-              <div className="lab3d-part-thumb">
-                {visual ? <img src={visual} alt="" draggable={false}/> : <span>3D</span>}
-              </div>
-              <div>
-                <strong>{part.label}</strong>
-                <small>{part.hint}</small>
-              </div>
-              <button type="button" className="lab3d-mini-btn" onClick={() => isPlaced ? removePart(part.id) : placePart(part.id)}>
-                {isPlaced ? "Remove" : "Place"}
-              </button>
+            return <div key={part.id} className={isPlaced ? "lab3d-part-card placed" : "lab3d-part-card"}>
+              <div className="lab3d-part-thumb">{visual ? <img src={visual} alt="" /> : <span>3D</span>}</div>
+              <div><strong>{part.label}</strong><small>{part.hint}</small></div>
+              <button type="button" className="lab3d-mini-btn" onClick={() => isPlaced ? removePart(part.id) : placePart(part.id)}>{isPlaced ? "Remove" : "Place"}</button>
             </div>;
           })}
         </div>
-
         <div className="lab3d-panel-actions">
           <button type="button" className="btn" onClick={autoAssemble}>Auto assemble demo</button>
           <button type="button" className="btn" onClick={reset}>Reset project</button>
@@ -325,73 +330,7 @@ export function Stem3DLabPrototype() {
       </aside>
 
       <section className="lab3d-workbench-column">
-        <div className="lab3d-toolbar">
-          <div>
-            <strong>3D workbench</strong>
-            <span>Tap labelled terminals to make a real project connection</span>
-          </div>
-          <div className="lab3d-view-controls">
-            <label>Rotate <input type="range" min="-28" max="28" value={angle} onChange={(event)=>setAngle(Number(event.target.value))}/></label>
-            <label>Tilt <input type="range" min="24" max="62" value={tilt} onChange={(event)=>setTilt(Number(event.target.value))}/></label>
-            <button type="button" className={exploded ? "lab3d-mini-btn active" : "lab3d-mini-btn"} onClick={()=>setExploded((value)=>!value)}>Exploded</button>
-            <button type="button" className="lab3d-mini-btn" onClick={openFullscreen}>Fullscreen</button>
-          </div>
-        </div>
-
-        <div className="lab3d-stage-wrap" ref={stageRef}>
-          <div
-            className={exploded ? "lab3d-plane exploded" : "lab3d-plane"}
-            style={{transform:`perspective(1000px) rotateX(${tilt}deg) rotateZ(${angle}deg)`}}
-          >
-            <div className="lab3d-grid-lines" aria-hidden="true" />
-            <div className="lab3d-table-label">STEMBuild Workbench · {project.shortTitle}</div>
-
-            {project.parts.map((part, index) => {
-              const isPlaced = placed.includes(part.id);
-              const visual = partImage(part.componentSlug);
-              return <div
-                key={part.id}
-                className={isPlaced ? `lab3d-snap-zone filled part-${part.id}` : "lab3d-snap-zone"}
-                style={{
-                  left:`${part.target.left}%`,
-                  top:`${part.target.top}%`,
-                  width:`${part.target.width}%`,
-                  height:`${part.target.height}%`,
-                  ["--explode-x" as string]: `${(index - (project.parts.length - 1) / 2) * 16}px`,
-                  ["--explode-y" as string]: `${index % 2 === 0 ? -20 : 20}px`,
-                }}
-                onDragOver={(event)=>event.preventDefault()}
-                onDrop={(event)=>handleDrop(event, part.id)}
-              >
-                {!isPlaced ? <><span className="lab3d-snap-plus">+</span><small>{part.label}</small></> :
-                  <>
-                    {visual ? <img src={visual} alt={part.label} draggable={false}/> : <div className="lab3d-model-placeholder">{part.label}</div>}
-                    <span className="lab3d-part-tag">{part.label}</span>
-                    {part.id === "led" ? <span className={ledOn ? "lab3d-led-glow on" : "lab3d-led-glow"} aria-label={ledOn ? "LED on" : "LED off"} /> : null}
-                  </>}
-              </div>;
-            })}
-
-            {project.terminals.map((terminal) => placed.includes(terminal.partId) ? <button
-              key={terminal.id}
-              type="button"
-              className={pendingTerminal === terminal.id ? "lab3d-terminal selected" : "lab3d-terminal"}
-              style={{left:`${terminal.left}%`,top:`${terminal.top}%`}}
-              onClick={()=>tapTerminal(terminal.id)}
-              aria-label={`Connect ${terminal.label}`}
-            >{terminal.label}</button> : null)}
-
-            <svg className="lab3d-wires" viewBox="0 0 1000 620" preserveAspectRatio="none" aria-hidden="true">
-              {project.connections.filter((wire)=>connected.includes(wire.id)).map((wire)=>
-                <path key={wire.id} d={wire.path} className={`wire ${wire.wireClass}`}/>
-              )}
-            </svg>
-          </div>
-          <div className="lab3d-stage-help">Tap one terminal, then its destination. Use Fullscreen on a phone for a larger workbench.</div>
-        </div>
-
         <div className="lab3d-message" role="status">{message}</div>
-
         <div id="lab-wire" className="lab3d-wire-panel">
           <div className="lab3d-wire-header">
             <div><div className="eyebrow">2 · WIRE</div><strong>Reviewed connections</strong></div>
@@ -413,9 +352,8 @@ export function Stem3DLabPrototype() {
       <aside id="lab-code" className="lab3d-panel lab3d-code-panel">
         <div className="eyebrow">3 · PROGRAM</div>
         <h2>Arduino sketch</h2>
-        <p className="small muted">Edit normal Arduino-style source. Your saved/exported .ino remains exactly this text.</p>
-
-        <textarea className="lab3d-code-editor" value={code} onChange={(event)=>{setCode(event.target.value);setRunning(false);}} spellCheck={false} aria-label="Arduino sketch editor"/>
+        <p className="small muted">The exported .ino remains your text. Full Firmware Mode mirrors standard Arduino .ino preprocessing by adding Arduino.h only when the browser compiler needs it.</p>
+        <textarea className="lab3d-code-editor" value={code} onChange={(event)=>{setCode(event.target.value);stopSimulation();}} spellCheck={false} aria-label="Arduino sketch editor"/>
 
         <div className="lab3d-code-checks">
           <div className={readiness.sketch.ok ? "lab3d-check ok" : "lab3d-check"}><span>{readiness.sketch.ok ? "✓" : "!"}</span><div><strong>Code mapping</strong><small>{readiness.sketch.ok ? "Code matches the reviewed pin map" : readiness.sketch.messages[0]}</small></div></div>
@@ -423,55 +361,53 @@ export function Stem3DLabPrototype() {
           <div className={placed.length === project.parts.length ? "lab3d-check ok" : "lab3d-check"}><span>{placed.length === project.parts.length ? "✓" : "!"}</span><div><strong>Assembly</strong><small>{placed.length}/{project.parts.length} parts placed</small></div></div>
         </div>
 
+        <div className="lab3d-engine-choice">
+          <button type="button" className={engineMode==="fast"?"active":""} onClick={()=>{stopSimulation();setEngineMode("fast");}}>
+            <strong>Fast Simulation</strong><span>Low-data · instant educational engine</span>
+          </button>
+          <button type="button" className={engineMode==="firmware"?"active":""} onClick={()=>{stopSimulation();setEngineMode("firmware");}}>
+            <strong>Full Firmware Mode</strong><span>Real AVR-GCC → Intel HEX → ATmega328P emulation</span>
+          </button>
+        </div>
+        {engineMode==="firmware" ? <div className="lab3d-firmware-note"><strong>Data notice:</strong> first use downloads a large browser compiler/toolchain (roughly 55 MB upstream assets). Choose Fast Simulation on limited data.</div> : null}
+
         <div id="lab-run" className="lab3d-run-section">
           <div className="eyebrow">4 · RUN</div>
           <div className="lab3d-run-controls">
-            <button type="button" className="btn btn-primary" onClick={runSimulation}>{running ? "Running…" : "▶ Run simulation"}</button>
-            <button type="button" className="btn" onClick={()=>setRunning(false)}>■ Stop</button>
+            <button type="button" className="btn btn-primary" onClick={runSimulation} disabled={firmwareStatus==="compiling"||firmwareStatus==="starting"}>
+              {firmwareStatus==="compiling" ? "Compiling real firmware…" : firmwareStatus==="starting" ? "Starting AVR emulator…" : running ? "Running…" : engineMode==="firmware" ? "▶ Compile & run firmware" : "▶ Run simulation"}
+            </button>
+            <button type="button" className="btn" onClick={()=>stopSimulation("Simulation stopped.")}>■ Stop</button>
           </div>
 
-          {project.inputMode === "button" ? <button
-            type="button"
-            className={buttonPressed ? "lab3d-virtual-button pressed" : "lab3d-virtual-button"}
-            disabled={!running || !readiness.ready}
-            onPointerDown={()=>setButtonPressed(true)}
-            onPointerUp={()=>setButtonPressed(false)}
-            onPointerCancel={()=>setButtonPressed(false)}
-            onPointerLeave={()=>setButtonPressed(false)}
-          ><span>{buttonPressed ? "Button pressed" : "Press and hold virtual button"}</span><small>D2 reads {buttonPressed ? "LOW" : "HIGH"}</small></button> : null}
+          {project.inputMode === "button" ? <button type="button" className={buttonPressed ? "lab3d-virtual-button pressed" : "lab3d-virtual-button"} disabled={!running || !readiness.ready} onPointerDown={()=>setButtonPressed(true)} onPointerUp={()=>setButtonPressed(false)} onPointerCancel={()=>setButtonPressed(false)} onPointerLeave={()=>setButtonPressed(false)}>
+            <span>{buttonPressed ? "Button pressed" : "Press and hold virtual button"}</span><small>D2 reads {buttonPressed ? "LOW" : "HIGH"}</small>
+          </button> : null}
 
           <div className={running && readiness.ready ? "lab3d-sim-card running" : "lab3d-sim-card"}>
             <div><span className={ledOn ? "sim-led on" : "sim-led"} /><strong>Virtual LED</strong></div>
             <span>{running && readiness.ready ? (ledOn ? "D8 HIGH" : "D8 LOW") : "Stopped"}</span>
           </div>
 
-          {running && readiness.ready ? <div className="lab3d-success">
-            <strong>Simulation running successfully ✓</strong>
-            <span>{project.inputMode === "button" ? "The virtual input and output are responding to the mapped Arduino code." : "The LED state is responding to the mapped Arduino code and timing."}</span>
-          </div> : null}
+          {firmwareMeta && engineMode==="firmware" ? <div className="lab3d-firmware-result"><strong>Real firmware compiled ✓</strong><span>{firmwareMeta.flashBytes.toLocaleString()} flash bytes · {(firmwareMeta.compileMs/1000).toFixed(1)} s compile</span></div> : null}
+          {firmwareError ? <div className="notice"><strong>Full Firmware Mode error:</strong> {firmwareError}</div> : null}
         </div>
 
         <div className="lab3d-export">
           <div className="eyebrow">TAKE IT TO THE REAL WORLD</div>
-          <p className="small">Use the same source on the physical Arduino Uno with the same reviewed wiring.</p>
-          <div className="inline">
-            <button type="button" className="btn" onClick={copyCode}>Copy code</button>
-            <button type="button" className="btn" onClick={downloadSketch}>Download .ino</button>
-          </div>
+          <p className="small">Copy/download the same Arduino sketch and use the same reviewed wiring on the physical Uno. Simulation success does not replace physical validation.</p>
+          <div className="inline"><button type="button" className="btn" onClick={copyCode}>Copy code</button><button type="button" className="btn" onClick={downloadSketch}>Download .ino</button></div>
         </div>
       </aside>
     </div>
 
     <section className="lab3d-parity">
-      <div>
-        <div className="eyebrow">SIMULATION-TO-HARDWARE PARITY</div>
-        <h2>What v0.2 proves</h2>
-      </div>
+      <div><div className="eyebrow">REAL ENGINE LAYER</div><h2>What changed</h2></div>
       <div className="lab3d-parity-grid">
-        <div><strong>✓ More than one project</strong><span>LED Blink and Push-Button Light share the same lab engine.</span></div>
-        <div><strong>✓ Direct wiring interaction</strong><span>Learners can tap virtual terminals instead of only pressing a Connect button.</span></div>
-        <div><strong>✓ Save & resume</strong><span>Assembly, wiring and code are stored locally on the learner's device.</span></div>
-        <div className="prototype"><strong>Next: true firmware + CAD</strong><span>The next engine layer is real AVR compilation/emulation and verified GLB/CAD parts.</span></div>
+        <div><strong>✓ True WebGL</strong><span>Three.js renders dimensioned 3D parts, orbit/zoom, 3D wires and clickable pin nodes.</span></div>
+        <div><strong>✓ glTF/CAD path</strong><span>The Uno and breadboard load as reusable glTF assets; smaller parts use dimensioned procedural CAD geometry.</span></div>
+        <div><strong>✓ Real AVR compilation</strong><span>Full Firmware Mode compiles Arduino source into Intel HEX with AVR-GCC/WebAssembly.</span></div>
+        <div><strong>✓ ATmega328P execution</strong><span>AVR8js executes the compiled machine code; D8 output and D2 input drive the virtual hardware.</span></div>
       </div>
     </section>
   </div>;
