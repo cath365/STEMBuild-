@@ -111,3 +111,33 @@ test('AVR engine drives D8 from real machine instructions and Stop resets output
   await expect(page.locator('.lab3d-sim-card')).toContainText('Stopped');
   await expect(page.locator('.sim-led')).not.toHaveClass(/on/);
 });
+
+test('robot assembly gates motion, obstacle controls work and Stop freezes position',async({page})=>{
+ await page.goto('/3d-lab');
+ const arena=page.locator('#robot-arena');
+ if(process.env.TEST_THREE_BUNDLES){
+  await page.route('https://esm.sh/three@0.180.0',async r=>r.fulfill({contentType:'text/javascript',body:await readFile(`${process.env.TEST_THREE_BUNDLES}/three.js`,'utf8')}));
+  await page.route('https://esm.sh/three@0.180.0/examples/jsm/controls/OrbitControls.js',async r=>r.fulfill({contentType:'text/javascript',body:await readFile(`${process.env.TEST_THREE_BUNDLES}/orbit.js`,'utf8')}));
+  await arena.getByRole('button',{name:'Launch robot 3D',exact:true}).click();
+  await expect(arena.getByText('3D arena · orbit and zoom in 3D.',{exact:false})).toBeVisible();
+  await expect(arena.locator('.robot-view canvas')).toBeVisible();
+ }
+ await expect(arena.getByRole('button',{name:'Start robot',exact:true})).toBeDisabled();
+ for(const c of await arena.getByRole('checkbox').all())await c.check();
+ await arena.getByRole('button',{name:'Add block',exact:true}).click();
+ await expect(arena).toContainText('2/20 obstacles');
+ const robot=arena.locator('.robot-map g');const before=await robot.getAttribute('transform');
+ await arena.getByRole('button',{name:'Start robot',exact:true}).click();
+ await expect.poll(()=>robot.getAttribute('transform')).not.toBe(before);
+ if(process.env.TEST_THREE_BUNDLES)await expect.poll(()=>arena.locator('.robot-view canvas').getAttribute('data-robot-position')).not.toBe('[0,65]');
+ await expect(arena.getByRole('button',{name:'Add block',exact:true})).toBeDisabled();
+ await arena.getByRole('button',{name:'Stop robot',exact:true}).click();
+ const stopped=await robot.getAttribute('transform');await page.waitForTimeout(150);
+ expect(await robot.getAttribute('transform')).toBe(stopped);
+ await arena.getByRole('button',{name:'Reset robot',exact:true}).click();
+ expect(await robot.getAttribute('transform')).toBe(before);
+ await arena.locator('input[type=range]').fill('32');
+ const download=page.waitForEvent('download');await arena.getByRole('button',{name:'Download robot .ino'}).click();
+ expect((await download).suggestedFilename()).toBe('stembuild-obstacle-robot.ino');
+ if(process.env.TEST_THREE_BUNDLES){await arena.getByRole('button',{name:'Close robot 3D',exact:true}).click();await expect(arena.locator('.robot-view canvas')).toHaveCount(0);}
+});

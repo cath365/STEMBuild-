@@ -465,3 +465,13 @@
 .lab3d-light-preview { min-width:0; grid-template-columns:minmax(0,1fr); }
 .lab3d-light-preview-stage { width:100%; min-width:0; }
 @media(max-width:480px) { .lab3d-light-preview-stage { aspect-ratio:auto; height:300px; } }
+
+.robot-lab {margin:48px 0;padding-top:32px;border-top:1px solid #dbe3ec}
+.robot-lab-grid {display:grid;grid-template-columns:minmax(240px,1fr) minmax(0,2fr);gap:24px}
+.robot-check {display:flex;gap:10px;align-items:flex-start;margin:12px 0;font-size:14px}
+.robot-check input {margin-top:4px;flex-shrink:0}
+.robot-view {height:380px;border:1px solid #dbe3ec;border-radius:16px;overflow:hidden;background:#edf2f7}
+.robot-map {display:block;width:100%;max-width:300px;aspect-ratio:1;cursor:crosshair;margin:16px 0;touch-action:manipulation}
+.robot-code {white-space:pre-wrap;overflow-wrap:anywhere;background:#142536;color:#e2edf5;padding:16px;border-radius:12px;font-size:12px}
+.robot-lab input[type=range] {display:block;width:100%;margin:12px 0}
+@media(max-width:760px){.robot-lab-grid{grid-template-columns:minmax(0,1fr)}.robot-view{height:300px}}
