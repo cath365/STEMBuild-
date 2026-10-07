@@ -140,3 +140,15 @@
   .build-part>.component-visual-compact .component-visual-image,.build-part>.component-visual-missing{height:68px;min-height:68px}
   .build-part>.component-visual-compact .component-visual-image img{height:56px;max-height:56px}
 }
+
+.component-learning-gallery{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:18px}
+.component-learning-visual{margin:0;border:1px solid var(--border);border-radius:9px;overflow:hidden;background:#fff}
+.component-learning-visual img{display:block;width:100%;height:240px;object-fit:contain;background:#f8fafb}
+.component-learning-visual figcaption{padding:12px}
+.component-learning-visual figcaption p{font-size:13px;line-height:1.6;margin:8px 0 0}
+.component-admin-media{display:grid;grid-template-columns:260px minmax(0,1fr);gap:22px;align-items:start}
+.component-admin-media>img{display:block;width:100%;height:220px;object-fit:contain;border:1px solid var(--border);border-radius:8px;background:#f8fafb}
+.component-coverage-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.component-coverage-item{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:12px;border:1px solid var(--border);border-radius:8px;background:#fff;font-size:12px}
+@media(max-width:900px){.component-coverage-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){.component-admin-media{grid-template-columns:1fr}.component-admin-media>img{height:260px}.component-learning-gallery,.component-coverage-grid{grid-template-columns:1fr}}
