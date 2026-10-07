@@ -99,3 +99,6 @@
   .build-step-nav{flex-direction:column-reverse}
   .build-step-nav .btn{width:100%}
 }
+
+.public-header nav{flex-wrap:wrap;justify-content:flex-end}
+@media(max-width:760px){.public-header nav{justify-content:flex-start;row-gap:10px}}
