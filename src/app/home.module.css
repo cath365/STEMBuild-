@@ -142,3 +142,21 @@
 @media (max-width: 360px) {
   .heroCopy h1 { font-size: clamp(29px, 8.6vw, 32px); }
 }
+
+/* Discover the 3D Lab immediately, while preserving the existing projects and curriculum. */
+.labSpotlight { padding: 34px 0; border-bottom: 1px solid #e2e7ed; background: #fff; }
+.labSpotlight .container { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, .8fr); gap: 32px; align-items: center; }
+.spotlightCopy { min-width: 0; }
+.spotlightCopy h2 { font-family: var(--display-font); text-transform: uppercase; font-size: clamp(27px, 3vw, 40px); line-height: 1.12; letter-spacing: -.052em; font-weight: 400; color: #1f2838; }
+.spotlightCopy > p:not(.kicker) { color: #586271; font-size: 14px; line-height: 1.7; max-width: 640px; margin: 12px 0; }
+.spotlightLink { display: inline-flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 800; color: #0b3d91; min-height: 44px; text-decoration: underline; text-underline-offset: 4px; }
+.spotlightSteps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.spotlightSteps > span { display: flex; flex-direction: column; gap: 10px; min-width: 0; border: 1px solid #dce6f0; background: #f6f9ff; border-radius: 10px; padding: 14px; font-size: 13px; font-weight: 750; color: #263345; }
+.spotlightSteps strong { font-family: var(--display-font); font-size: 23px; color: #0b3d91; letter-spacing: -.04em; }
+@media (max-width: 760px) {
+  .labSpotlight { padding: 28px 0; }
+  .labSpotlight .container { grid-template-columns: 1fr; gap: 18px; }
+  .spotlightCopy h2 { font-size: clamp(25px, 6.7vw, 34px); }
+  .spotlightSteps { gap: 8px; }
+  .spotlightSteps > span { padding: 12px; }
+}
