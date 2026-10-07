@@ -47,9 +47,9 @@ export default function Home() {
             <input id="topic-search" placeholder="Search learning topics" value={query} onChange={(event) => setQuery(event.target.value)} type="search" />
             <button type="submit" className={styles.srOnly}>Search topics</button>
           </form>
-          <nav className={styles.desktopNav} aria-label="Main navigation"><Link href="/projects">Projects</Link><Link href="/components">Components</Link><a href="#teachers">Teachers</a></nav>
+          <nav className={styles.desktopNav} aria-label="Main navigation"><Link href="/learning-paths/first-robot">First robot path</Link><Link href="/projects">Projects</Link><Link href="/components">Components</Link><a href="#teachers">Teachers</a></nav>
           <Link className={styles.signIn} href="/login">Sign in</Link>
-          <details className={styles.mobileMenu}><summary>Menu</summary><nav aria-label="Mobile navigation"><Link href="/projects">Projects</Link><Link href="/components">Components</Link><a href="#topics">Learning areas</a><a href="#teachers">For teachers</a></nav></details>
+          <details className={styles.mobileMenu}><summary>Menu</summary><nav aria-label="Mobile navigation"><Link href="/learning-paths/first-robot">First robot path</Link><Link href="/projects">Projects</Link><Link href="/components">Components</Link><a href="#topics">Learning areas</a><a href="#teachers">For teachers</a></nav></details>
         </div>
       </header>
 
@@ -62,7 +62,7 @@ export default function Home() {
                 <p className={styles.kicker}>LEARN BY BUILDING REAL THINGS</p>
                 <h1 id="hero-title">What do you want to<br/><span>build today?</span></h1>
                 <p>Choose a project. STEMBuild helps you understand the parts, connect them safely, write the code, test what happens and fix problems one step at a time.</p>
-                <div className="inline"><Link className={styles.primaryButton} href="/projects">Choose a project <span aria-hidden="true">→</span></Link><Link className="btn" href="/components">I already have components</Link></div>
+                <div className="inline"><Link className={styles.primaryButton} href="/learning-paths/first-robot">Follow the First Robot Path <span aria-hidden="true">→</span></Link><Link className="btn" href="/projects">Choose any project</Link><Link className="btn" href="/components">I already have components</Link></div>
                 <div className={styles.heroNote}>Beginner friendly <span aria-hidden="true">·</span> Real hardware <span aria-hidden="true">·</span> Honest evidence <span aria-hidden="true">·</span> Teacher support</div>
               </div>
               <figure className={styles.heroFigure}>
@@ -86,7 +86,7 @@ export default function Home() {
                 <span className="text-link">Open Build Mode →</span>
               </Link>)}
             </div>
-            <div className="inline" style={{marginTop:20}}><Link className="btn btn-primary" href="/projects">See all projects</Link><Link className="btn" href="/components">Find projects from my components</Link></div>
+            <div className="inline" style={{marginTop:20}}><Link className="btn btn-primary" href="/learning-paths/first-robot">Follow the First Robot Path</Link><Link className="btn" href="/projects">See all projects</Link><Link className="btn" href="/components">Find projects from my components</Link></div>
           </div>
         </section>
 
