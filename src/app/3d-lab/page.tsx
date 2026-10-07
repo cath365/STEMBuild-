@@ -2,9 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PublicHeader } from "@/components/public-header";
 import { PublicFooter } from "@/components/public-footer";
-import { RobotCADWorkspace } from "@/components/robot-cad-workspace";
-import { RobotArena } from "@/components/robot-arena";
-import { Stem3DLabPrototype } from "@/components/stem-3d-lab-prototype";
+import { LabModeSelector } from "@/components/lab-mode-selector";
 
 export const metadata: Metadata = {
   title: "3D Lab",
@@ -17,9 +15,9 @@ export default function ThreeDLabPage() {
     <main>
       <section className="lab3d-hero">
         <div className="container">
-          <div className="eyebrow">STEMBUILD 3D LAB · REAL ENGINE PREVIEW</div>
-          <h1>Build it in 3D.<br/><span>Run the firmware. Take it outside.</span></h1>
-          <p className="lead">The lab now combines a true WebGL workbench with dimensioned 3D parts and two simulation choices: a fast low-data learning engine, or an opt-in Full Firmware Mode that compiles Arduino Uno source to real AVR machine code and executes it in an ATmega328P emulator.</p>
+          <div className="eyebrow">STEMBUILD 3D LAB · LEARN BY MAKING</div>
+          <h1>Build it in 3D.<br/><span>Understand how it works.</span></h1>
+          <p className="lead">Start with an Arduino circuit, build a robot or adjust a 3D assembly. Choose a workspace, test what the models support and take your code or design to real hardware. Fast learning mode works without downloading the optional firmware compiler.</p>
           <div className="inline" style={{marginTop:18}}>
             <a className="btn btn-primary" href="#workbench">Open the 3D workbench</a>
             <Link className="btn" href="/learning-paths/first-robot">First Robot Path</Link>
@@ -28,9 +26,7 @@ export default function ThreeDLabPage() {
       </section>
 
       <section id="workbench" className="container lab3d-section">
-        <Stem3DLabPrototype />
-        <RobotCADWorkspace />
-        <RobotArena />
+        <LabModeSelector />
       </section>
 
       <section className="container lab3d-next-section">
