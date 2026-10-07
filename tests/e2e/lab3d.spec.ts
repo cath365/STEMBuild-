@@ -153,3 +153,23 @@ test('robot assembly gates motion, obstacle controls work and Stop freezes posit
  expect((await download).suggestedFilename()).toBe('stembuild-obstacle-robot.ino');
  if(process.env.TEST_THREE_BUNDLES){await arena.getByRole('button',{name:'Close robot 3D',exact:true}).click();await expect(arena.locator('.robot-view canvas')).toHaveCount(0);}
 });
+
+test('CAD workspace edits real 3D parts, undo/redo and device save restore assemblies',async({page})=>{
+ const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
+ if(process.env.TEST_THREE_BUNDLES){
+  const root=process.env.TEST_THREE_BUNDLES;
+  await page.route('https://esm.sh/three@0.180.0',async r=>r.fulfill({contentType:'text/javascript',body:await readFile(`${root}/three.js`,'utf8')}));
+  for(const [name,file]of [['OrbitControls','orbit'],['TransformControls','transform']])await page.route(`https://esm.sh/three@0.180.0/examples/jsm/controls/${name}.js`,async r=>r.fulfill({contentType:'text/javascript',body:await readFile(`${root}/${file}.js`,'utf8')}));
+ }
+ await page.goto('/3d-lab');const cad=page.locator('#robot-cad');
+ if(process.env.TEST_THREE_BUNDLES){await cad.getByRole('button',{name:'Launch CAD workspace',exact:true}).click();await expect(cad).toContainText('3D assembly ready.');}
+ const x=cad.getByLabel('X offset (cm)',{exact:true});await x.fill('4');
+ if(process.env.TEST_THREE_BUNDLES){await expect(cad.locator('canvas')).toHaveAttribute('data-cad-offset','[4,0,0]');await expect(cad.locator('canvas')).toHaveAttribute('data-cad-position','[4,7.5,-4]');}
+ await cad.getByRole('button',{name:'Undo CAD edit',exact:true}).click();await expect(x).toHaveValue('0');
+ await cad.getByRole('button',{name:'Redo CAD edit',exact:true}).click();await expect(x).toHaveValue('4');
+ await cad.getByRole('button',{name:'Save assembly',exact:true}).click();await cad.getByRole('button',{name:'Snap to reference mount',exact:true}).click();await expect(x).toHaveValue('0');
+ await cad.getByRole('button',{name:'Load assembly',exact:true}).click();await expect(x).toHaveValue('4');
+ if(process.env.TEST_THREE_BUNDLES){await cad.getByRole('button',{name:'Top view',exact:true}).click();await cad.getByRole('button',{name:'Check electronics overlap',exact:true}).click();await expect(cad).toContainText('Possible electronics overlap:');await x.fill('12');await cad.getByRole('button',{name:'Check electronics overlap',exact:true}).click();await expect(cad).toContainText('No electronics bounding-box overlaps detected.');await cad.getByRole('button',{name:'Close CAD view',exact:true}).click();await expect(cad.locator('canvas')).toHaveCount(0);}
+ const dl=page.waitForEvent('download');await cad.getByRole('button',{name:'Export assembly',exact:true}).click();expect((await dl).suggestedFilename()).toBe('stembuild-robot-assembly.json');
+ expect(errors).toEqual([]);
+});

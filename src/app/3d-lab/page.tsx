@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PublicHeader } from "@/components/public-header";
 import { PublicFooter } from "@/components/public-footer";
+import { RobotCADWorkspace } from "@/components/robot-cad-workspace";
 import { RobotArena } from "@/components/robot-arena";
 import { Stem3DLabPrototype } from "@/components/stem-3d-lab-prototype";
 
@@ -28,6 +29,7 @@ export default function ThreeDLabPage() {
 
       <section id="workbench" className="container lab3d-section">
         <Stem3DLabPrototype />
+        <RobotCADWorkspace />
         <RobotArena />
       </section>
 
