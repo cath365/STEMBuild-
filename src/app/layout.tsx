@@ -1,9 +1,13 @@
 import type { Metadata } from "next";
+import { Archivo_Black } from "next/font/google";
 import "./globals.css";
 import "./brand.css";
 import "./learn.css";
 import { PwaRegister } from "@/components/pwa-register";
 import { ConnectivityStatus } from "@/components/connectivity-status";
+
+// The bold display type is self-hosted by Next.js and used only for editorial headings.
+const posterDisplay = Archivo_Black({ weight: "400", subsets: ["latin"], display: "swap", variable: "--font-stembuild-display" });
 
 export const metadata: Metadata = {
   title: { default: "STEMBuild: Robotics & IoT", template: "%s | STEMBuild" },
@@ -19,5 +23,5 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en"><body><PwaRegister /><ConnectivityStatus />{children}</body></html>;
+  return <html lang="en" className={posterDisplay.variable}><body><PwaRegister /><ConnectivityStatus />{children}</body></html>;
 }
