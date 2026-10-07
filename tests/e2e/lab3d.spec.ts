@@ -115,6 +115,7 @@ test('AVR engine drives D8 from real machine instructions and Stop resets output
 
 test('robot assembly gates motion, obstacle controls work and Stop freezes position',async({page})=>{
  await page.goto('/3d-lab');
+ await page.getByRole('tab',{name:/Robot Builder/}).click();
  const arena=page.locator('#robot-arena');
  if(process.env.TEST_THREE_BUNDLES){
   await page.route('https://esm.sh/three@0.180.0',async r=>r.fulfill({contentType:'text/javascript',body:await readFile(`${process.env.TEST_THREE_BUNDLES}/three.js`,'utf8')}));
@@ -161,7 +162,7 @@ test('CAD workspace edits real 3D parts, undo/redo and device save restore assem
   await page.route('https://esm.sh/three@0.180.0',async r=>r.fulfill({contentType:'text/javascript',body:await readFile(`${root}/three.js`,'utf8')}));
   for(const [name,file]of [['OrbitControls','orbit'],['TransformControls','transform']])await page.route(`https://esm.sh/three@0.180.0/examples/jsm/controls/${name}.js`,async r=>r.fulfill({contentType:'text/javascript',body:await readFile(`${root}/${file}.js`,'utf8')}));
  }
- await page.goto('/3d-lab');const cad=page.locator('#robot-cad');
+ await page.goto('/3d-lab');await page.getByRole('tab',{name:/CAD Workspace/}).click();const cad=page.locator('#robot-cad');
  if(process.env.TEST_THREE_BUNDLES){await cad.getByRole('button',{name:'Launch CAD workspace',exact:true}).click();await expect(cad).toContainText('3D assembly ready.');}
  const x=cad.getByLabel('X offset (cm)',{exact:true});await x.fill('4');
  if(process.env.TEST_THREE_BUNDLES){await expect(cad.locator('canvas')).toHaveAttribute('data-cad-offset','[4,0,0]');await expect(cad.locator('canvas')).toHaveAttribute('data-cad-position','[4,7.5,-4]');}
