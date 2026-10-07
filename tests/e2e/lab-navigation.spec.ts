@@ -10,7 +10,7 @@ test("home highlights the 3D Lab and it opens in low-data Circuit Builder mode",
   await expect(launch).toBeVisible();
   await launch.click();
 
-  await expect(page).toHaveURL(/\\/3d-lab/);
+  await expect(page).toHaveURL(/3d-lab/);
   await expect(page.getByRole("tab", { name: /Circuit Builder/ })).toHaveAttribute("aria-selected", "true");
   await expect(page.getByRole("tabpanel", { name: /Circuit Builder/ })).toBeVisible();
   await expect(page.getByRole("tabpanel", { name: /Robot Builder/ })).toBeHidden();
