@@ -4,7 +4,7 @@ import {createRobotModels} from '@/lib/robot-models';
 import {useEffect,useRef,useState} from 'react';
 import { robotMounts, validateRobotCircuit } from '@/lib/robot-circuit';
 import { ROBOT_PROJECT_KEY, parseSavedRobotProject, type RobotBuilderSnapshot, type SavedRobotProject } from '@/lib/robot-save';
-import {collides,initialRobot,robotParts,robotSketch,stepRobot,type Obstacle} from '@/lib/robot-arena';
+import {collides,initialRobot,repositionObstacle,robotParts,robotSketch,stepRobot,type Obstacle} from '@/lib/robot-arena';
 
 export function RobotArena({active=true}:{active?:boolean}){
  const [parts,setParts]=useState<string[]>([]),[wiringReady,setWiringReady]=useState(false);
@@ -113,13 +113,8 @@ export function RobotArena({active=true}:{active?:boolean}){
   void boot();return ()=>{dead=true;inspect.current=null;cancelAnimationFrame(raf);observer?.disconnect();controls?.dispose();scene?.traverse((o:any)=>{o.geometry?.dispose();o.material?.map?.dispose();o.material?.dispose();});renderer?.dispose();renderer?.domElement?.remove();};
  },[show3D]);
  function moveBlock(id:number,x:number,z:number){
-  if(running||!Number.isFinite(x)||!Number.isFinite(z))return;
-  const nextX=Math.max(-78,Math.min(78,x)),nextZ=Math.max(-78,Math.min(78,z));
-  if(collides(robot.x,robot.z,[{id,x:nextX,z:nextZ,size:22}]))return;
-  setBlocks(current=>{
-   if(current.some(block=>block.id!==id&&Math.abs(block.x-nextX)<23&&Math.abs(block.z-nextZ)<23))return current;
-   return current.map(block=>block.id===id?{...block,x:nextX,z:nextZ}:block);
-  });
+  if(running)return;
+  setBlocks(current=>repositionObstacle(current,id,x,z,robot));
  }
  function arenaPoint(event:React.PointerEvent<SVGSVGElement>){
   const rect=event.currentTarget.getBoundingClientRect();
