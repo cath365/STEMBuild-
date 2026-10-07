@@ -95,7 +95,7 @@ export default async function AiLabCoachPage({ searchParams }: { searchParams: P
 
             {!superseded ? <div style={{marginTop:16}}>
               <div className="eyebrow">GUIDE</div>
-              {!step.hintRevealedAt ? <form action={revealAiLabCoachHint.bind(null, step.id)} style={{marginTop:8}}><button className="btn">Request a teaching hint</button></form> : <div className="card card-muted" style={{marginTop:8}}><div className="inline"><span className="badge">AI teaching hint</span></div><p style={{marginBottom:0}}>{step.hint}</p></div>}
+              {!step.hintRevealedAt ? <form action={revealAiLabCoachHint.bind(null, step.id)} style={{marginTop:8}}><button className="btn">Request a teaching hint</button></form> : <div className="card card-muted" style={{marginTop:8}}><div className="inline"><span className="badge">{step.sourceMode === "ai-gateway" ? "AI teaching hint" : "Approved teaching hint"}</span></div><p style={{marginBottom:0}}>{step.hint}</p></div>}
             </div> : null}
 
             {!superseded && step.status !== "VERIFIED" && (isNext || step.status === "NEEDS_HELP") ? <form action={submitAiLabCoachCheck.bind(null, step.id)} className="form" style={{marginTop:18}}>

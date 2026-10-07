@@ -171,6 +171,32 @@ const componentCatalog = [
   ["Battery pack", "power", "Motor-appropriate battery pack with switch."],
 ] as const;
 
+function robotCode(board: "uno" | "esp32") {
+  const pins = board === "uno" ? "L1=5,L2=6,R1=9,R2=10,TRIG=7,ECHO=8" : "L1=25,L2=26,R1=27,R2=14,TRIG=18,ECHO=19";
+  return `// Starter firmware: validate wiring with wheels lifted before ground tests.
+// L298N ENA/ENB must be enabled using the module's jumpers. Separate motor supply, common ground.
+const int ${pins};
+void stopMotors(){ digitalWrite(L1,LOW); digitalWrite(L2,LOW); digitalWrite(R1,LOW); digitalWrite(R2,LOW); }
+void forward(){ digitalWrite(L1,HIGH); digitalWrite(L2,LOW); digitalWrite(R1,HIGH); digitalWrite(R2,LOW); }
+void turnRight(){ digitalWrite(L1,HIGH); digitalWrite(L2,LOW); digitalWrite(R1,LOW); digitalWrite(R2,HIGH); }
+long readDistanceCm(){
+  digitalWrite(TRIG,LOW); delayMicroseconds(2); digitalWrite(TRIG,HIGH); delayMicroseconds(10); digitalWrite(TRIG,LOW);
+  unsigned long duration=pulseIn(ECHO,HIGH,30000UL);
+  return duration ? duration / 58 : -1;
+}
+void setup(){
+  pinMode(L1,OUTPUT); pinMode(L2,OUTPUT); pinMode(R1,OUTPUT); pinMode(R2,OUTPUT);
+  pinMode(TRIG,OUTPUT); pinMode(ECHO,INPUT); stopMotors(); delay(2000);
+}
+void loop(){
+  long distanceCm=readDistanceCm();
+  if(distanceCm<0){ stopMotors(); delay(200); return; } // Missing sensor data never means clear path.
+  if(distanceCm<20){ stopMotors(); delay(200); turnRight(); delay(300); stopMotors(); }
+  else { forward(); }
+  delay(50);
+}`;
+}
+
 function codeFor(slug: string, board: "uno" | "esp32") {
   const ledPin = board === "uno" ? "13" : "2";
   const buttonPin = board === "uno" ? "2" : "4";
@@ -186,7 +212,7 @@ function codeFor(slug: string, board: "uno" | "esp32") {
     "sensors": `const int SENSOR_PIN=${analogPin}; const int LED_PIN=${ledPin};\nvoid setup(){ Serial.begin(115200); pinMode(LED_PIN,OUTPUT); }\nvoid loop(){ int value=analogRead(SENSOR_PIN); Serial.println(value); digitalWrite(LED_PIN, value > ${board === "uno" ? "500" : "2000"}); delay(100); }`,
     "motors-and-motor-drivers": `const int IN1=${motorA[0]}, IN2=${motorA[1]};\nvoid setup(){ pinMode(IN1,OUTPUT); pinMode(IN2,OUTPUT); }\nvoid loop(){ digitalWrite(IN1,HIGH); digitalWrite(IN2,LOW); delay(1500); digitalWrite(IN1,LOW); digitalWrite(IN2,LOW); delay(500); digitalWrite(IN1,LOW); digitalWrite(IN2,HIGH); delay(1500); digitalWrite(IN1,LOW); digitalWrite(IN2,LOW); delay(1000); }`,
     "microcontroller-programming": `const int LED_A=${ledPin}; const int LED_B=${board === "uno" ? "12" : "5"}; const int INPUT_PIN=${buttonPin};\nvoid setup(){ Serial.begin(115200); pinMode(LED_A,OUTPUT); pinMode(LED_B,OUTPUT); pinMode(INPUT_PIN,INPUT_PULLUP); }\nvoid loop(){ bool active=digitalRead(INPUT_PIN)==LOW; setOutputs(active); Serial.println(active ? "ACTIVE" : "IDLE"); delay(100); }\nvoid setOutputs(bool active){ digitalWrite(LED_A,active); digitalWrite(LED_B,!active); }`,
-    "build-a-simple-robot": `const int L1=${motorA[0]}, L2=${motorA[1]}, R1=${motorB[0]}, R2=${motorB[1]};\n// Add your tested distance-reading function for the ultrasonic sensor.\nvoid setup(){ pinMode(L1,OUTPUT); pinMode(L2,OUTPUT); pinMode(R1,OUTPUT); pinMode(R2,OUTPUT); }\nvoid loop(){ long distanceCm = readDistanceCm(); if(distanceCm > 0 && distanceCm < 20){ stopMotors(); delay(200); turnRight(); delay(500); } else { forward(); } }\n// Implement readDistanceCm(), forward(), turnRight() and stopMotors() from your verified subsystem tests.`,
+    "build-a-simple-robot": robotCode(board),
   };
   return snippets[slug] ?? "// This lesson is hardware-neutral. Record observations and verify connections before applying power.";
 }
@@ -226,6 +252,7 @@ async function resetDemoData() {
 }
 
 async function main() {
+  if (process.env.NODE_ENV === "production" && process.env.ALLOW_DEMO_SEED !== "true") throw new Error("DEMO seeding is disabled in production.");
   await resetDemoData();
 
   const school = await db.school.create({
@@ -340,7 +367,7 @@ async function main() {
   const lessonIds: string[] = [];
   for (let index = 0; index < lessons.length; index++) {
     const source = lessons[index];
-    const module = await db.module.create({
+    const courseModule = await db.module.create({
       data: { courseId: course.id, title: `Module ${index + 1}: ${source.module}`, slug: `module-${index + 1}-${source.slug}`, description: source.objective, order: index + 1 },
     });
 
@@ -356,7 +383,7 @@ async function main() {
 
     const lesson = await db.lesson.create({
       data: {
-        moduleId: module.id,
+        moduleId: courseModule.id,
         title: source.module,
         slug: source.slug,
         objective: source.objective,
@@ -610,7 +637,7 @@ void loop(){
       },
     ],
   });
-  const showcaseVariantRows = await db.lessonHardwareVariant.findMany({ where: { lessonId: showcaseLesson.id }, select: { id: true } });
+  const showcaseVariantRows = await db.lessonHardwareVariant.findMany({ where: { lessonId: showcaseLesson.id }, select: { id: true, hardwarePlatformId: true, codeSnippet: true } });
   for (const variant of showcaseVariantRows) {
     await db.variantComponent.createMany({
       data: showcaseComponents.map((name) => ({ variantId: variant.id, componentId: components.get(name)!, quantity: name === "LED" || name === "330 ohm resistor" ? 2 : 1, notes: name === "Piezo buzzer" ? "Optional" : name === "10k ohm resistor" ? "Use if required by the exact sensor version/module." : null })),
@@ -638,7 +665,7 @@ void loop(){
             gpioMappings: "DHT DATA D2 | Green LED D8 | Red LED D9 | Optional buzzer D10",
             codeLanguage: "Arduino C++",
             programmingFramework: "Arduino IDE + DHT sensor library",
-            sourceCode: "Use the tested Arduino Uno code from the Smart Environment Monitor lesson. Keep the sampling interval at about two seconds and reject invalid sensor reads.",
+            sourceCode: showcaseVariantRows.find((v) => v.hardwarePlatformId === hardware.get("arduino-uno"))!.codeSnippet,
             uploadProcedure: "Select Arduino Uno, correct port, compile/upload, then verify readings in Serial Monitor at 9600 baud.",
             expectedOutput: "At least three recorded temperature/humidity readings plus visible LED-state evidence or honest fault evidence.",
             troubleshooting: "Verify sensor type/pinout, VCC/GND/D2, required pull-up, library installation and sampling interval.",
@@ -650,7 +677,7 @@ void loop(){
             gpioMappings: "DHT DATA GPIO4 | Green LED GPIO18 | Red LED GPIO19 | Optional buzzer GPIO23",
             codeLanguage: "Arduino C++",
             programmingFramework: "Arduino IDE + ESP32 core + DHT sensor library",
-            sourceCode: "Use the tested ESP32 code from the Smart Environment Monitor lesson first. Only after local readings are validated should an advanced learner add Wi-Fi/HTTPS transport as a separate extension.",
+            sourceCode: showcaseVariantRows.find((v) => v.hardwarePlatformId === hardware.get("esp32"))!.codeSnippet,
             uploadProcedure: "Select the exact ESP32 board and port, compile/upload, verify local readings at 115200 baud, then optionally explore authenticated dashboard telemetry as a separate advanced exercise.",
             expectedOutput: "At least three recorded temperature/humidity readings plus visible indicator evidence. Optional telemetry is not required for completion.",
             troubleshooting: "Verify 3.3 V-safe wiring, GPIO4, sensor type, library/toolchain and serial readings before adding any network code.",
@@ -676,11 +703,11 @@ void loop(){
         {
           hardwarePlatformId: hardware.get("arduino-uno")!,
           notes: "5 V Uno control logic. Keep motor power separate from the board.",
-          wiringInstructions: "Connect both DC motors to the L298N outputs. Tie L298N GND to Uno GND. Connect IN1/IN2/IN3/IN4 to D5/D6/D9/D10. Connect HC-SR04 TRIG to D7 and ECHO to D8.",
+          wiringInstructions: "Enable L298N ENA/ENB with the module jumpers. Connect both DC motors to the L298N outputs. Tie L298N GND to Uno GND. Connect IN1/IN2/IN3/IN4 to D5/D6/D9/D10. Connect HC-SR04 TRIG to D7 and ECHO to D8.",
           gpioMappings: "Left motor IN1 -> D5\nLeft motor IN2 -> D6\nRight motor IN3 -> D9\nRight motor IN4 -> D10\nHC-SR04 TRIG -> D7\nHC-SR04 ECHO -> D8",
           codeLanguage: "Arduino C++",
           programmingFramework: "Arduino IDE",
-          sourceCode: "const int L1=5,L2=6,R1=9,R2=10,TRIG=7,ECHO=8;\n// Build and test motor + distance functions separately before integration.\nvoid setup(){ pinMode(L1,OUTPUT); pinMode(L2,OUTPUT); pinMode(R1,OUTPUT); pinMode(R2,OUTPUT); pinMode(TRIG,OUTPUT); pinMode(ECHO,INPUT); }\nvoid loop(){ /* read distance; stop/turn if obstacle is close; otherwise drive forward */ }",
+          sourceCode: robotCode("uno"),
           uploadProcedure: boardProfile("arduino-uno").upload,
           expectedOutput: "The robot moves forward, detects a nearby obstacle, stops and changes direction.",
           troubleshooting: "Lift the wheels before first motor test. Verify common ground, motor-driver supply and each motor direction separately. Confirm ultrasonic trigger/echo wiring before integration.",
@@ -688,11 +715,11 @@ void loop(){
         {
           hardwarePlatformId: hardware.get("esp32")!,
           notes: "3.3 V ESP32 GPIO. Do not feed the HC-SR04 5 V Echo signal directly into an ESP32 input.",
-          wiringInstructions: "Connect L298N control inputs to GPIO25/GPIO26/GPIO27/GPIO14. Tie grounds together. Connect HC-SR04 TRIG to GPIO18. Route ECHO through a suitable voltage divider or level shifter before GPIO19.",
+          wiringInstructions: "Enable L298N ENA/ENB with the module jumpers. Connect L298N control inputs to GPIO25/GPIO26/GPIO27/GPIO14. Tie grounds together. Connect HC-SR04 TRIG to GPIO18. Route ECHO through a suitable voltage divider or level shifter before GPIO19.",
           gpioMappings: "Left motor IN1 -> GPIO25\nLeft motor IN2 -> GPIO26\nRight motor IN3 -> GPIO27\nRight motor IN4 -> GPIO14\nHC-SR04 TRIG -> GPIO18\nHC-SR04 ECHO -> level shift/divider -> GPIO19",
           codeLanguage: "Arduino C++",
           programmingFramework: "Arduino IDE + ESP32 core",
-          sourceCode: "const int L1=25,L2=26,R1=27,R2=14,TRIG=18,ECHO=19;\n// Build and test motor + distance functions separately before integration.\nvoid setup(){ pinMode(L1,OUTPUT); pinMode(L2,OUTPUT); pinMode(R1,OUTPUT); pinMode(R2,OUTPUT); pinMode(TRIG,OUTPUT); pinMode(ECHO,INPUT); }\nvoid loop(){ /* read distance; stop/turn if obstacle is close; otherwise drive forward */ }",
+          sourceCode: robotCode("esp32"),
           uploadProcedure: boardProfile("esp32").upload,
           expectedOutput: "The robot moves forward, detects a nearby obstacle, stops and changes direction.",
           troubleshooting: "Keep ESP32 inputs at 3.3 V logic. Verify the Echo level shift, common ground, motor power and pin selection before changing code.",

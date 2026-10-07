@@ -10,16 +10,18 @@ type StateEvent = {
   projectSubmissionId: string | null;
   skillId: string | null;
   occurredAt: Date;
+  metadata?: unknown;
 };
 
-function effectiveLearningEvents<T extends StateEvent>(events: T[]) {
+export function effectiveLearningEvents<T extends StateEvent>(events: T[]) {
   const latest = new Map<string, T>();
   const passthrough: T[] = [];
   for (const event of events) {
     let key: string | null = null;
     if (event.type === "RUBRIC_SCORED") {
       const submissionId = event.practicalSubmissionId ?? event.projectSubmissionId;
-      if (submissionId) key = `rubric:${submissionId}:${event.skillId ?? "unmapped"}`;
+      const metadata = event.metadata as { criterionId?: string } | null;
+      if (submissionId) key = `rubric:${submissionId}:${metadata?.criterionId ?? event.skillId ?? "unmapped"}`;
     } else if (event.type === "PRACTICAL_TASK_COMPLETED" && event.practicalSubmissionId) {
       key = `practical-review:${event.practicalSubmissionId}`;
     }

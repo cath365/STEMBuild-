@@ -10,3 +10,8 @@ src/generated/prisma
 .DS_Store
 
 *.tsbuildinfo
+
+.local-evidence/
+.test-db/
+playwright-report/
+test-results/

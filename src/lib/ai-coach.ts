@@ -409,10 +409,13 @@ Return JSON only, no Markdown, with this exact shape:
 
 export async function generateCoachPlan(snapshot: LearnerCoachSnapshot): Promise<CoachPlanDraft> {
   const startedAt = Date.now();
+  if (process.env.AI_COACH_DISABLE_MODEL === "true") return fallbackPlan(snapshot, "Model access disabled; approved lesson guidance only");
   try {
     const prompt = `Create the next-step learning plan from this stored learner evidence. Do not infer facts outside it.\n\nEVIDENCE_JSON\n${JSON.stringify(snapshot)}`;
     const result = await generateText({
       model: AI_COACH_MODEL,
+      timeout: 20000,
+      maxOutputTokens: 1800,
       system: buildSystemPrompt(),
       prompt,
     });
@@ -432,7 +435,7 @@ export async function generateCoachPlan(snapshot: LearnerCoachSnapshot): Promise
       latencyMs: Date.now() - startedAt,
     };
   } catch (error) {
-    const reason = error instanceof Error ? cleanText(error.message, 180) : "AI generation unavailable";
+    const reason = error instanceof Error ? "AI service unavailable; using approved lesson guidance" : "AI generation unavailable";
     const safe = fallbackPlan(snapshot, reason || "AI generation unavailable");
     safe.latencyMs = Date.now() - startedAt;
     return safe;
@@ -505,9 +508,15 @@ export async function generateAdaptedCoachSteps(args: {
   learnerResult: string;
 }) {
   const startedAt = Date.now();
+  if (process.env.AI_COACH_DISABLE_MODEL === "true") {
+    const fallback = fallbackPlan(args.snapshot, "Model access disabled; approved lesson guidance only");
+    return { steps: fallback.steps.slice(0, 3), sourceMode: fallback.sourceMode, model: fallback.model, latencyMs: 0, guardrailFlags: fallback.guardrailFlags };
+  }
   try {
     const result = await generateText({
       model: AI_COACH_MODEL,
+      timeout: 20000,
+      maxOutputTokens: 1800,
       system: buildSystemPrompt(),
       prompt: `ADAPT the learning plan after a learner check. Create 2 or 3 safe next steps only. The learner's self-report is NOT evidence that practical work passed. Keep recommendations diagnostic and instructional.\n\nCURRENT_EVIDENCE\n${JSON.stringify(args.snapshot)}\n\nPRIOR_PLAN\n${JSON.stringify(args.priorSteps)}\n\nCHECK_RESULT\n${JSON.stringify({ checkedStep: args.checkedStep, outcome: args.outcome, learnerResult: cleanText(args.learnerResult, 500) })}`,
     });
@@ -519,7 +528,7 @@ export async function generateAdaptedCoachSteps(args: {
     }
     return { steps: parsed.steps.slice(0, 3), sourceMode: "ai-gateway" as const, model: AI_COACH_MODEL, latencyMs: Date.now() - startedAt, guardrailFlags: [] as string[] };
   } catch (error) {
-    const fallback = fallbackPlan(args.snapshot, error instanceof Error ? cleanText(error.message, 180) : "Adaptive AI generation unavailable");
+    const fallback = fallbackPlan(args.snapshot, error instanceof Error ? "AI service unavailable; using approved lesson guidance" : "Adaptive AI generation unavailable");
     return { steps: fallback.steps.slice(0, 3), sourceMode: fallback.sourceMode, model: fallback.model, latencyMs: Date.now() - startedAt, guardrailFlags: fallback.guardrailFlags };
   }
 }

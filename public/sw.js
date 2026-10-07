@@ -1,5 +1,5 @@
-const SHELL_CACHE = "stembuild-shell-v3";
-const STATIC_CACHE = "stembuild-static-v3";
+const SHELL_CACHE = "stembuild-shell-v4";
+const STATIC_CACHE = "stembuild-static-v4";
 const SHELL_URLS = ["/", "/offline", "/offline-lesson.html", "/icon-192.png", "/icon-512.png"];
 const DB_NAME = "stembuild_offline_v1";
 const DB_VERSION = 2;
@@ -56,14 +56,18 @@ async function deleteQueue(ids) {
   db.close();
 }
 
+let syncing = false;
 async function flushQueue() {
+  if (syncing) return;
+  syncing = true;
+  try {
   const ownerId = await getMeta("activeOwner");
   const operations = await getQueueForOwner(ownerId);
   if (!operations.length) return;
   const response = await fetch("/api/offline/sync", {
     method: "POST",
     credentials: "include",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", "X-STEMBuild-Sync": "1" },
     body: JSON.stringify({ operations }),
   });
   if (response.status === 401 || response.status === 403) return;
@@ -71,6 +75,12 @@ async function flushQueue() {
   const result = await response.json();
   const permanentRejects = (result.rejected || []).filter((item) => item.retryable === false).map((item) => item.id);
   await deleteQueue([...(result.accepted || []), ...permanentRejects]);
+  // A single reconnect should drain more than one 25-operation batch.
+  if ((await getQueueForOwner(ownerId)).length && (result.accepted?.length || permanentRejects.length)) {
+    syncing = false;
+    await flushQueue();
+  }
+  } finally { syncing = false; }
 }
 
 self.addEventListener("install", (event) => {
@@ -88,7 +98,7 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const request = event.request;
   const url = new URL(request.url);
-  if (request.method !== "GET" || url.origin !== self.location.origin) return;
+  if (request.method !== "GET" || url.origin !== self.location.origin || request.headers.get("RSC") === "1") return;
 
   if (url.pathname.startsWith("/_next/static/")) {
     event.respondWith(caches.open(STATIC_CACHE).then(async (cache) => {

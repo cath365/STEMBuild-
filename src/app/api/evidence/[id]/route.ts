@@ -1,4 +1,4 @@
-import { get } from "@vercel/blob";
+import { readEvidence } from "@/lib/evidence-storage";
 import { db } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
 
@@ -24,13 +24,14 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
   const allowed = user.role === "ADMIN" || ownsPractical || teachesPractical || ownsProject || teachesProject;
   if (!allowed) return new Response("Forbidden", { status: 403 });
 
-  const result = await get(asset.storagePath, { access: "private", useCache: false });
+  const result = await readEvidence(asset.storagePath);
   if (!result) return new Response("File not found", { status: 404 });
-  return new Response(result.stream, {
+  return new Response(result.body, {
     headers: {
-      "Content-Type": result.blob.contentType || asset.mimeType || "application/octet-stream",
+      "Content-Type": asset.mimeType || "application/octet-stream",
       "Cache-Control": "private, no-store",
-      "Content-Disposition": `inline; filename="${(asset.originalName || "evidence").replace(/\"/g, "")}"`,
+      "X-Content-Type-Options": "nosniff",
+      "Content-Disposition": `inline; filename="${(asset.originalName || "evidence").replace(/[\"\r\n\\]/g, "")}"`,
     },
   });
 }

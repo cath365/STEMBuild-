@@ -4,6 +4,7 @@ import { randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { requireRole } from "@/lib/session";
+import { assessmentInput } from "@/lib/validation";
 import { recomputeLessonProgress } from "@/lib/progress";
 
 function joinCode() { return `STEM-${randomBytes(3).toString("hex").toUpperCase()}`; }
@@ -22,7 +23,7 @@ export async function addStudentToClass(classroomId: string, formData: FormData)
   if (!classroom || classroom.teacherId !== teacher.id) throw new Error("Class not found.");
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const student = await db.user.findUnique({ where: { email } });
-  if (!student || student.role !== "STUDENT") throw new Error("No student account was found with that email.");
+  if (!student || student.role !== "STUDENT" || !student.isActive || student.schoolId !== classroom.schoolId) throw new Error("No active student in this school was found with that email.");
   await db.classEnrollment.upsert({
     where: { classroomId_studentId: { classroomId, studentId: student.id } },
     create: { classroomId, studentId: student.id, status: "ACTIVE" },
@@ -36,11 +37,14 @@ export async function assignLesson(classroomId: string, formData: FormData) {
   const classroom = await db.classroom.findUnique({ where: { id: classroomId } });
   if (!classroom || classroom.teacherId !== teacher.id) throw new Error("Class not found.");
   const lessonId = String(formData.get("lessonId") ?? "");
+  const lesson = await db.lesson.findFirst({ where: { id: lessonId, status: "PUBLISHED", module: { course: { status: "PUBLISHED" } } } });
+  if (!lesson) throw new Error("Choose a published lesson from a published course.");
   const due = String(formData.get("dueAt") ?? "");
+  if (due && !/^\d{4}-\d{2}-\d{2}$/.test(due)) throw new Error("Invalid due date.");
   await db.lessonAssignment.upsert({
     where: { classroomId_lessonId: { classroomId, lessonId } },
-    create: { classroomId, lessonId, assignedById: teacher.id, dueAt: due ? new Date(`${due}T23:59:59`) : null },
-    update: { status: "ACTIVE", dueAt: due ? new Date(`${due}T23:59:59`) : null },
+    create: { classroomId, lessonId, assignedById: teacher.id, dueAt: due ? new Date(`${due}T21:59:59Z`) : null },
+    update: { status: "ACTIVE", dueAt: due ? new Date(`${due}T21:59:59Z`) : null },
   });
   revalidatePath(`/dashboard/teacher/classes/${classroomId}`);
 }
@@ -56,13 +60,13 @@ export async function assessPractical(submissionId: string, formData: FormData) 
   });
   if (!submission || !submission.classroom || submission.classroom.teacherId !== teacher.id) throw new Error("Submission not available for this teacher.");
 
-  const feedback = String(formData.get("feedback") ?? "").trim();
-  const decision = String(formData.get("decision") ?? "ASSESSED");
+  if (!['SUBMITTED', 'NEEDS_REVISION', 'ASSESSED'].includes(submission.status)) throw new Error("Only submitted evidence can be assessed.");
+  const input = assessmentInput(formData, submission.task.rubric.criteria);
+  const { feedback, decision } = input;
   let totalScore = 0;
   const maxScore = submission.task.rubric.criteria.reduce((sum, c) => sum + c.maxScore, 0);
-  const scores = submission.task.rubric.criteria.map((criterion) => {
-    const raw = Number(formData.get(`criterion_${criterion.id}`));
-    const score = Number.isFinite(raw) ? Math.max(0, Math.min(criterion.maxScore, raw)) : 0;
+  const scores = submission.task.rubric.criteria.map((criterion, index) => {
+    const score = input.scores[index];
     totalScore += score;
     return { criterionId: criterion.id, skillId: criterion.skillId, score, maxScore: criterion.maxScore, feedback: null as string | null };
   });
@@ -139,13 +143,13 @@ export async function assessProject(submissionId: string, formData: FormData) {
     },
   });
   if (!submission || submission.classroom.teacherId !== teacher.id) throw new Error("Project submission is not available for this teacher.");
-  const feedback = String(formData.get("feedback") ?? "").trim();
-  const decision = String(formData.get("decision") ?? "ASSESSED");
+  if (!['SUBMITTED', 'NEEDS_REVISION', 'ASSESSED'].includes(submission.status)) throw new Error("Only submitted evidence can be assessed.");
+  const input = assessmentInput(formData, submission.project.rubric.criteria);
+  const { feedback, decision } = input;
   let totalScore = 0;
   const maxScore = submission.project.rubric.criteria.reduce((sum, c) => sum + c.maxScore, 0);
-  const scores = submission.project.rubric.criteria.map((criterion) => {
-    const raw = Number(formData.get(`criterion_${criterion.id}`));
-    const score = Number.isFinite(raw) ? Math.max(0, Math.min(criterion.maxScore, raw)) : 0;
+  const scores = submission.project.rubric.criteria.map((criterion, index) => {
+    const score = input.scores[index];
     totalScore += score;
     return { criterionId: criterion.id, skillId: criterion.skillId, score, maxScore: criterion.maxScore, feedback: null as string | null };
   });
@@ -201,4 +205,21 @@ export async function assessProject(submissionId: string, formData: FormData) {
   revalidatePath("/dashboard/teacher/reviews");
   revalidatePath("/dashboard/teacher/analytics");
   revalidatePath(`/dashboard/teacher/classes/${submission.classroomId}`);
+}
+
+export async function assignProject(classroomId: string, formData: FormData) {
+  const teacher = await requireRole("TEACHER");
+  const classroom = await db.classroom.findFirst({ where: { id: classroomId, teacherId: teacher.id } });
+  if (!classroom) throw new Error("Class not found.");
+  const projectId = String(formData.get("projectId") ?? "");
+  const project = await db.project.findFirst({ where: { id: projectId, status: "PUBLISHED", course: { status: "PUBLISHED" }, hardware: { some: { hardwarePlatform: { active: true } } } } });
+  if (!project) throw new Error("Choose a published project with a configured board.");
+  const due = String(formData.get("dueAt") ?? "");
+  if (due && !/^\d{4}-\d{2}-\d{2}$/.test(due)) throw new Error("Invalid due date.");
+  await db.projectAssignment.upsert({
+    where: { classroomId_projectId: { classroomId, projectId } },
+    create: { classroomId, projectId, assignedById: teacher.id, dueAt: due ? new Date(`${due}T21:59:59Z`) : null },
+    update: { status: "ACTIVE", dueAt: due ? new Date(`${due}T21:59:59Z`) : null },
+  });
+  revalidatePath(`/dashboard/teacher/classes/${classroomId}`);
 }

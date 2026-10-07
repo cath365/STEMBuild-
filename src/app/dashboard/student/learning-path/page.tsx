@@ -5,12 +5,13 @@ import { requireRole } from "@/lib/session";
 export default async function LearningPathPage() {
   const user = await requireRole("STUDENT");
   const course = await db.course.findFirst({
-    where: { status: "PUBLISHED" },
+    where: { status: "PUBLISHED", modules: { some: { lessons: { some: { assignments: { some: { status: "ACTIVE", classroom: { enrollments: { some: { studentId: user.id, status: "ACTIVE" } } } } } } } } } },
     include: {
       modules: {
         orderBy: { order: "asc" },
         include: {
           lessons: {
+            where: { status: "PUBLISHED", assignments: { some: { status: "ACTIVE", classroom: { enrollments: { some: { studentId: user.id, status: "ACTIVE" } } } } } },
             orderBy: { order: "asc" },
             include: {
               progress: { where: { studentId: user.id } },

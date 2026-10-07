@@ -16,7 +16,7 @@ export async function recomputeCredentials(studentId: string) {
       where: { courseId: course.id, status: "PUBLISHED" },
       include: { submissions: { where: { studentId, status: "ASSESSED" }, include: { assessment: true } } },
     });
-    const projectRequirementMet = projects.length === 0 || projects.some((project) => project.submissions.some((submission) => submission.assessment && submission.assessment.maxScore > 0 && (submission.assessment.totalScore / submission.assessment.maxScore) * 100 >= 70));
+    const projectRequirementMet = projects.length === 0 || projects.every((project) => project.submissions.some((submission) => submission.assessment && submission.assessment.maxScore > 0 && (submission.assessment.totalScore / submission.assessment.maxScore) * 100 >= 70));
     if (!projectRequirementMet) continue;
 
     await db.certificate.upsert({
@@ -27,7 +27,7 @@ export async function recomputeCredentials(studentId: string) {
   }
 
   const practicals = await db.practicalSubmission.findMany({ where: { studentId, status: "ASSESSED" }, include: { assessment: true } });
-  const passingPracticals = practicals.filter((p) => p.assessment && p.assessment.maxScore > 0 && (p.assessment.totalScore / p.assessment.maxScore) * 100 >= 70).length;
+  const passingPracticals = new Set(practicals.filter((p) => p.assessment && p.assessment.maxScore > 0 && (p.assessment.totalScore / p.assessment.maxScore) * 100 >= 70).map((p) => p.taskId)).size;
   const badges = await db.badgeDefinition.findMany();
   for (const badge of badges) {
     const rule = badge.rule as { type?: string; minimumCompleted?: number };

@@ -46,7 +46,7 @@ export async function getCurrentUser() {
 
   if (!session || session.expiresAt <= new Date() || !session.user.isActive) {
     if (session) await db.session.delete({ where: { id: session.id } }).catch(() => undefined);
-    store.delete(COOKIE_NAME);
+    // Server Components may read cookies but cannot mutate them. Logout clears it.
     return null;
   }
 

@@ -110,9 +110,9 @@ See `prisma/schema.prisma` for the complete implementation.
 
 ```bash
 cp .env.example .env
-npm install
+npm ci
 npm run db:generate
-npm run db:migrate
+npm run db:deploy
 npm run db:seed
 npm run dev
 ```
@@ -169,3 +169,12 @@ The DEMO curriculum includes a polished **SMART ENVIRONMENT MONITOR** lesson/pro
 The ESP32 variant includes an optional collapsed advanced-mode explanation for future authenticated dashboard telemetry, but the MVP does not pretend that telemetry has already been received. Practical completion still depends on learner evidence and/or teacher validation.
 
 See `docs/SMART_ENVIRONMENT_MONITOR.md`.
+
+
+## MVP validation
+
+Run `npm test`, `npm run typecheck`, `npm run lint` and `npm run build` for the code checks. Install Chromium with `npx playwright install chromium`, then run `npm run verify:local` for an isolated synthetic learner/teacher/admin workflow with a disposable PostgreSQL-compatible database. For standard PostgreSQL, apply the migration, seed a test database and run `npm run test:e2e` instead. Never point the browser workflow at a database containing real school data.
+
+Private evidence uses Vercel Blob by default. `EVIDENCE_STORAGE=local` is available only in development for isolated verification. AI coaching has a labelled rules-based fallback when model access is unavailable; `AI_COACH_DISABLE_MODEL=true` makes this deterministic for tests. Production seeding requires explicit `ALLOW_DEMO_SEED=true` and creates synthetic accounts, so it is intended only for a demo environment.
+
+See `docs/MVP_VALIDATION.md` for verified coverage and release requirements.

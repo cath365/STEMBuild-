@@ -49,7 +49,7 @@ export type LearningEventInput = {
   durationMs?: number | null;
   score?: number | null;
   maxScore?: number | null;
-  metadata?: Record<string, string | number | boolean | null> | null;
+  metadata?: Record<string, string | number | boolean | null>;
   source?: string;
   occurredAt?: Date;
 };
@@ -75,6 +75,7 @@ export async function resolveAssignedLessonContext(learnerId: string, lessonId: 
     where: {
       lessonId,
       status: "ACTIVE",
+      lesson: { status: "PUBLISHED", module: { course: { status: "PUBLISHED" } } },
       classroom: { enrollments: { some: { studentId: learnerId, status: "ACTIVE" } } },
     },
     include: { lesson: { include: { module: { include: { course: true } } } } },

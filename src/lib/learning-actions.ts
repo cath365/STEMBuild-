@@ -1,7 +1,8 @@
 "use server";
 
+import { evidenceSignature } from "@/lib/validation";
 import { randomUUID } from "node:crypto";
-import { put } from "@vercel/blob";
+import { storeEvidence, deleteEvidence } from "@/lib/evidence-storage";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { requireRole } from "@/lib/session";
@@ -21,10 +22,11 @@ function metadataString(value: unknown, key: string) {
   return typeof item === "string" && item ? item : null;
 }
 
-function assertEvidence(file: FormDataEntryValue | null) {
+async function assertEvidence(file: FormDataEntryValue | null) {
   if (!(file instanceof File) || file.size === 0) throw new Error("A photo or PDF evidence file is required.");
   if (!EVIDENCE_TYPES.has(file.type)) throw new Error("Evidence must be JPG, PNG, WEBP or PDF.");
   if (file.size > 3_500_000) throw new Error("Evidence must be 3.5 MB or smaller for the MVP server upload.");
+  if (!evidenceSignature(new Uint8Array(await file.slice(0, 12).arrayBuffer()), file.type)) throw new Error("Evidence content does not match its file type.");
   return file;
 }
 
@@ -58,7 +60,7 @@ export async function startQuiz(quizId: string) {
     where: { id: quizId },
     include: { lesson: { include: { module: { include: { course: true } } } } },
   });
-  if (!quiz) throw new Error("Quiz not found.");
+  if (!quiz || quiz.lesson.status !== "PUBLISHED" || quiz.lesson.module.course.status !== "PUBLISHED") throw new Error("Quiz not found.");
   const assignment = await db.lessonAssignment.findFirst({
     where: { lessonId: quiz.lessonId, status: "ACTIVE", classroom: { enrollments: { some: { studentId: user.id, status: "ACTIVE" } } } },
   });
@@ -90,7 +92,7 @@ export async function submitQuiz(quizId: string, formData: FormData) {
       lesson: { include: { module: { include: { course: true } } } },
     },
   });
-  if (!quiz) throw new Error("Quiz not found.");
+  if (!quiz || quiz.lesson.status !== "PUBLISHED" || quiz.lesson.module.course.status !== "PUBLISHED") throw new Error("Quiz not found.");
   const assignment = await db.lessonAssignment.findFirst({
     where: { lessonId: quiz.lessonId, status: "ACTIVE", classroom: { enrollments: { some: { studentId: user.id, status: "ACTIVE" } } } },
   });
@@ -182,7 +184,7 @@ export async function startPracticalTask(taskId: string, formData: FormData) {
     where: { id: taskId },
     include: { lesson: { include: { module: { include: { course: true } }, hardwareVariants: true } } },
   });
-  if (!task) throw new Error("Practical task not found.");
+  if (!task || task.lesson.status !== "PUBLISHED" || task.lesson.module.course.status !== "PUBLISHED") throw new Error("Practical task not found.");
   if (!task.lesson.hardwareVariants.some((variant) => variant.hardwarePlatformId === hardwarePlatformId)) throw new Error("The selected hardware is not configured for this lesson.");
   const assignment = await db.lessonAssignment.findFirst({
     where: { lessonId: task.lessonId, status: "ACTIVE", classroom: { enrollments: { some: { studentId: user.id, status: "ACTIVE" } } } },
@@ -255,13 +257,13 @@ export async function submitPractical(formData: FormData) {
   const issue = String(formData.get("issue") ?? "").trim();
   const actionTried = String(formData.get("actionTried") ?? "").trim();
   const result = String(formData.get("result") ?? "").trim();
-  const file = assertEvidence(formData.get("evidence"));
+  const file = await assertEvidence(formData.get("evidence"));
 
   const task = await db.practicalTask.findUnique({
     where: { id: taskId },
     include: { lesson: { include: { module: { include: { course: true } }, hardwareVariants: true } } },
   });
-  if (!task) throw new Error("Practical task not found.");
+  if (!task || task.lesson.status !== "PUBLISHED" || task.lesson.module.course.status !== "PUBLISHED") throw new Error("Practical task not found.");
   const compatible = task.lesson.hardwareVariants.some((variant) => variant.hardwarePlatformId === hardwarePlatformId);
   if (!compatible) throw new Error("The selected hardware is not configured for this lesson.");
 
@@ -290,9 +292,11 @@ export async function submitPractical(formData: FormData) {
     orderBy: { startedAt: "desc" },
   }) : null;
 
+  if (!started) throw new Error("Start this attempt and select a board before submitting evidence.");
+  if (!studentNotes || studentNotes.length > 4000 || codeSnippet.length > 12000) throw new Error("Build notes are required (up to 4,000 characters); code must be 12,000 characters or fewer.");
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
   const pathname = `evidence/${user.id}/${taskId}/${randomUUID()}-${safeName}`;
-  const blob = await put(pathname, file, { access: "private" });
+  const blob = await storeEvidence(pathname, file);
   const submittedAt = new Date();
   const durationMs = clampDurationMs(started ? submittedAt.getTime() - started.occurredAt.getTime() : null);
   const [programmingSkill, debuggingSkill] = await Promise.all([
@@ -300,48 +304,53 @@ export async function submitPractical(formData: FormData) {
     issue || actionTried || result ? db.skill.findUnique({ where: { slug: "debugging" }, select: { id: true } }) : null,
   ]);
 
-  await db.$transaction(async (tx) => {
-    const submission = await tx.practicalSubmission.create({
-      data: {
-        taskId,
-        studentId: user.id,
+  try {
+    await db.$transaction(async (tx) => {
+      const submission = await tx.practicalSubmission.create({
+        data: {
+          taskId,
+          studentId: user.id,
+          classroomId: assignment.classroomId,
+          hardwarePlatformId,
+          kitUsageId: openKitUsage?.id ?? null,
+          status: "SUBMITTED",
+          studentNotes: studentNotes || null,
+          codeSnippet: codeSnippet || null,
+          submissionNo: attemptNo,
+          submittedAt,
+          evidence: { create: { type: evidenceType(file), storagePath: blob.pathname, originalName: file.name, mimeType: file.type, sizeBytes: file.size } },
+          troubleshooting: issue || actionTried || result ? { create: { issue: issue || "Not specified", actionTried: actionTried || "Not specified", result: result || "Not specified" } } : undefined,
+        },
+      });
+
+      if (openKitUsage) await tx.kitUsage.update({ where: { id: openKitUsage.id }, data: { endedAt: submittedAt } });
+
+      const common = {
+        learnerId: user.id,
         classroomId: assignment.classroomId,
+        courseId: task.lesson.module.course.id,
+        lessonId: task.lessonId,
+        practicalTaskId: taskId,
+        practicalSubmissionId: submission.id,
         hardwarePlatformId,
-        kitUsageId: openKitUsage?.id ?? null,
-        status: "SUBMITTED",
-        studentNotes: studentNotes || null,
-        codeSnippet: codeSnippet || null,
-        submissionNo: attemptNo,
-        submittedAt,
-        evidence: { create: { type: evidenceType(file), storagePath: blob.pathname, originalName: file.name, mimeType: file.type, sizeBytes: file.size } },
-        troubleshooting: issue || actionTried || result ? { create: { issue: issue || "Not specified", actionTried: actionTried || "Not specified", result: result || "Not specified" } } : undefined,
-      },
+        attemptNo,
+        source: "server",
+        occurredAt: submittedAt,
+      };
+      const kitMetadata: Record<string, string | number | boolean | null> = kit ? { kitId: kit.id, kitCode: kit.code } : {};
+      const events: LearningEventInput[] = [
+        { ...common, type: "PRACTICAL_TASK_ATTEMPTED", outcome: "SUBMITTED", durationMs, metadata: kitMetadata },
+        { ...common, type: "EVIDENCE_UPLOADED", outcome: "RECORDED", metadata: { mimeType: file.type, sizeBytes: file.size, ...kitMetadata } },
+        { ...common, type: "HARDWARE_PLATFORM_SELECTED", outcome: "SELECTED", metadata: { phase: "submission", ...kitMetadata } },
+      ];
+      if (issue || actionTried || result) events.push({ ...common, type: "TROUBLESHOOTING_ATTEMPTED", outcome: "RECORDED", skillId: debuggingSkill?.id, metadata: { hasIssue: Boolean(issue), hasAction: Boolean(actionTried), hasResult: Boolean(result), ...kitMetadata } });
+      if (codeSnippet) events.push({ ...common, type: "CODE_SUBMISSION", outcome: "RECORDED", skillId: programmingSkill?.id, metadata: { characters: codeSnippet.length, ...kitMetadata } });
+      await tx.learningEvent.createMany({ data: events });
     });
-
-    if (openKitUsage) await tx.kitUsage.update({ where: { id: openKitUsage.id }, data: { endedAt: submittedAt } });
-
-    const common = {
-      learnerId: user.id,
-      classroomId: assignment.classroomId,
-      courseId: task.lesson.module.course.id,
-      lessonId: task.lessonId,
-      practicalTaskId: taskId,
-      practicalSubmissionId: submission.id,
-      hardwarePlatformId,
-      attemptNo,
-      source: "server",
-      occurredAt: submittedAt,
-    };
-    const kitMetadata = kit ? { kitId: kit.id, kitCode: kit.code } : {};
-    const events: LearningEventInput[] = [
-      { ...common, type: "PRACTICAL_TASK_ATTEMPTED", outcome: "SUBMITTED", durationMs, metadata: kitMetadata },
-      { ...common, type: "EVIDENCE_UPLOADED", outcome: "RECORDED", metadata: { mimeType: file.type, sizeBytes: file.size, ...kitMetadata } },
-      { ...common, type: "HARDWARE_PLATFORM_SELECTED", outcome: "SELECTED", metadata: { phase: "submission", ...kitMetadata } },
-    ];
-    if (issue || actionTried || result) events.push({ ...common, type: "TROUBLESHOOTING_ATTEMPTED", outcome: "RECORDED", skillId: debuggingSkill?.id, metadata: { hasIssue: Boolean(issue), hasAction: Boolean(actionTried), hasResult: Boolean(result), ...kitMetadata } });
-    if (codeSnippet) events.push({ ...common, type: "CODE_SUBMISSION", outcome: "RECORDED", skillId: programmingSkill?.id, metadata: { characters: codeSnippet.length, ...kitMetadata } });
-    await tx.learningEvent.createMany({ data: events });
-  });
+  } catch (error) {
+    await deleteEvidence(blob.pathname).catch(() => undefined);
+    throw error;
+  }
 
   revalidatePath(`/dashboard/student/lessons/${task.lessonId}`);
   revalidatePath("/dashboard/student/progress");
@@ -359,16 +368,17 @@ export async function requestLessonHelp(lessonId: string, _: AiHelpState, formDa
     where: { id: lessonId },
     include: { module: { include: { course: true } }, hardwareVariants: { include: { hardwarePlatform: true } } },
   });
-  if (!lesson) return { error: "Lesson not found." };
+  if (!lesson || lesson.status !== "PUBLISHED" || lesson.module.course.status !== "PUBLISHED") return { error: "Lesson not found." };
   const assignment = await db.lessonAssignment.findFirst({ where: { lessonId, status: "ACTIVE", classroom: { enrollments: { some: { studentId: user.id, status: "ACTIVE" } } } } });
   if (!assignment) return { error: "This lesson is not assigned to your active class." };
 
   const variant = lesson.hardwareVariants.find((v) => v.hardwarePlatformId === hardwarePlatformId) ?? lesson.hardwareVariants[0];
+  if (question.length > 2000) return { error: "Keep your question under 2,000 characters." };
   const q = question.toLowerCase();
-  const focus = q.includes("not work") || q.includes("fail") || q.includes("wrong")
-    ? "Check power and ground first, then verify one connection and one code assumption at a time."
-    : q.includes("hot") || q.includes("smell") || q.includes("smoke")
-      ? "Disconnect power immediately and ask a teacher to inspect the circuit before continuing."
+  const focus = q.includes("hot") || q.includes("smell") || q.includes("smoke")
+    ? "Disconnect power immediately and ask a teacher to inspect the circuit before continuing."
+    : q.includes("not work") || q.includes("fail") || q.includes("wrong")
+      ? "Check power and ground first, then verify one connection and one code assumption at a time."
       : q.includes("upload") || q.includes("port")
         ? "Confirm the board model, USB cable, selected port and toolchain before changing the circuit."
         : "Compare the observed result with the expected output, then isolate the smallest subsystem that is not behaving as expected.";
@@ -400,7 +410,7 @@ export async function startProject(projectId: string, formData: FormData) {
   const user = await requireRole("STUDENT");
   const hardwarePlatformId = String(formData.get("hardwarePlatformId") ?? "");
   const assignment = await db.projectAssignment.findFirst({
-    where: { projectId, status: "ACTIVE", classroom: { enrollments: { some: { studentId: user.id, status: "ACTIVE" } } } },
+    where: { projectId, status: "ACTIVE", project: { status: "PUBLISHED", course: { status: "PUBLISHED" } }, classroom: { enrollments: { some: { studentId: user.id, status: "ACTIVE" } } } },
     include: { project: { include: { hardware: true } } },
   });
   if (!assignment) throw new Error("This project is not assigned to your active class.");
@@ -422,24 +432,26 @@ export async function submitProject(projectId: string, formData: FormData) {
   const studentNotes = String(formData.get("studentNotes") ?? "").trim();
   const codeSnippet = String(formData.get("codeSnippet") ?? "").trim();
   const troubleshootingNotes = String(formData.get("troubleshootingNotes") ?? "").trim();
-  const file = assertEvidence(formData.get("evidence"));
+  const file = await assertEvidence(formData.get("evidence"));
 
   const assignment = await db.projectAssignment.findFirst({
-    where: { projectId, status: "ACTIVE", classroom: { enrollments: { some: { studentId: user.id, status: "ACTIVE" } } } },
+    where: { projectId, status: "ACTIVE", project: { status: "PUBLISHED", course: { status: "PUBLISHED" } }, classroom: { enrollments: { some: { studentId: user.id, status: "ACTIVE" } } } },
     include: { project: { include: { hardware: true } } },
   });
   if (!assignment) throw new Error("This project is not assigned to your active class.");
   if (!assignment.project.hardware.some((h) => h.hardwarePlatformId === hardwarePlatformId)) throw new Error("Selected hardware is not configured for this project.");
 
-  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
-  const pathname = `project-evidence/${user.id}/${projectId}/${randomUUID()}-${safeName}`;
-  const blob = await put(pathname, file, { access: "private" });
   const prior = await db.projectSubmission.count({ where: { projectId, studentId: user.id } });
   const attemptNo = prior + 1;
   const started = await latestOpenStart({ learnerId: user.id, type: "PROJECT_STARTED", projectId, attemptNo });
   if (started?.hardwarePlatformId && started.hardwarePlatformId !== hardwarePlatformId) {
     throw new Error("Use the same board selected when this project attempt started.");
   }
+  if (!started) throw new Error("Start this attempt and select a board before submitting evidence.");
+  if (!studentNotes || studentNotes.length > 4000 || codeSnippet.length > 12000) throw new Error("Build notes are required (up to 4,000 characters); code must be 12,000 characters or fewer.");
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
+  const pathname = `project-evidence/${user.id}/${projectId}/${randomUUID()}-${safeName}`;
+  const blob = await storeEvidence(pathname, file);
   const submittedAt = new Date();
   const durationMs = clampDurationMs(started ? submittedAt.getTime() - started.occurredAt.getTime() : null);
   const [programmingSkill, debuggingSkill] = await Promise.all([
@@ -447,32 +459,37 @@ export async function submitProject(projectId: string, formData: FormData) {
     troubleshootingNotes ? db.skill.findUnique({ where: { slug: "debugging" }, select: { id: true } }) : null,
   ]);
 
-  await db.$transaction(async (tx) => {
-    const submission = await tx.projectSubmission.create({
-      data: {
-        projectId,
-        studentId: user.id,
-        classroomId: assignment.classroomId,
-        hardwarePlatformId,
-        status: "SUBMITTED",
-        studentNotes: studentNotes || null,
-        codeSnippet: codeSnippet || null,
-        troubleshootingNotes: troubleshootingNotes || null,
-        submissionNo: attemptNo,
-        submittedAt,
-        evidence: { create: { type: evidenceType(file), storagePath: blob.pathname, originalName: file.name, mimeType: file.type, sizeBytes: file.size } },
-      },
+  try {
+    await db.$transaction(async (tx) => {
+      const submission = await tx.projectSubmission.create({
+        data: {
+          projectId,
+          studentId: user.id,
+          classroomId: assignment.classroomId,
+          hardwarePlatformId,
+          status: "SUBMITTED",
+          studentNotes: studentNotes || null,
+          codeSnippet: codeSnippet || null,
+          troubleshootingNotes: troubleshootingNotes || null,
+          submissionNo: attemptNo,
+          submittedAt,
+          evidence: { create: { type: evidenceType(file), storagePath: blob.pathname, originalName: file.name, mimeType: file.type, sizeBytes: file.size } },
+        },
+      });
+      const common = { learnerId: user.id, classroomId: assignment.classroomId, courseId: assignment.project.courseId, projectId, projectSubmissionId: submission.id, hardwarePlatformId, attemptNo, source: "server", occurredAt: submittedAt };
+      const events: LearningEventInput[] = [
+        { ...common, type: "PROJECT_SUBMITTED", outcome: "SUBMITTED", durationMs },
+        { ...common, type: "EVIDENCE_UPLOADED", outcome: "RECORDED", metadata: { mimeType: file.type, sizeBytes: file.size } },
+        { ...common, type: "HARDWARE_PLATFORM_SELECTED", outcome: "SELECTED", metadata: { phase: "project_submission" } },
+      ];
+      if (troubleshootingNotes) events.push({ ...common, type: "TROUBLESHOOTING_ATTEMPTED", outcome: "RECORDED", skillId: debuggingSkill?.id, metadata: { characters: troubleshootingNotes.length, context: "project" } });
+      if (codeSnippet) events.push({ ...common, type: "CODE_SUBMISSION", outcome: "RECORDED", skillId: programmingSkill?.id, metadata: { characters: codeSnippet.length, context: "project" } });
+      await tx.learningEvent.createMany({ data: events });
     });
-    const common = { learnerId: user.id, classroomId: assignment.classroomId, courseId: assignment.project.courseId, projectId, projectSubmissionId: submission.id, hardwarePlatformId, attemptNo, source: "server", occurredAt: submittedAt };
-    const events: LearningEventInput[] = [
-      { ...common, type: "PROJECT_SUBMITTED", outcome: "SUBMITTED", durationMs },
-      { ...common, type: "EVIDENCE_UPLOADED", outcome: "RECORDED", metadata: { mimeType: file.type, sizeBytes: file.size } },
-      { ...common, type: "HARDWARE_PLATFORM_SELECTED", outcome: "SELECTED", metadata: { phase: "project_submission" } },
-    ];
-    if (troubleshootingNotes) events.push({ ...common, type: "TROUBLESHOOTING_ATTEMPTED", outcome: "RECORDED", skillId: debuggingSkill?.id, metadata: { characters: troubleshootingNotes.length, context: "project" } });
-    if (codeSnippet) events.push({ ...common, type: "CODE_SUBMISSION", outcome: "RECORDED", skillId: programmingSkill?.id, metadata: { characters: codeSnippet.length, context: "project" } });
-    await tx.learningEvent.createMany({ data: events });
-  });
+  } catch (error) {
+    await deleteEvidence(blob.pathname).catch(() => undefined);
+    throw error;
+  }
   revalidatePath("/dashboard/student/projects");
   revalidatePath("/dashboard/student/progress");
 }

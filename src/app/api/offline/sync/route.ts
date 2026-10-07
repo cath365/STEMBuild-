@@ -19,13 +19,24 @@ function parseDate(value: unknown) {
 }
 
 export async function POST(request: Request) {
+  const origin = request.headers.get("origin");
+  // Next may normalize request.url to localhost behind a proxy; Host retains the browser origin.
+  const host = request.headers.get("host") ?? new URL(request.url).host;
+  let originMatches = false;
+  try { originMatches = Boolean(origin && new URL(origin).host === host && new URL(origin).protocol === new URL(request.url).protocol); } catch {}
+  const workerRequest = !origin && request.headers.get("x-stembuild-sync") === "1" && request.headers.get("sec-fetch-site") !== "cross-site";
+  if (!originMatches && !workerRequest) return NextResponse.json({ error: "Same-origin request required." }, { status: 403 });
+  if (Number(request.headers.get("content-length") ?? 0) > 512000) return NextResponse.json({ error: "Request too large." }, { status: 413 });
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Authentication required." }, { status: 401 });
   if (user.role !== "STUDENT") return NextResponse.json({ error: "Student account required." }, { status: 403 });
 
   let body: { operations?: OfflineSyncOperation[] };
   try {
-    body = await request.json();
+    const raw = await request.text();
+    if (raw.length > 512000) return NextResponse.json({ error: "Request too large." }, { status: 413 });
+    body = JSON.parse(raw);
+    if (!body || typeof body !== "object") throw new Error("Invalid body");
   } catch {
     return NextResponse.json({ error: "Invalid JSON." }, { status: 400 });
   }
@@ -83,9 +94,12 @@ export async function POST(request: Request) {
       : [];
     const clientUpdatedAt = parseDate(operation.payload?.clientUpdatedAt);
     const clientKey = `${user.id}:${lessonId}:${practicalTaskId ?? "lesson"}`;
-    const existingProgress = await db.lessonProgress.findUnique({ where: { studentId_lessonId: { studentId: user.id, lessonId } } });
 
     await db.$transaction(async (tx) => {
+      // Serialize changes to this learner so reconnect/retry cannot overwrite a newer draft.
+      await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${user.id} FOR UPDATE`;
+      const current = await tx.offlineLessonCheckpoint.findUnique({ where: { clientKey } });
+      if (current && current.clientUpdatedAt >= clientUpdatedAt) return;
       await tx.offlineLessonCheckpoint.upsert({
         where: { clientKey },
         create: {
@@ -110,12 +124,13 @@ export async function POST(request: Request) {
         },
       });
 
-      if (!existingProgress?.startedAt) {
+      const progress = await tx.lessonProgress.findUnique({ where: { studentId_lessonId: { studentId: user.id, lessonId } } });
+      if (!progress?.startedAt) {
         const startedAt = clientUpdatedAt;
         await tx.lessonProgress.upsert({
           where: { studentId_lessonId: { studentId: user.id, lessonId } },
           create: { studentId: user.id, lessonId, status: "IN_PROGRESS", startedAt },
-          update: { status: existingProgress?.status === "COMPLETED" ? "COMPLETED" : "IN_PROGRESS", startedAt },
+          update: { status: progress?.status === "COMPLETED" ? "COMPLETED" : "IN_PROGRESS", startedAt },
         });
         await tx.learningEvent.create({
           data: {

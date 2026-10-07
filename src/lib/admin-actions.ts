@@ -22,6 +22,8 @@ export async function createUser(formData: FormData) {
   const password = String(formData.get("password") ?? "");
   const role = String(formData.get("role") ?? "STUDENT") as "STUDENT" | "TEACHER" | "ADMIN";
   const schoolId = String(formData.get("schoolId") ?? "") || null;
+  if (!["STUDENT", "TEACHER", "ADMIN"].includes(role)) throw new Error("Invalid role.");
+  if (schoolId && !await db.school.findUnique({ where: { id: schoolId } })) throw new Error("School not found.");
   if (!displayName || !email.includes("@")) throw new Error("Name and a valid email are required.");
   const passwordHash = await hashPassword(password);
   await db.user.create({ data: { displayName, email, passwordHash, role, schoolId } });
@@ -206,6 +208,7 @@ export async function toggleUserActive(userId: string) {
 export async function setCourseStatus(courseId: string, formData: FormData) {
   await requireRole("ADMIN");
   const status = String(formData.get("status") ?? "DRAFT") as "DRAFT" | "PUBLISHED" | "ARCHIVED";
+  if (!["DRAFT", "PUBLISHED", "ARCHIVED"].includes(status)) throw new Error("Invalid course status.");
   await db.course.update({ where: { id: courseId }, data: { status } });
   revalidatePath("/dashboard/admin/curriculum");
 }

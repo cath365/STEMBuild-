@@ -4,9 +4,9 @@
 
 1. Copy `.env.example` to `.env`.
 2. Start PostgreSQL with `docker compose up -d` or use another PostgreSQL instance.
-3. Run `npm install`.
+3. Run `npm ci`.
 4. Run `npm run db:generate`.
-5. Run `npm run db:migrate` and name the first migration `initial_stembuild_schema`.
+5. Run `npm run db:deploy` to apply the committed migration.
 6. Run `npm run db:seed` only where synthetic DEMO records are wanted.
 7. Run `npm run dev`.
 
@@ -37,13 +37,17 @@
 A production release should pass:
 
 ```bash
-npm install
+npm ci
 npm run db:generate
 npm run typecheck
 npm run lint
+npm test
 npm run build
 ```
 
 Then test one complete workflow using synthetic data:
 
 Teacher assigns lesson -> Student completes quiz -> Student submits practical evidence -> Teacher scores rubric -> Progress updates -> Credential remains locked/unlocked according to requirements.
+
+
+Run `npx playwright install chromium` and `npm run verify:local` for the isolated demo browser verification. CI applies the same migration to PostgreSQL 16 and runs the browser workflow. Test only a dedicated synthetic database. After deployment, repeat evidence upload/download with the private Blob store and exercise live Gateway responses; local validation deliberately uses development storage and the rules-based coach fallback.

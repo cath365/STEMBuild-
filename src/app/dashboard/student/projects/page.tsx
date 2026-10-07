@@ -9,7 +9,7 @@ import { ShowcaseLearningJourney } from "@/components/showcase-learning-journey"
 export default async function StudentProjects() {
   const user = await requireRole("STUDENT");
   const assignments = await db.projectAssignment.findMany({
-    where: { status: "ACTIVE", classroom: { enrollments: { some: { studentId: user.id, status: "ACTIVE" } } } },
+    where: { status: "ACTIVE", project: { status: "PUBLISHED", course: { status: "PUBLISHED" } }, classroom: { enrollments: { some: { studentId: user.id, status: "ACTIVE" } } } },
     include: {
       classroom: true,
       project: {
@@ -82,7 +82,7 @@ export default async function StudentProjects() {
           <HardwareVariantSelector variants={variants} label={`Choose your board for attempt ${nextAttempt}`}/>
           <button className="btn btn-primary" disabled={!variants.length}>Start project attempt</button>
           <div className="small muted">Your board choice is locked to this attempt so wiring, code, evidence and analytics stay consistent.</div>
-        </form> : <form action={submitProject.bind(null, a.project.id)} className="form" encType="multipart/form-data">
+        </form> : <form action={submitProject.bind(null, a.project.id)} className="form">
           <HardwareVariantSelector variants={lockedVariant ? [lockedVariant] : variants} defaultId={started.hardwarePlatformId} label="Board selected for this attempt"/>
           <CompressedEvidenceInput label="Project evidence photo or PDF"/>
           <div className="field"><label>{a.project.slug === "smart-environment-monitor" ? "Recorded readings + build notes" : "Build notes"}</label><textarea className="textarea" name="studentNotes" required placeholder={a.project.slug === "smart-environment-monitor" ? "Record at least three readings, for example: 24.8°C / 58%, 24.9°C / 57%, 25.0°C / 57%. Then describe what the LEDs indicated." : undefined}/>{a.project.slug === "smart-environment-monitor" ? <span className="small muted">Do not invent readings. Enter only values you actually observed, or explain that valid readings were not obtained.</span> : null}</div>

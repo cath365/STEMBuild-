@@ -13,19 +13,25 @@
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "node --import tsx prisma/seed.ts",
+    "test": "node --import tsx --test tests/unit/*.test.ts",
+    "test:e2e": "playwright test",
+    "verify:local": "node scripts/verify-local.mjs"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.10.0",
     "@prisma/client": "7.10.0",
     "@vercel/blob": "2.8.0",
+    "ai": "7.0.123",
     "next": "16.3.8",
     "pg": "8.16.3",
     "react": "19.3.0",
-    "react-dom": "19.3.0",
-    "ai": "7.0.123"
+    "react-dom": "19.3.0"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
+    "@electric-sql/pglite-socket": "^0.2.11",
+    "@playwright/test": "^1.63.0",
     "@types/node": "^22.15.0",
     "@types/pg": "^8.15.0",
     "@types/react": "^19.0.0",
@@ -35,5 +41,9 @@
     "prisma": "7.10.0",
     "tsx": "^4.20.0",
     "typescript": "^5.8.0"
+  },
+  "overrides": {
+    "deepmerge-ts": "8.0.2",
+    "mysql2": "3.24.5"
   }
 }

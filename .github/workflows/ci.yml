@@ -1,50 +1,61 @@
 name: CI
-
 on:
   push:
   pull_request:
-
+permissions:
+  contents: read
 jobs:
   verify:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
-
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: stembuild
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     env:
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/stembuild
-      BLOB_READ_WRITE_TOKEN: vercel_blob_rw_placeholder
-
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/stembuild
+      AI_COACH_DISABLE_MODEL: "true"
+      EVIDENCE_STORAGE: local
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Node
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
-
-      - name: Start PostgreSQL
-        run: |
-          sudo systemctl start postgresql.service
-          sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'postgres';"
-          sudo -u postgres createdb stembuild
-
-      - name: Install dependencies
-        run: npm install
-
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
       - name: Generate Prisma client
         run: npm run db:generate
-
-      - name: Push schema to ephemeral PostgreSQL
-        run: npm run db:push
-
+      - name: Apply committed migrations
+        run: npm run db:deploy
       - name: Validate DEMO seed
         run: npm run db:seed
-
       - name: Typecheck
         run: npm run typecheck
-
       - name: Lint
         run: npm run lint
-
+      - name: Unit tests
+        run: npm test
       - name: Production build
-        run: npm run build
+        run: EVIDENCE_STORAGE= npm run build
+      - name: Install test browser
+        run: npx playwright install --with-deps chromium
+      - name: Verify teaching workflow
+        run: npm run test:e2e
+      - name: Upload failure evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verification-failure
+          path: test-results/
+          retention-days: 7
