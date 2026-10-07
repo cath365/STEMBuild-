@@ -1,36 +1,59 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { checkLedSketch, defaultLedSketch, labReadiness, ledLabConnections, ledLabParts } from "../../src/lib/lab3d";
+import {
+  checkButtonSketch,
+  checkLedSketch,
+  connectionForTerminals,
+  defaultButtonSketch,
+  defaultLedSketch,
+  lab3dProject,
+  lab3dProjects,
+  labReadiness,
+} from "../../src/lib/lab3d";
 
-test("3D LED lab defines unique parts and connections", () => {
-  assert.equal(new Set(ledLabParts.map((part) => part.id)).size, ledLabParts.length);
-  assert.equal(new Set(ledLabConnections.map((wire) => wire.id)).size, ledLabConnections.length);
+test("3D Lab project definitions have unique parts, terminals and connections", () => {
+  for (const project of lab3dProjects) {
+    assert.equal(new Set(project.parts.map((part) => part.id)).size, project.parts.length, `${project.slug} duplicate part`);
+    assert.equal(new Set(project.terminals.map((terminal) => terminal.id)).size, project.terminals.length, `${project.slug} duplicate terminal`);
+    assert.equal(new Set(project.connections.map((wire) => wire.id)).size, project.connections.length, `${project.slug} duplicate connection`);
+  }
 });
 
-test("default Arduino sketch maps to D8 and blink behavior", () => {
+test("default LED sketch maps to D8 and blink behavior", () => {
   const result = checkLedSketch(defaultLedSketch);
   assert.equal(result.ok, true);
   assert.equal(result.highDelayMs, 500);
   assert.equal(result.lowDelayMs, 500);
 });
 
-test("3D lab blocks Run until assembly, wiring and code are ready", () => {
-  const incomplete = labReadiness([], [], defaultLedSketch);
-  assert.equal(incomplete.ready, false);
-  assert.equal(incomplete.missingParts.length, ledLabParts.length);
-  assert.equal(incomplete.missingConnections.length, ledLabConnections.length);
-
-  const ready = labReadiness(
-    ledLabParts.map((part) => part.id),
-    ledLabConnections.map((wire) => wire.id),
-    defaultLedSketch,
-  );
-  assert.equal(ready.ready, true);
+test("default button sketch maps D2 input and D8 output", () => {
+  const result = checkButtonSketch(defaultButtonSketch);
+  assert.equal(result.ok, true);
 });
 
-test("3D lab catches code that no longer matches the physical D8 wiring", () => {
-  const source = defaultLedSketch.replace("LED_PIN = 8", "LED_PIN = 7");
-  const result = checkLedSketch(source);
-  assert.equal(result.ok, false);
-  assert.match(result.messages.join(" "), /D8/);
+test("each 3D project blocks Run until assembly, wiring and code are ready", () => {
+  for (const project of lab3dProjects) {
+    const incomplete = labReadiness(project, [], [], project.defaultSketch);
+    assert.equal(incomplete.ready, false);
+
+    const ready = labReadiness(
+      project,
+      project.parts.map((part) => part.id),
+      project.connections.map((wire) => wire.id),
+      project.defaultSketch,
+    );
+    assert.equal(ready.ready, true, `${project.slug} should be ready`);
+  }
+});
+
+test("tap-to-wire resolves reviewed terminal pairs only", () => {
+  const led = lab3dProject("led-blink");
+  assert.equal(connectionForTerminals(led, "uno-d8", "r-in")?.id, "d8-resistor");
+  assert.equal(connectionForTerminals(led, "r-in", "uno-d8")?.id, "d8-resistor");
+  assert.equal(connectionForTerminals(led, "uno-d8", "led-k"), undefined);
+});
+
+test("3D Lab catches code that no longer matches physical wiring", () => {
+  assert.equal(checkLedSketch(defaultLedSketch.replace("LED_PIN = 8", "LED_PIN = 7")).ok, false);
+  assert.equal(checkButtonSketch(defaultButtonSketch.replace("BUTTON_PIN = 2", "BUTTON_PIN = 3")).ok, false);
 });
