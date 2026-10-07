@@ -109,6 +109,7 @@
   text-shadow: 0 5px 0 rgba(0,0,0,.22), 0 12px 24px rgba(0,0,0,.20);
 }
 .heroLine { display: block; }
+.heroCopy h1 .heroLine { color: #fff; }
 .heroCopy h1 .heroAccent {
   color: #ffd34b;
   background: linear-gradient(180deg, #ffe681 3%, #ffc629 54%, #f3ac08 100%);
