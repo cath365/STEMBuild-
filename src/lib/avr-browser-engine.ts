@@ -44,13 +44,13 @@ export type FirmwareCompileResult = {
 
 export async function compileUnoFirmware(source: string): Promise<FirmwareCompileResult> {
   const started = performance.now();
-  let module: RemoteModule;
+  let compiler: RemoteModule;
   // Arduino IDE preprocessing implicitly provides Arduino.h for .ino sketches.
   // The WASM compiler consumes C++ directly, so mirror that standard step when needed.
   const compileSource = /#\s*include\s*[<"]Arduino\.h[>"]/.test(source) ? source : `#include <Arduino.h>\n${source}`;
   try {
-    module = await remoteImport(`${COMPILER_BASE}index.js`);
-    const result = await module.compile({
+    compiler = await remoteImport(`${COMPILER_BASE}index.js`);
+    const result = await compiler.compile({
       source: compileSource,
       sensors: [],
       assetsBase: COMPILER_BASE,
@@ -65,8 +65,8 @@ export async function compileUnoFirmware(source: string): Promise<FirmwareCompil
     // Some browsers block a cross-origin module Worker. The package also
     // exposes the same compiler pipeline for direct execution.
     try {
-      module = await remoteImport(`${COMPILER_BASE}firmware-builder.js`);
-      const result = await module.buildFirmware({
+      compiler = await remoteImport(`${COMPILER_BASE}firmware-builder.js`);
+      const result = await compiler.buildFirmware({
         source: compileSource,
         sensors: [],
         assetsBase: COMPILER_BASE,
@@ -99,7 +99,7 @@ export async function startUnoFirmwareSimulation(
   },
 ): Promise<AVRSimulation> {
   const avr = await remoteImport(AVR8_URL);
-  const FLASH_WORDS = 0x8000;
+  const FLASH_WORDS = 0x4000; // ATmega328P has 32 KB flash (16K words).
   const program = new Uint16Array(FLASH_WORDS);
   loadIntelHex(hex, new Uint8Array(program.buffer));
 
@@ -125,29 +125,27 @@ export async function startUnoFirmwareSimulation(
   // Arduino D2 is ATmega328P PD2. INPUT_PULLUP reads HIGH while released.
   if (options.buttonProject) portD.setPin(2, true);
 
-  const schedule = typeof MessageChannel !== "undefined" ? new MessageChannel() : null;
-  const workUnitCycles = 60_000;
-
-  const runChunk = () => {
+  // Pace emulation to the Uno's 16 MHz clock, yielding every frame. A bounded
+  // execution budget keeps touch/Stop responsive on slower phones; such devices
+  // may simulate more slowly rather than locking the interface.
+  let frame = 0;
+  let lastTime = performance.now();
+  const runChunk = (now: number) => {
     if (stopped) return;
-    const stopAt = cpu.cycles + workUnitCycles;
+    const elapsed = Math.min(Math.max(now - lastTime, 0), 50);
+    lastTime = now;
+    const stopAt = cpu.cycles + elapsed * 16_000;
+    const deadline = performance.now() + 8;
+    let instructions = 0;
     while (!stopped && cpu.cycles < stopAt) {
       avr.avrInstruction(cpu);
       cpu.tick();
+      if (++instructions % 1024 === 0 && performance.now() >= deadline) break;
     }
     options.onCycles?.(cpu.cycles);
-    if (!stopped) {
-      if (schedule) schedule.port1.postMessage(0);
-      else setTimeout(runChunk, 0);
-    }
+    if (!stopped) frame = requestAnimationFrame(runChunk);
   };
-
-  if (schedule) {
-    schedule.port2.onmessage = runChunk;
-    schedule.port1.postMessage(0);
-  } else {
-    setTimeout(runChunk, 0);
-  }
+  frame = requestAnimationFrame(runChunk);
 
   return {
     setButtonPressed(pressed: boolean) {
@@ -156,10 +154,7 @@ export async function startUnoFirmwareSimulation(
     stop() {
       stopped = true;
       options.onLedChange(false);
-      if (schedule) {
-        schedule.port1.close();
-        schedule.port2.close();
-      }
+      cancelAnimationFrame(frame);
     },
   };
 }

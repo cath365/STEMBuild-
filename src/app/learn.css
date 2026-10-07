@@ -457,3 +457,11 @@
 @media(max-width:480px){
   .lab3d-light-preview-stage{min-height:300px;aspect-ratio:1.22/1}
 }
+
+.lab3d-renderer-mount { position:absolute; inset:0; }
+.lab3d-pin-controls { display:flex; flex-wrap:wrap; gap:8px; }
+.lab3d-pin-controls .btn { font-size:12px; padding:9px 12px; }
+.lab3d-pin-controls [aria-pressed="true"] { background:var(--primary); color:#fff; }
+.lab3d-light-preview { min-width:0; grid-template-columns:minmax(0,1fr); }
+.lab3d-light-preview-stage { width:100%; min-width:0; }
+@media(max-width:480px) { .lab3d-light-preview-stage { aspect-ratio:auto; height:300px; } }

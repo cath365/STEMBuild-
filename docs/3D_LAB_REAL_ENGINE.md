@@ -81,3 +81,30 @@ The first real-firmware projects are:
 - Push-Button Light — D2 / PD2 input with `INPUT_PULLUP`, D8 / PB0 output.
 
 The architecture is intended to grow toward HC-SR04, servo, motor driver and robot projects after these first two firmware paths are physically benchmarked and tested across phones and desktop browsers.
+
+## Reliability review — 8 October 2026 (Zambia)
+
+- Scene readiness now applies current parts, wires, LED state and pin selection after models load, including assemblies made before launch.
+- React owns overlays separately from the Three.js canvas. Closing a loading or active scene cancels its animation frame and releases resources.
+- Each project has a separate mounted session and validated, deduplicated local save. Switching projects cannot write the previous project's code into the new save.
+- Stop, edits, mode changes and project changes invalidate pending firmware results. A completed old compile cannot restart a stopped session.
+- AVR execution yields every frame with a bounded CPU budget and a 16 MHz timing target. Slow devices may simulate more slowly. ATmega328P flash allocation is 32 KB.
+- Fast mode is explicitly a starter-template preview, not a general Arduino interpreter. It accepts comments, whitespace and numeric blink delays up to 60 seconds; other edits need firmware execution. Supported delay values are no longer silently clamped to 80–2500 ms.
+- Named terminal buttons, camera reset, keyboard button input, a direct fallback action and honest storage-failure feedback improve usability.
+- A phone-width overflow in the lightweight stage and the micro:bit photo's catalogue slug were corrected.
+
+### Validation
+
+`npm run verify:lab` builds production and runs the browser regression suite. `npm test` covers all unit suites. WebGL regression additionally accepts `TEST_THREE_BUNDLES` containing version-matched Three.js, GLTFLoader and OrbitControls ESM bundles, and `TEST_WEBGL=true` for a software-rendering test browser. Those bundles are test-only and do not replace production's pinned lazy CDN imports.
+
+Browser tests cover real component-image loading, saved-project isolation and reload, keyboard input, unsupported-code rejection, mobile overflow, stale compiler results, and WebGL replay/reopen/disposal. Compiler lifecycle tests use controlled responses and do not establish AVR-GCC or physical-kit correctness.
+
+### Highest-value next milestones
+
+1. Build a real electrical netlist: breadboard rows/rails, shared grounds, resistor placement and LED polarity. Currently wiring is a reviewed list of connections, not an electrical solver.
+2. Add move/rotate/snap and visible pin labels linked to exact board variants. Current placement uses fixed positions.
+3. Run the actual browser compiler and benchmark generated firmware against a real Uno for blink timing and button behaviour, including Android devices.
+4. Add project-file import/export, recovery and clear shared-device ownership; current saves are local to the browser.
+5. Expand to sensors and motors only after their electrical and timing models pass the same physical comparisons. ESP32 needs a separate execution target.
+
+Review results: clean production build and TypeScript passed; all 21 unit tests and all five 3D browser tests passed. The AVR browser test executes a fixed eight-byte GPIO program in real AVR8js with the compiler response stubbed. WebGL uses the real matching Three.js library and a software renderer. Changed 3D files pass targeted ESLint with image-optimisation warnings. Repository-wide ESLint still reports two pre-existing state-hydration errors in Build Mode and Component Browser; they are outside this patch.

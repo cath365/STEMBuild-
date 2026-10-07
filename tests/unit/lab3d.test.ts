@@ -8,11 +8,24 @@ import {
   lab3dProject,
   lab3dProjects,
   labReadiness,
+  supportsFastSketch,
 } from "../../src/lib/lab3d";
 
 test("both real-engine projects retain valid Arduino pin mappings", () => {
   assert.equal(checkLedSketch(defaultLedSketch).ok, true);
   assert.equal(checkButtonSketch(defaultButtonSketch).ok, true);
+});
+
+test("fast preview refuses misleading code edits and preserves supported delay values", () => {
+  const led = lab3dProject("led-blink");
+  const button = lab3dProject("button-light");
+  const slow = defaultLedSketch.replaceAll("delay(500)", "delay(5000)");
+  assert.equal(supportsFastSketch(led, slow), true);
+  assert.equal(checkLedSketch(slow).highDelayMs, 5000);
+  assert.equal(supportsFastSketch(led, defaultLedSketch.replace("digitalWrite(LED_PIN, HIGH);", "if (false) digitalWrite(LED_PIN, HIGH);")), false);
+  assert.equal(supportsFastSketch(button, defaultButtonSketch.replace("pressed ? HIGH : LOW", "pressed ? LOW : HIGH")), false);
+  assert.equal(supportsFastSketch(led, defaultLedSketch.replaceAll("500", "9999999999")), false);
+  assert.equal(supportsFastSketch(led, "/* learner notes */\n" + defaultLedSketch), true);
 });
 
 test("all 3D projects require complete assembly and reviewed wiring", () => {

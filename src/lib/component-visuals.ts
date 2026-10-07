@@ -15,7 +15,7 @@ export type ComponentVisual = {
 };
 
 const boardVisuals: ComponentVisual[] = boards.map((board) => ({
-  slug: board.id,
+  slug: board.id === "bbc-microbit" ? "microbit" : board.id,
   src: board.image,
   alt: board.model,
   caption: `Real example of ${board.name}. Board revisions and clones may look different.`,

@@ -149,7 +149,7 @@ export function lab3dProject(slug: Lab3DProject["slug"]) {
 }
 
 function normalizedSource(source: string) {
-  return source.replace(/\/\/.*$/gm, " ").replace(/\s+/g, " ");
+  return source.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/\/\/.*$/gm, " ").replace(/\s+/g, " ");
 }
 
 export function checkLedSketch(source: string): SketchCheck {
@@ -162,8 +162,8 @@ export function checkLedSketch(source: string): SketchCheck {
   if (!/digitalWrite\s*\(\s*LED_PIN\s*,\s*LOW\s*\)/.test(normalized)) messages.push("The sketch never drives the LED LOW.");
 
   const delays = [...normalized.matchAll(/delay\s*\(\s*(\d+)\s*\)/g)].map((match) => Number(match[1]));
-  const highDelayMs = Math.min(Math.max(delays[0] ?? 500, 80), 2500);
-  const lowDelayMs = Math.min(Math.max(delays[1] ?? delays[0] ?? 500, 80), 2500);
+  const highDelayMs = delays[0] ?? 500;
+  const lowDelayMs = delays[1] ?? delays[0] ?? 500;
   if (delays.length === 0) messages.push("Add delay(...) so the LED state remains visible in this prototype.");
 
   return { ok: messages.length === 0, messages, highDelayMs, lowDelayMs };
@@ -204,4 +204,15 @@ export function connectionForTerminals(project: Lab3DProject, a: string, b: stri
     (wire.fromTerminal === a && wire.toTerminal === b) ||
     (wire.fromTerminal === b && wire.toTerminal === a)
   );
+}
+
+// Fast mode is a template preview, not an Arduino interpreter. Never claim an
+// arbitrary sketch works merely because pin names appear somewhere in its text.
+export function supportsFastSketch(project: Lab3DProject, source: string) {
+  const canonical = (text: string) => normalizedSource(text)
+    .replace(/#\s*include\s*[<"]Arduino\.h[>"]/g, "")
+    .replace(/delay\s*\(\s*\d+\s*\)/g, "delay(N)")
+    .replace(/\s/g, "");
+  const delays = [...normalizedSource(source).matchAll(/delay\s*\(\s*(\d+)\s*\)/g)].map(m=>Number(m[1]));
+  return delays.every(n=>Number.isSafeInteger(n) && n <= 60_000) && canonical(source) === canonical(project.defaultSketch);
 }

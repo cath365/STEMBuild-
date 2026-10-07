@@ -9,6 +9,7 @@ import {
   lab3dProject,
   lab3dProjects,
   labReadiness,
+  supportsFastSketch,
   type Lab3DProject,
 } from "@/lib/lab3d";
 
@@ -24,6 +25,11 @@ type EngineMode = "fast" | "firmware";
 
 export function Stem3DLabPrototype() {
   const [projectSlug, setProjectSlug] = useState<Lab3DProject["slug"]>("led-blink");
+  // A separate session per project prevents cross-project saves and stale runs.
+  return <LabProjectSession key={projectSlug} projectSlug={projectSlug} onProjectChange={setProjectSlug} />;
+}
+
+function LabProjectSession({projectSlug,onProjectChange}: {projectSlug:Lab3DProject["slug"];onProjectChange:(slug:Lab3DProject["slug"])=>void}) {
   const project = useMemo(() => lab3dProject(projectSlug), [projectSlug]);
 
   const [placed, setPlaced] = useState<string[]>([]);
@@ -34,17 +40,20 @@ export function Stem3DLabPrototype() {
   const [buttonPressed, setButtonPressed] = useState(false);
   const [pendingTerminal, setPendingTerminal] = useState<string | null>(null);
   const [message, setMessage] = useState("Start by placing the real-world parts onto their matching snap zones.");
-  const [hydrated, setHydrated] = useState(false);
+  const [hydratedProject, setHydratedProject] = useState<string | null>(null);
+  const [storageAvailable, setStorageAvailable] = useState(true);
   const [engineMode, setEngineMode] = useState<EngineMode>("fast");
   const [webglEnabled, setWebglEnabled] = useState(false);
   const [firmwareStatus, setFirmwareStatus] = useState<"idle"|"compiling"|"starting"|"running"|"error">("idle");
   const [firmwareError, setFirmwareError] = useState("");
   const [firmwareMeta, setFirmwareMeta] = useState<{flashBytes:number;compileMs:number}|null>(null);
   const avrRef = useRef<AVRSimulation | null>(null);
+  const runVersion = useRef(0);
 
   const readiness = useMemo(() => labReadiness(project, placed, connected, code), [project, placed, connected, code]);
 
   function stopSimulation(nextMessage?: string) {
+    runVersion.current += 1;
     avrRef.current?.stop();
     avrRef.current = null;
     setRunning(false);
@@ -54,52 +63,42 @@ export function Stem3DLabPrototype() {
   }
 
   useEffect(() => {
-    stopSimulation();
-    setHydrated(false);
-    setButtonPressed(false);
-    setPendingTerminal(null);
-    setPlaced([]);
-    setConnected([]);
-    setCode(project.defaultSketch);
-    setFirmwareError("");
-    setFirmwareMeta(null);
-    setWebglEnabled(false);
-    setMessage(`Loaded ${project.shortTitle}. Assemble the parts first.`);
-
-    try {
-      const saved = JSON.parse(window.localStorage.getItem(storageKey(project)) ?? "null") as null | {
-        placed?: string[];
-        connected?: string[];
-        code?: string;
-      };
-      if (saved) {
-        if (Array.isArray(saved.placed)) setPlaced(saved.placed.filter((id) => project.parts.some((part) => part.id === id)));
-        if (Array.isArray(saved.connected)) setConnected(saved.connected.filter((id) => project.connections.some((wire) => wire.id === id)));
-        if (typeof saved.code === "string" && saved.code.trim()) setCode(saved.code);
-        setMessage("Saved work restored on this device.");
-      }
-    } catch {}
-    setHydrated(true);
-
+    let cancelled = false;
+    // Hydrate after the server-compatible first render, then enable saving.
+    Promise.resolve().then(() => {
+      if (cancelled) return;
+      try {
+        const saved = JSON.parse(window.localStorage.getItem(storageKey(project)) ?? "null") as null | {placed?:string[];connected?:string[];code?:string};
+        if (saved) {
+          const parts = Array.isArray(saved.placed) ? [...new Set(saved.placed.filter(id=>project.parts.some(p=>p.id===id)))] : [];
+          const terminalIds = new Set(project.terminals.filter(t=>parts.includes(t.partId)).map(t=>t.id));
+          const wires = Array.isArray(saved.connected) ? [...new Set(saved.connected.filter(id=>project.connections.some(w=>w.id===id && terminalIds.has(w.fromTerminal) && terminalIds.has(w.toTerminal))))] : [];
+          setPlaced(parts);
+          setConnected(wires);
+          if (typeof saved.code === "string" && saved.code.trim()) setCode(saved.code);
+          setMessage("Saved work restored on this device.");
+        }
+      } catch { setStorageAvailable(false); }
+      setHydratedProject(project.slug);
+    });
     return () => {
+      cancelled = true;
+      runVersion.current += 1;
       avrRef.current?.stop();
       avrRef.current = null;
     };
   }, [project]);
 
   useEffect(() => {
-    if (!hydrated) return;
+    if (hydratedProject !== project.slug) return;
     try {
       window.localStorage.setItem(storageKey(project), JSON.stringify({ placed, connected, code }));
-    } catch {}
-  }, [hydrated, project, placed, connected, code]);
+    } catch { queueMicrotask(()=>setStorageAvailable(false)); }
+  }, [hydratedProject, project, placed, connected, code]);
 
   useEffect(() => {
     if (engineMode !== "fast" || !running || !readiness.ready) return;
-    if (project.inputMode === "button") {
-      setLedOn(buttonPressed);
-      return;
-    }
+    if (project.inputMode === "button") return;
 
     let timer: ReturnType<typeof setTimeout>;
     let cancelled = false;
@@ -196,9 +195,12 @@ export function Stem3DLabPrototype() {
       stopSimulation(readinessProblem());
       return;
     }
-    avrRef.current?.stop();
-    avrRef.current = null;
-    setFirmwareStatus("idle");
+    if (!supportsFastSketch(project, code)) {
+      stopSimulation("This edited sketch needs Full Firmware Mode. Fast Simulation supports the starter code with numeric blink delay changes only.");
+      return;
+    }
+    stopSimulation();
+    setButtonPressed(false);
     setRunning(true);
     setMessage(project.inputMode === "button"
       ? "Fast simulation running. Press and hold the virtual button."
@@ -211,6 +213,7 @@ export function Stem3DLabPrototype() {
       return;
     }
     stopSimulation();
+    const version = runVersion.current;
     setFirmwareError("");
     setFirmwareMeta(null);
     setFirmwareStatus("compiling");
@@ -218,6 +221,7 @@ export function Stem3DLabPrototype() {
 
     try {
       const compiled = await compileUnoFirmware(code);
+      if (version !== runVersion.current) return;
       if (!compiled.fitsTarget) throw new Error(`Firmware uses ${compiled.flashBytes} bytes and exceeds the Uno application flash limit.`);
       setFirmwareMeta({flashBytes:compiled.flashBytes,compileMs:compiled.compileMs});
       setFirmwareStatus("starting");
@@ -225,14 +229,16 @@ export function Stem3DLabPrototype() {
 
       const simulation = await startUnoFirmwareSimulation(compiled.hex, {
         buttonProject: project.inputMode === "button",
-        onLedChange: setLedOn,
+        onLedChange: (on) => { if (version === runVersion.current) setLedOn(on); },
       });
+      if (version !== runVersion.current) { simulation.stop(); return; }
       avrRef.current = simulation;
       simulation.setButtonPressed(buttonPressed);
       setRunning(true);
       setFirmwareStatus("running");
       setMessage("Full Firmware Mode is running the compiled AVR machine code.");
     } catch (cause) {
+      if (version !== runVersion.current) return;
       avrRef.current?.stop();
       avrRef.current = null;
       setRunning(false);
@@ -249,8 +255,10 @@ export function Stem3DLabPrototype() {
   }
 
   async function copyCode() {
-    await navigator.clipboard.writeText(code);
-    setMessage("Arduino sketch copied.");
+    try {
+      await navigator.clipboard.writeText(code);
+      setMessage("Arduino sketch copied.");
+    } catch { setMessage("Copy is unavailable in this browser. Use Download .ino or select the sketch text."); }
   }
 
   function downloadSketch() {
@@ -284,6 +292,7 @@ export function Stem3DLabPrototype() {
     setMessage("Assembly complete. Wire the project by tapping blue pin nodes in the WebGL scene or using the connection list.");
   }
 
+  const displayedLed = engineMode === "fast" && project.inputMode === "button" ? running && readiness.ready && buttonPressed : ledOn;
   const progress = Math.round(((placed.length + connected.length + (readiness.sketch.ok ? 1 : 0)) / (project.parts.length + project.connections.length + 1)) * 100);
 
   return <div className="lab3d-shell">
@@ -294,7 +303,7 @@ export function Stem3DLabPrototype() {
         <p className="small muted">{project.description}</p>
       </div>
       <div className="lab3d-project-buttons">
-        {lab3dProjects.map((item) => <button key={item.slug} type="button" className={item.slug === project.slug ? "btn btn-primary" : "btn"} onClick={() => setProjectSlug(item.slug)}>{item.shortTitle}</button>)}
+        {lab3dProjects.map((item) => <button key={item.slug} type="button" className={item.slug === project.slug ? "btn btn-primary" : "btn"} onClick={() => onProjectChange(item.slug)}>{item.shortTitle}</button>)}
       </div>
     </div>
 
@@ -308,7 +317,7 @@ export function Stem3DLabPrototype() {
     <section className="lab3d-statusbar">
       <div><span className="lab3d-live-dot" /> 3D Lab real-engine preview</div>
       <div className="lab3d-progress"><span style={{width:`${progress}%`}} /></div>
-      <div>{progress}% ready · saved locally</div>
+      <div>{progress}% assembled and mapped · {storageAvailable ? "saved on this device" : "saving unavailable — download your sketch"}</div>
     </section>
 
     {webglEnabled ? (
@@ -320,7 +329,7 @@ export function Stem3DLabPrototype() {
           </div>
           <button type="button" className="btn" onClick={()=>setWebglEnabled(false)}>Close 3D view</button>
         </div>
-        <Stem3DWebGLWorkbench project={project} placed={placed} connected={connected} ledOn={ledOn} pendingTerminal={pendingTerminal} onTerminalSelect={tapTerminal} />
+        <Stem3DWebGLWorkbench project={project} placed={placed} connected={connected} ledOn={displayedLed} pendingTerminal={pendingTerminal} onTerminalSelect={tapTerminal} onUseLightweight={()=>setWebglEnabled(false)} />
       </div>
     ) : (
       <section className="lab3d-safe-launch">
@@ -386,7 +395,7 @@ export function Stem3DLabPrototype() {
       <aside id="lab-assemble" className="lab3d-panel lab3d-parts-panel">
         <div className="eyebrow">1 · ASSEMBLE</div>
         <h2>Parts tray</h2>
-        <p className="small muted">Tap Place. The true WebGL scene above updates immediately.</p>
+        <p className="small muted">Tap Place to add a part to the preview. Launch 3D for rotation and pin selection.</p>
         <div className="lab3d-parts-list">
           {project.parts.map((part) => {
             const visual = partImage(part.componentSlug);
@@ -438,12 +447,13 @@ export function Stem3DLabPrototype() {
 
         <div className="lab3d-engine-choice">
           <button type="button" className={engineMode==="fast"?"active":""} onClick={()=>{stopSimulation();setEngineMode("fast");}}>
-            <strong>Fast Simulation</strong><span>Low-data · instant educational engine</span>
+            <strong>Fast Simulation</strong><span>Starter sketch · low-data preview</span>
           </button>
           <button type="button" className={engineMode==="firmware"?"active":""} onClick={()=>{stopSimulation();setEngineMode("firmware");}}>
             <strong>Full Firmware Mode</strong><span>Real AVR-GCC → Intel HEX → ATmega328P emulation</span>
           </button>
         </div>
+        {engineMode==="fast" ? <p className="small muted">Fast mode previews the starter logic and numeric blink delays. For other code changes, use Full Firmware Mode to execute your program.</p> : null}
         {engineMode==="firmware" ? <div className="lab3d-firmware-note"><strong>Data notice:</strong> first use downloads a large browser compiler/toolchain (roughly 55 MB upstream assets). Choose Fast Simulation on limited data.</div> : null}
 
         <div id="lab-run" className="lab3d-run-section">
@@ -455,13 +465,13 @@ export function Stem3DLabPrototype() {
             <button type="button" className="btn" onClick={()=>stopSimulation("Simulation stopped.")}>■ Stop</button>
           </div>
 
-          {project.inputMode === "button" ? <button type="button" className={buttonPressed ? "lab3d-virtual-button pressed" : "lab3d-virtual-button"} disabled={!running || !readiness.ready} onPointerDown={()=>setButtonPressed(true)} onPointerUp={()=>setButtonPressed(false)} onPointerCancel={()=>setButtonPressed(false)} onPointerLeave={()=>setButtonPressed(false)}>
+          {project.inputMode === "button" ? <button type="button" className={buttonPressed ? "lab3d-virtual-button pressed" : "lab3d-virtual-button"} disabled={!running || !readiness.ready} onPointerDown={()=>setButtonPressed(true)} onPointerUp={()=>setButtonPressed(false)} onPointerCancel={()=>setButtonPressed(false)} onPointerLeave={()=>setButtonPressed(false)} onKeyDown={(e)=>{if(e.key===" "||e.key==="Enter"){e.preventDefault();setButtonPressed(true);}}} onKeyUp={(e)=>{if(e.key===" "||e.key==="Enter"){e.preventDefault();setButtonPressed(false);}}} onBlur={()=>setButtonPressed(false)} aria-pressed={buttonPressed}>
             <span>{buttonPressed ? "Button pressed" : "Press and hold virtual button"}</span><small>D2 reads {buttonPressed ? "LOW" : "HIGH"}</small>
           </button> : null}
 
           <div className={running && readiness.ready ? "lab3d-sim-card running" : "lab3d-sim-card"}>
-            <div><span className={ledOn ? "sim-led on" : "sim-led"} /><strong>Virtual LED</strong></div>
-            <span>{running && readiness.ready ? (ledOn ? "D8 HIGH" : "D8 LOW") : "Stopped"}</span>
+            <div><span className={displayedLed ? "sim-led on" : "sim-led"} /><strong>Virtual LED</strong></div>
+            <span>{running && readiness.ready ? (displayedLed ? "D8 HIGH" : "D8 LOW") : "Stopped"}</span>
           </div>
 
           {firmwareMeta && engineMode==="firmware" ? <div className="lab3d-firmware-result"><strong>Real firmware compiled ✓</strong><span>{firmwareMeta.flashBytes.toLocaleString()} flash bytes · {(firmwareMeta.compileMs/1000).toFixed(1)} s compile</span></div> : null}

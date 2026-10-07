@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable react-hooks/immutability -- Three.js objects are imperative scene resources owned by refs, not React state. */
 
 import { useEffect, useRef, useState } from "react";
 import type { Lab3DProject } from "@/lib/lab3d";
@@ -10,6 +11,7 @@ type Props = {
   ledOn: boolean;
   pendingTerminal: string | null;
   onTerminalSelect: (terminalId: string) => void;
+  onUseLightweight: () => void;
 };
 
 type RemoteModule = Record<string, any>;
@@ -58,6 +60,7 @@ export function Stem3DWebGLWorkbench({
   ledOn,
   pendingTerminal,
   onTerminalSelect,
+  onUseLightweight,
 }: Props) {
   const mountRef = useRef<HTMLDivElement>(null);
   const callbackRef = useRef(onTerminalSelect);
@@ -84,6 +87,19 @@ export function Stem3DWebGLWorkbench({
 
   useEffect(() => {
     let cancelled = false;
+
+    function cleanupScene() {
+      const state = sceneState.current;
+      if (!state) return;
+      cancelAnimationFrame(state.raf);
+      state.resize?.disconnect();
+      if (state.pointerHandler) state.renderer.domElement.removeEventListener("pointerdown", state.pointerHandler);
+      state.controls?.dispose?.();
+      disposeObject(state.scene);
+      state.renderer?.dispose?.();
+      state.renderer?.domElement?.remove?.();
+      sceneState.current = null;
+    }
 
     async function boot() {
       try {
@@ -141,6 +157,10 @@ export function Stem3DWebGLWorkbench({
 
         const loader = new gltfModule.GLTFLoader();
         const partObjects = new Map<string, any>();
+        const terminalObjects = new Map<string, any>();
+        // Own resources before awaiting models so closing a loading view releases them.
+        const state = {THREE, scene, camera, renderer, controls, partGroup, wireGroup, terminalGroup, partObjects, terminalObjects, ledMaterial:null as any, raf:0, resize:undefined as ResizeObserver | undefined, pointerHandler:undefined as ((event:PointerEvent)=>void) | undefined};
+        sceneState.current = state;
         let ledMaterial: any = null;
 
         function createResistor() {
@@ -196,6 +216,7 @@ export function Stem3DWebGLWorkbench({
           if (layout.path) {
             const gltf = await loader.loadAsync(layout.path);
             object = gltf.scene;
+            if (cancelled) { disposeObject(object); return; }
             // Trimesh exports our models with Z as physical up; convert to Three's Y-up.
             object.rotation.x = -Math.PI/2;
             object.scale.setScalar(layout.scale ?? 1);
@@ -205,14 +226,14 @@ export function Stem3DWebGLWorkbench({
           else object = new THREE.Mesh(new THREE.BoxGeometry(10,5,10),new THREE.MeshStandardMaterial({color:0x8899aa}));
 
           object.position.set(...layout.position);
-          object.visible = placed.includes(part.id);
+          object.visible = false;
           object.name = part.id;
           object.traverse?.((child:any)=>{ if (child.isMesh) { child.castShadow=true; child.receiveShadow=true; } });
           partGroup.add(object);
           partObjects.set(part.id,object);
         }
 
-        const terminalObjects = new Map<string, any>();
+        state.ledMaterial = ledMaterial;
         for (const terminal of project.terminals) {
           const point = TERMINAL_POINTS[terminal.id];
           if (!point) continue;
@@ -221,7 +242,7 @@ export function Stem3DWebGLWorkbench({
           sphere.position.set(...point);
           sphere.userData.terminalId=terminal.id;
           sphere.userData.partId=terminal.partId;
-          sphere.visible=placed.includes(terminal.partId);
+          sphere.visible=false;
           terminalGroup.add(sphere);
           terminalObjects.set(terminal.id,sphere);
         }
@@ -237,6 +258,7 @@ export function Stem3DWebGLWorkbench({
           if(hit?.object?.userData?.terminalId) callbackRef.current(hit.object.userData.terminalId);
         };
         renderer.domElement.addEventListener("pointerdown",pointerHandler);
+        state.pointerHandler = pointerHandler;
 
         const resize = new ResizeObserver(()=>{
           const width=Math.max(1,mount.clientWidth);
@@ -246,19 +268,19 @@ export function Stem3DWebGLWorkbench({
           renderer.setSize(width,height,false);
         });
         resize.observe(mount);
+        state.resize = resize;
 
-        let raf=0;
         const animate=()=>{
+          if (cancelled) return;
           controls.update();
           renderer.render(scene,camera);
-          raf=requestAnimationFrame(animate);
+          state.raf=requestAnimationFrame(animate);
         };
         animate();
-
-        sceneState.current={THREE,scene,camera,renderer,controls,partGroup,wireGroup,terminalGroup,partObjects,terminalObjects,ledMaterial,raf,resize,pointerHandler};
         setStatus("ready");
       } catch (cause) {
         if (!cancelled) {
+          cleanupScene();
           setStatus("error");
           setError(cause instanceof Error ? cause.message : String(cause));
         }
@@ -268,34 +290,25 @@ export function Stem3DWebGLWorkbench({
 
     return ()=>{
       cancelled=true;
-      const state=sceneState.current;
-      if(state){
-        cancelAnimationFrame(state.raf);
-        state.resize?.disconnect();
-        if(state.pointerHandler) state.renderer.domElement.removeEventListener("pointerdown",state.pointerHandler);
-        state.controls?.dispose?.();
-        disposeObject(state.scene);
-        state.renderer?.dispose?.();
-        state.renderer?.domElement?.remove?.();
-      }
-      sceneState.current=null;
+      cleanupScene();
     };
-  }, [project.slug]);
+  }, [project]);
 
   useEffect(()=>{
     const state=sceneState.current;
     if(!state)return;
     for(const [id,object] of state.partObjects) object.visible=placed.includes(id);
     for(const [,sphere] of state.terminalObjects) sphere.visible=placed.includes(sphere.userData.partId);
-  },[placed]);
+  },[placed,status]);
 
   useEffect(()=>{
     const state=sceneState.current;
     if(!state)return;
     const {THREE,wireGroup}=state;
     while(wireGroup.children.length){
-      const child=wireGroup.children.pop();
-      if(child)disposeObject(child);
+      const child=wireGroup.children[0];
+      wireGroup.remove(child);
+      disposeObject(child);
     }
     for(const wire of project.connections){
       if(!connected.includes(wire.id))continue;
@@ -311,7 +324,7 @@ export function Stem3DWebGLWorkbench({
       const mesh=new THREE.Mesh(geometry,new THREE.MeshStandardMaterial({color,roughness:.55}));
       wireGroup.add(mesh);
     }
-  },[connected,project]);
+  },[connected,project,status]);
 
   useEffect(()=>{
     const material=sceneState.current?.ledMaterial;
@@ -319,7 +332,7 @@ export function Stem3DWebGLWorkbench({
     material.emissive?.setHex?.(ledOn?0xff1515:0x220000);
     material.emissiveIntensity=ledOn?3.2:.25;
     material.color?.setHex?.(ledOn?0xff3030:0xbb2020);
-  },[ledOn]);
+  },[ledOn,status]);
 
   useEffect(()=>{
     const state=sceneState.current;
@@ -330,16 +343,24 @@ export function Stem3DWebGLWorkbench({
       sphere.material.emissive.setHex(selected?0x0063a3:0x001a3d);
       sphere.scale.setScalar(selected?1.45:1);
     }
-  },[pendingTerminal]);
+  },[pendingTerminal,status]);
 
   return <div className="lab3d-webgl-shell">
     <div className="lab3d-webgl-head">
       <div><span className="badge badge-green">TRUE WEBGL</span><strong>Dimensioned 3D workbench</strong></div>
       <span className="small muted">Drag to orbit · pinch/scroll to zoom · tap blue pin nodes to wire</span>
     </div>
-    <div className="lab3d-webgl-canvas" ref={mountRef}>
+    <div className="lab3d-webgl-canvas" aria-label="3D component scene">
+      <div className="lab3d-renderer-mount" ref={mountRef} />
       {status==="loading"?<div className="lab3d-webgl-overlay">Loading WebGL engine and CAD models…</div>:null}
-      {status==="error"?<div className="lab3d-webgl-overlay error"><strong>WebGL mode could not load.</strong><span>{error}</span><span>The guided 2D workbench below remains available.</span></div>:null}
+      {status==="error"?<div className="lab3d-webgl-overlay error"><strong>WebGL mode could not load.</strong><span>{error}</span><span>Your assembly and code are kept. Continue in the lightweight view.</span><button type="button" className="btn" onClick={onUseLightweight}>Return to lightweight view</button></div>:null}
+    </div>
+    {status === "ready" ? <div className="inline">
+      <button type="button" className="btn" onClick={()=>{const state=sceneState.current;if(state){state.camera.position.set(0,125,155);state.controls.target.set(0,4,0);state.controls.update();}}}>Reset camera</button>
+      <span className="small muted">{placed.length} parts visible · {connected.length} wires</span>
+    </div> : null}
+    <div className="lab3d-pin-controls" role="group" aria-label="Component terminals">
+      {project.terminals.filter(t=>placed.includes(t.partId)).map(t=><button key={t.id} type="button" className="btn" aria-pressed={pendingTerminal===t.id} onClick={()=>onTerminalSelect(t.id)}>{project.parts.find(p=>p.id===t.partId)?.label}: {t.label}</button>)}
     </div>
     <div className="small muted">Arduino Uno model uses the official 68.6 × 53.4 mm board footprint. Generic component geometry is dimensioned for learning and may differ from a specific manufacturer or clone.</div>
   </div>;
