@@ -60,7 +60,7 @@ export function BuildMode({ project, components }: Props) {
   const steps = [
     {
       title: "Understand the goal",
-      body: <><p>{project.summary}</p><div className="notice"><strong>Expected result:</strong> {project.outcome}</div><p className="small muted">{guidance}</p></>,
+      body: <><p>{project.summary}</p><div className="notice"><strong>Expected result:</strong> {project.outcome}</div><p className="small muted">{guidance}</p><div className="card card-muted"><strong>No hardware yet?</strong><p className="small muted">You can use Build Mode to understand the parts, safety, sequence and troubleshooting first. Do not treat planning or simulation as proof of a physical practical skill; complete the real build when hardware is available.</p><Link className="text-link" href="/components">Explore the components first →</Link></div></>,
     },
     {
       title: "Check your components",
