@@ -475,3 +475,5 @@
 .robot-code {white-space:pre-wrap;overflow-wrap:anywhere;background:#142536;color:#e2edf5;padding:16px;border-radius:12px;font-size:12px}
 .robot-lab input[type=range] {display:block;width:100%;margin:12px 0}
 @media(max-width:760px){.robot-lab-grid{grid-template-columns:minmax(0,1fr)}.robot-view{height:300px}}
+
+.robot-tray,.robot-pins{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}.robot-tray .btn,.robot-pins .btn{font-size:12px;padding:8px}.robot-tray [aria-pressed=true],.robot-pins [aria-pressed=true]{outline:2px solid #16869b}.robot-assembly{display:block;width:100%;touch-action:none;margin:16px 0}.robot-wire-list{padding-left:18px;font-size:12px;overflow-wrap:anywhere}.robot-wire-list li{margin:8px 0}

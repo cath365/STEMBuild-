@@ -1,10 +1,11 @@
 "use client";
+import {RobotBuilder} from '@/components/robot-builder';
 import {createRobotModels} from '@/lib/robot-models';
 import {useEffect,useRef,useState} from 'react';
-import {collides,initialRobot,robotParts,robotSketch,robotWires,stepRobot,type Obstacle} from '@/lib/robot-arena';
+import {collides,initialRobot,robotParts,robotSketch,stepRobot,type Obstacle} from '@/lib/robot-arena';
 
 export function RobotArena(){
- const [parts,setParts]=useState<string[]>([]),[wires,setWires]=useState<string[]>([]);
+ const [parts,setParts]=useState<string[]>([]),[wiringReady,setWiringReady]=useState(false);
  const [blocks,setBlocks]=useState<Obstacle[]>([{id:1,x:0,z:0,size:22}]);
  const [running,setRunning]=useState(false),[threshold,setThreshold]=useState(25);
  const [robot,setRobot]=useState(initialRobot),[view,setView]=useState('Top view · low-data mode');
@@ -13,7 +14,7 @@ export function RobotArena(){
  const inspect=useRef<(()=>void)|null>(null);
  const mount=useRef<HTMLDivElement>(null),latest=useRef({robot,blocks,parts});
  useEffect(()=>{latest.current={robot,blocks,parts};},[robot,blocks,parts]);
- const ready=parts.length===robotParts.length&&wires.length===robotWires.length;
+ const ready=parts.length===robotParts.length&&wiringReady;
  useEffect(()=>{
   if(!running)return;
   let raf=0,last=0;
@@ -55,9 +56,7 @@ export function RobotArena(){
  return <section className="robot-lab" id="robot-arena">
   <div className="eyebrow">ROBOTICS · BUILD AND TEST</div><h2>Obstacle-avoiding robot</h2>
   <p>Assemble a two-wheel Uno robot and add blocks to its test arena. This model tests the generated avoidance logic; arbitrary Arduino code execution and motor electronics are not connected to this arena yet.</p>
-  <div className="robot-lab-grid"><aside className="card"><h3>1. Assemble</h3>{robotParts.map(p=><label className="robot-check" key={p}><input type="checkbox" checked={parts.includes(p)} disabled={running} onChange={e=>setParts(a=>e.target.checked?[...a,p]:a.filter(v=>v!==p))}/>{p}</label>)}
-  <p className="small muted">Models show recognisable hardware features. Uno uses its published PCB footprint; motor, battery, chassis and module layouts are generic kit variants.</p><h3>2. Review connections</h3>{robotWires.map(p=><label className="robot-check" key={p}><input type="checkbox" checked={wires.includes(p)} disabled={running} onChange={e=>setWires(a=>e.target.checked?[...a,p]:a.filter(v=>v!==p))}/>{p}</label>)}
-  <p className="small muted">These checks record your review; they do not electrically validate a circuit. Use a motor supply matched to your motors and driver. Motors must not draw power from Uno GPIO.</p></aside>
+  <div className="robot-lab-grid"><aside className="card"><RobotBuilder disabled={running} onChange={(assembled,wired)=>{setParts(assembled);setWiringReady(wired);}}/></aside>
   <div><button className="btn" onClick={()=>{setShow3D(s=>!s);setView(show3D?"Top view · low-data mode":"Loading 3D…");}}>{show3D?"Close robot 3D":"Launch robot 3D"}</button>{show3D?<button className="btn" onClick={()=>inspect.current?.()}>Inspect robot parts</button>:null}{show3D?<div className="robot-view" ref={mount} aria-label="3D robot arena"/>:null}<p className="small muted">{view} · orbit and zoom in 3D. Place obstacles using the top view below.</p>
   <svg className="robot-map" viewBox="-100 -100 200 200" role="img" aria-label="Robot top view: click to place an obstacle" onClick={e=>{const r=e.currentTarget.getBoundingClientRect();addBlock((e.clientX-r.left)/r.width*200-100,(e.clientY-r.top)/r.height*200-100);}}>
    <rect x="-99" y="-99" width="198" height="198" fill="#edf2f7" stroke="#64748b"/>{blocks.map(b=><rect key={b.id} x={b.x-b.size/2} y={b.z-b.size/2} width={b.size} height={b.size} fill="#da7650"/>)}

@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
+import {robotMounts,requiredRobotNets,terminalLabel} from '../../src/lib/robot-circuit';
 import { defaultLedSketch, defaultButtonSketch } from '../../src/lib/lab3d';
 
 async function assembleAndWire(page: import('@playwright/test').Page) {
@@ -123,7 +124,18 @@ test('robot assembly gates motion, obstacle controls work and Stop freezes posit
   await expect(arena.locator('.robot-view canvas')).toBeVisible();
  }
  await expect(arena.getByRole('button',{name:'Start robot',exact:true})).toBeDisabled();
- for(const c of await arena.getByRole('checkbox').all())await c.check();
+ for(const m of robotMounts){await arena.getByRole('button',{name:m.name,exact:true}).click();await arena.getByRole('button',{name:'Attach selected part',exact:true}).click();}
+ await expect(arena.getByRole('button',{name:'Start robot',exact:true})).toBeDisabled();
+ await arena.getByRole('button',{name:'Arduino Uno 5V',exact:true}).click();await arena.getByRole('button',{name:'Arduino Uno GND',exact:true}).click();
+ await expect(arena).toContainText('Short circuit: Uno 5V is connected to ground.');
+ await arena.getByRole('button',{name:'Remove wire 1',exact:true}).click();
+ for(const [a,b] of requiredRobotNets){await arena.getByRole('button',{name:terminalLabel(a),exact:true}).click();await arena.getByRole('button',{name:terminalLabel(b),exact:true}).click();}
+ await expect(arena).toContainText('Supported wiring topology passes');
+ await expect(arena.getByRole('button',{name:'Start robot',exact:true})).toBeEnabled();
+ await arena.getByRole('button',{name:'Rotate selected part',exact:true}).click();
+ await expect(arena.getByRole('button',{name:'Start robot',exact:true})).toBeDisabled();
+ for(let n=0;n<3;n++)await arena.getByRole('button',{name:'Rotate selected part',exact:true}).click();
+ await expect(arena.getByRole('button',{name:'Start robot',exact:true})).toBeEnabled();
  await arena.getByRole('button',{name:'Add block',exact:true}).click();
  await expect(arena).toContainText('2/20 obstacles');
  const robot=arena.locator('.robot-map g');const before=await robot.getAttribute('transform');
