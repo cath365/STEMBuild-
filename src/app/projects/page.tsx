@@ -20,7 +20,7 @@ export default function ProjectsPage() {
           <div className="eyebrow">WHAT DO YOU WANT TO BUILD?</div>
           <h1>Choose a project.<br/><span>Learn what you need.</span></h1>
           <p className="lead">Start small, build something real, test it, fix problems and improve it. Pick a project by your current experience—not by how impressive it looks.</p>
-          <div className="inline" style={{marginTop:18}}><Link className="btn btn-primary" href="#Beginner">Start with beginner projects</Link><Link className="btn" href="/components">Check My Components</Link></div>
+          <div className="inline" style={{marginTop:18}}><Link className="btn btn-primary" href="/learning-paths/first-robot">Follow the First Robot Path</Link><Link className="btn" href="#Beginner">Browse beginner projects</Link><Link className="btn" href="/components">Check My Components</Link></div>
         </div>
       </section>
 

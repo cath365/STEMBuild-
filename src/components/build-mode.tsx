@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { BuildProject, LearningLevel, StemComponent } from "@/lib/build-catalog";
 import { ComponentVisualCard } from "@/components/component-visual-card";
+import { VerifiedBuildGuidePanel } from "@/components/verified-build-guide-panel";
+import { guideBoards, guideFor } from "@/lib/verified-build-guides";
 
 type Props = {
   project: BuildProject;
@@ -41,6 +43,8 @@ export function BuildMode({ project, components }: Props) {
   const required = useMemo(() => project.required.map((slug) => components.find((item) => item.slug === slug)).filter((item): item is StemComponent => Boolean(item)), [project.required, components]);
   const optional = useMemo(() => (project.optional ?? []).map((slug) => components.find((item) => item.slug === slug)).filter((item): item is StemComponent => Boolean(item)), [project.optional, components]);
   const missingCount = required.filter((item) => !checkedParts.includes(item.slug)).length;
+  const exactGuide = guideFor(project.slug, board);
+  const exactGuideBoards = guideBoards(project.slug);
 
   function togglePart(slug: string) {
     setCheckedParts((current) => current.includes(slug) ? current.filter((item) => item !== slug) : [...current, slug]);
@@ -72,8 +76,8 @@ export function BuildMode({ project, components }: Props) {
       body: <><div className="notice"><strong>Board check:</strong> {boardNote}</div><ul className="list"><li>Disconnect power before changing wiring.</li><li>Confirm VCC, GND and signal pins from the exact module in your hand.</li><li>Do not power motors, servos, solenoids or other high-current loads directly from GPIO.</li><li>Keep beginner projects low-voltage DC. Do not use mains wiring.</li><li>If a part becomes hot, smells unusual or behaves unexpectedly, disconnect power and inspect it.</li></ul></>,
     },
     {
-      title: "Build one section at a time",
-      body: <><p>Do not wire the whole project at once. Use this order:</p><ol className="build-sequence"><li><strong>Power and ground</strong><span>Verify voltage and common ground where required.</span></li><li><strong>One input or sensor</strong><span>Read/print its value before adding outputs.</span></li><li><strong>One output or actuator</strong><span>Test it independently and safely.</span></li><li><strong>Combine the logic</strong><span>Only combine subsystems after each works alone.</span></li></ol><p className="small muted">Exact GPIO mappings can differ by board and module revision. STEMBuild should never encourage you to guess a pin. Use the board-specific lesson or verified pinout for your hardware.</p>{project.slug === "smart-environment-monitor" ? <Link className="btn btn-primary" href="/showcase/smart-environment-monitor">Open the verified sample wiring →</Link> : null}</>,
+      title: exactGuide ? "Follow the reviewed wiring" : "Build one section at a time",
+      body: exactGuide ? <VerifiedBuildGuidePanel guide={exactGuide} /> : <><div className="notice"><strong>No reviewed pin-by-pin guide for {board} yet.</strong> STEMBuild will not invent GPIO mappings. {exactGuideBoards.length ? <>A reviewed guide is currently available for: <strong>{exactGuideBoards.join(", ")}</strong>.</> : <>Use the safe build sequence below while a board-specific guide is prepared.</>}</div><p>Do not wire the whole project at once. Use this order:</p><ol className="build-sequence"><li><strong>Power and ground</strong><span>Verify voltage and common ground where required.</span></li><li><strong>One input or sensor</strong><span>Read/print its value before adding outputs.</span></li><li><strong>One output or actuator</strong><span>Test it independently and safely.</span></li><li><strong>Combine the logic</strong><span>Only combine subsystems after each works alone.</span></li></ol><p className="small muted">Exact GPIO mappings can differ by board and module revision. If the guide for your board is not reviewed yet, use the exact manufacturer/module documentation or ask a teacher before applying power.</p>{project.slug === "smart-environment-monitor" ? <Link className="btn btn-primary" href="/showcase/smart-environment-monitor">Open the Smart Environment Monitor sample →</Link> : null}</>,
     },
     {
       title: "Code and run the first test",
