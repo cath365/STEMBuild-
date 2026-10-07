@@ -53,12 +53,12 @@ const breadboardHoles = breadboardHoleGrid();
 function holeLocalPosition(holeId: string): [number, number, number] | null {
   const hole = breadboardHoles.find((item) => item.id === holeId);
   if (!hole) return null;
-  const x = -27 + (hole.column - 1) * 6;
+  const x = -36.83 + (hole.column - 1) * 2.54;
   const topRows = ["a","b","c","d","e"];
   const bottomRows = ["f","g","h","i","j"];
   const topIndex = topRows.indexOf(hole.row);
   const bottomIndex = bottomRows.indexOf(hole.row);
-  const z = topIndex >= 0 ? -15 + topIndex * 2.7 : 4.2 + bottomIndex * 2.7;
+  const z = topIndex >= 0 ? -14 + topIndex * 2.54 : 3.84 + bottomIndex * 2.54;
   return [x, BREADBOARD_TOP_Y, z];
 }
 
@@ -373,11 +373,11 @@ export function Stem3DWebGLWorkbench({
           const board=partObjects.get("breadboard");
           if(!board||!board.visible)return null;
           const local=board.worldToLocal(object.getWorldPosition(new THREE.Vector3()).clone());
-          if(Math.abs(local.x)>34||Math.abs(local.z)>21)return null;
+          if(Math.abs(local.x)>39||Math.abs(local.z)>21)return null;
 
-          const col=Math.max(1,Math.min(10,Math.round((local.x+27)/6)+1));
+          const col=Math.max(1,Math.min(30,Math.round((local.x+36.83)/2.54)+1));
           const topRows=["a","b","c","d","e"];
-          const rowIndex=Math.max(0,Math.min(4,Math.round((local.z+15)/2.7)));
+          const rowIndex=Math.max(0,Math.min(4,Math.round((local.z+14)/2.54)));
           const row=topRows[rowIndex];
 
           if(partId==="resistor"){
@@ -386,12 +386,12 @@ export function Stem3DWebGLWorkbench({
             return {holes};
           }
           if(partId==="led"){
-            const startCol=Math.max(1,Math.min(9,col));
+            const startCol=Math.max(1,Math.min(29,col));
             const holes=[`bb-${row}${startCol}`,`bb-${row}${startCol+1}`];
             return {holes};
           }
           if(partId==="button"){
-            const column=Math.max(1,Math.min(10,col));
+            const column=Math.max(1,Math.min(30,col));
             return {holes:[`bb-e${column}`,`bb-f${column}`]};
           }
           return null;
