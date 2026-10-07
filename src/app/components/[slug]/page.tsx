@@ -7,6 +7,7 @@ import { ComponentVisualCard } from "@/components/component-visual-card";
 import { componentBySlug, componentCatalog, projectsUsingComponent } from "@/lib/build-catalog";
 import { db } from "@/lib/db";
 import type { ComponentVisual } from "@/lib/component-visuals";
+import { pinoutFor } from "@/lib/component-pinouts";
 
 export const dynamic = "force-dynamic";
 
@@ -45,6 +46,7 @@ export default async function ComponentDetailPage({ params }: { params: Promise<
     local: true,
   } : null;
   const learningVisuals = uploadedMedia.filter((media) => media.kind !== "PHOTO");
+  const pinout = pinoutFor(item.slug);
 
   return <div>
     <PublicHeader />
@@ -75,6 +77,18 @@ export default async function ComponentDetailPage({ params }: { params: Promise<
             <h2 style={{marginTop:8}}>What does this component do?</h2>
             <p>{item.summary}</p>
           </section>
+
+          {pinout ? <section className="card">
+            <div className="eyebrow">PIN / ROLE GUIDE</div>
+            <h2 style={{marginTop:8}}>{pinout.title}</h2>
+            <p className="small muted">{pinout.orientationNote}</p>
+            <div className="pinout-visual" role="list">
+              {pinout.pins.map((pin) => <div className="pinout-row" role="listitem" key={pin.label}>
+                <div className="pinout-label">{pin.label}</div>
+                <div className="pinout-role">{pin.role}{pin.caution ? <div className="pinout-caution">⚠ {pin.caution}</div> : null}</div>
+              </div>)}
+            </div>
+          </section> : null}
 
           <section className="card">
             <div className="eyebrow">Connect it safely</div>
