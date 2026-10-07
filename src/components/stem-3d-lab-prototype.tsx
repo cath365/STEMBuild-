@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { componentVisualFor } from "@/lib/component-visuals";
 import { compileUnoFirmware, startUnoFirmwareSimulation, type AVRSimulation } from "@/lib/avr-browser-engine";
 import { Stem3DWebGLWorkbench } from "@/components/stem-3d-webgl-workbench";
+import { validateLedBreadboardCircuit, type BreadboardJumper, type BreadboardPlacement } from "@/lib/breadboard-circuit";
 import {
   connectionForTerminals,
   lab3dProject,
@@ -17,7 +18,7 @@ function partImage(slug: string) {
 }
 
 function storageKey(project: Lab3DProject) {
-  return `stembuild-3d-lab-v03-${project.slug}`;
+  return `stembuild-3d-lab-v04-${project.slug}`;
 }
 
 type EngineMode = "fast" | "firmware";
@@ -37,12 +38,25 @@ export function Stem3DLabPrototype() {
   const [hydrated, setHydrated] = useState(false);
   const [engineMode, setEngineMode] = useState<EngineMode>("fast");
   const [webglEnabled, setWebglEnabled] = useState(false);
+  const [physicalPlacements, setPhysicalPlacements] = useState<Record<string, BreadboardPlacement | undefined>>({});
+  const [physicalJumpers, setPhysicalJumpers] = useState<BreadboardJumper[]>([]);
   const [firmwareStatus, setFirmwareStatus] = useState<"idle"|"compiling"|"starting"|"running"|"error">("idle");
   const [firmwareError, setFirmwareError] = useState("");
   const [firmwareMeta, setFirmwareMeta] = useState<{flashBytes:number;compileMs:number}|null>(null);
   const avrRef = useRef<AVRSimulation | null>(null);
 
   const readiness = useMemo(() => labReadiness(project, placed, connected, code), [project, placed, connected, code]);
+  const physicalValidation = useMemo(
+    () => project.slug === "led-blink" ? validateLedBreadboardCircuit(physicalPlacements, physicalJumpers) : null,
+    [project.slug, physicalPlacements, physicalJumpers],
+  );
+  const hasPhysicalCircuit = project.slug === "led-blink" && (
+    physicalJumpers.length > 0 ||
+    Boolean(physicalPlacements.resistor?.holes?.length) ||
+    Boolean(physicalPlacements.led?.holes?.length)
+  );
+  const wiringReady = hasPhysicalCircuit ? Boolean(physicalValidation?.ok) : readiness.missingConnections.length === 0;
+  const effectiveReady = placed.length === project.parts.length && wiringReady && readiness.sketch.ok;
 
   function stopSimulation(nextMessage?: string) {
     avrRef.current?.stop();
@@ -60,10 +74,14 @@ export function Stem3DLabPrototype() {
     setPendingTerminal(null);
     setPlaced([]);
     setConnected([]);
+    setPhysicalPlacements({});
+    setPhysicalJumpers([]);
     setCode(project.defaultSketch);
     setFirmwareError("");
     setFirmwareMeta(null);
     setWebglEnabled(false);
+    setPhysicalPlacements({});
+    setPhysicalJumpers([]);
     setMessage(`Loaded ${project.shortTitle}. Assemble the parts first.`);
 
     try {
@@ -71,11 +89,15 @@ export function Stem3DLabPrototype() {
         placed?: string[];
         connected?: string[];
         code?: string;
+        physicalPlacements?: Record<string, BreadboardPlacement | undefined>;
+        physicalJumpers?: BreadboardJumper[];
       };
       if (saved) {
         if (Array.isArray(saved.placed)) setPlaced(saved.placed.filter((id) => project.parts.some((part) => part.id === id)));
         if (Array.isArray(saved.connected)) setConnected(saved.connected.filter((id) => project.connections.some((wire) => wire.id === id)));
         if (typeof saved.code === "string" && saved.code.trim()) setCode(saved.code);
+        if (saved.physicalPlacements && typeof saved.physicalPlacements === "object") setPhysicalPlacements(saved.physicalPlacements);
+        if (Array.isArray(saved.physicalJumpers)) setPhysicalJumpers(saved.physicalJumpers);
         setMessage("Saved work restored on this device.");
       }
     } catch {}
@@ -90,12 +112,12 @@ export function Stem3DLabPrototype() {
   useEffect(() => {
     if (!hydrated) return;
     try {
-      window.localStorage.setItem(storageKey(project), JSON.stringify({ placed, connected, code }));
+      window.localStorage.setItem(storageKey(project), JSON.stringify({ placed, connected, code, physicalPlacements, physicalJumpers }));
     } catch {}
-  }, [hydrated, project, placed, connected, code]);
+  }, [hydrated, project, placed, connected, code, physicalPlacements, physicalJumpers]);
 
   useEffect(() => {
-    if (engineMode !== "fast" || !running || !readiness.ready) return;
+    if (engineMode !== "fast" || !running || !effectiveReady) return;
     if (project.inputMode === "button") {
       setLedOn(buttonPressed);
       return;
@@ -115,7 +137,7 @@ export function Stem3DLabPrototype() {
     };
     high();
     return () => { cancelled = true; clearTimeout(timer); };
-  }, [engineMode, running, readiness.ready, readiness.sketch.highDelayMs, readiness.sketch.lowDelayMs, project.inputMode, buttonPressed]);
+  }, [engineMode, running, effectiveReady, readiness.sketch.highDelayMs, readiness.sketch.lowDelayMs, project.inputMode, buttonPressed]);
 
   useEffect(() => {
     if (engineMode === "firmware") avrRef.current?.setButtonPressed(buttonPressed);
@@ -138,9 +160,15 @@ export function Stem3DLabPrototype() {
       const wire = project.connections.find((item) => item.id === connectionId);
       return wire ? !terminalIds.has(wire.fromTerminal) && !terminalIds.has(wire.toTerminal) : false;
     }));
+    setPhysicalPlacements((current) => {
+      const next = { ...current };
+      delete next[id];
+      return next;
+    });
+    if (id === "arduino" || id === "breadboard") setPhysicalJumpers([]);
     stopSimulation();
     setPendingTerminal(null);
-    setMessage("Part removed. Attached wires were removed too.");
+    setMessage("Part removed. Attached physical placement/wiring was cleared where needed.");
   }
 
   function connect(id: string) {
@@ -186,13 +214,14 @@ export function Stem3DLabPrototype() {
   }
 
   function readinessProblem() {
-    return readiness.missingParts[0] ? `Missing part: ${readiness.missingParts[0]}` :
-      readiness.missingConnections[0] ? `Missing wire: ${readiness.missingConnections[0]}` :
-      readiness.sketch.messages[0] ?? "The project is not ready.";
+    if (readiness.missingParts[0]) return `Missing part: ${readiness.missingParts[0]}`;
+    if (hasPhysicalCircuit && physicalValidation && !physicalValidation.ok) return physicalValidation.message;
+    if (!hasPhysicalCircuit && readiness.missingConnections[0]) return `Missing wire: ${readiness.missingConnections[0]}`;
+    return readiness.sketch.messages[0] ?? "The project is not ready.";
   }
 
   function runFastSimulation() {
-    if (!readiness.ready) {
+    if (!effectiveReady) {
       stopSimulation(readinessProblem());
       return;
     }
@@ -206,7 +235,7 @@ export function Stem3DLabPrototype() {
   }
 
   async function runFirmwareSimulation() {
-    if (!readiness.ready) {
+    if (!effectiveReady) {
       stopSimulation(readinessProblem());
       return;
     }
@@ -284,7 +313,10 @@ export function Stem3DLabPrototype() {
     setMessage("Assembly complete. Wire the project by tapping blue pin nodes in the WebGL scene or using the connection list.");
   }
 
-  const progress = Math.round(((placed.length + connected.length + (readiness.sketch.ok ? 1 : 0)) / (project.parts.length + project.connections.length + 1)) * 100);
+  const physicalWiringProgress = hasPhysicalCircuit
+    ? Math.min(project.connections.length, physicalJumpers.length + (physicalPlacements.resistor?.holes?.length && physicalPlacements.led?.holes?.length ? 1 : 0))
+    : connected.length;
+  const progress = Math.round(((placed.length + physicalWiringProgress + (readiness.sketch.ok ? 1 : 0)) / (project.parts.length + project.connections.length + 1)) * 100);
 
   return <div className="lab3d-shell">
     <div className="lab3d-project-switcher">
@@ -320,7 +352,19 @@ export function Stem3DLabPrototype() {
           </div>
           <button type="button" className="btn" onClick={()=>setWebglEnabled(false)}>Close 3D view</button>
         </div>
-        <Stem3DWebGLWorkbench project={project} placed={placed} connected={connected} ledOn={ledOn} pendingTerminal={pendingTerminal} onTerminalSelect={tapTerminal} />
+        <Stem3DWebGLWorkbench
+          project={project}
+          placed={placed}
+          connected={connected}
+          ledOn={ledOn}
+          pendingTerminal={pendingTerminal}
+          onTerminalSelect={tapTerminal}
+          physicalPlacements={physicalPlacements}
+          physicalJumpers={physicalJumpers}
+          onPhysicalPlacementChange={(partId, placement) => setPhysicalPlacements((current) => ({ ...current, [partId]: placement }))}
+          onPhysicalJumpersChange={setPhysicalJumpers}
+          onWorkbenchMessage={setMessage}
+        />
       </div>
     ) : (
       <section className="lab3d-safe-launch">
@@ -411,7 +455,17 @@ export function Stem3DLabPrototype() {
             <div><div className="eyebrow">2 · WIRE</div><strong>Reviewed connections</strong></div>
             <button type="button" className="lab3d-mini-btn" onClick={undoWire} disabled={!connected.length}>Undo last wire</button>
           </div>
-          <div className="lab3d-wire-list">
+          {project.slug === "led-blink" && hasPhysicalCircuit ? <div className={physicalValidation?.ok ? "lab3d-physical-circuit ok" : "lab3d-physical-circuit"}>
+            <div>
+              <strong>{physicalValidation?.ok ? "Physical breadboard circuit valid ✓" : "Physical breadboard circuit needs work"}</strong>
+              <span>{physicalValidation?.message}</span>
+            </div>
+            <div className="lab3d-physical-jumpers">
+              {physicalJumpers.map((jumper) => <span key={jumper.id}>{jumper.from.replace("uno-","Arduino ").toUpperCase()} → {jumper.to.replace("bb-","").toUpperCase()}</span>)}
+              {!physicalJumpers.length ? <span>No jumper wires yet.</span> : null}
+            </div>
+            <button type="button" className="lab3d-mini-btn" onClick={() => { setPhysicalJumpers([]); stopSimulation("Physical jumper wires cleared."); }}>Clear jumper wires</button>
+          </div> : <div className="lab3d-wire-list">
             {project.connections.map((wire, index) => {
               const done = connected.includes(wire.id);
               return <div key={wire.id} className={done ? "lab3d-wire-row done" : "lab3d-wire-row"}>
@@ -420,7 +474,7 @@ export function Stem3DLabPrototype() {
                 <button type="button" className="lab3d-mini-btn" onClick={()=>connect(wire.id)} disabled={done}>{done ? "Connected ✓" : "Connect"}</button>
               </div>;
             })}
-          </div>
+          </div>}
         </div>
       </section>
 
@@ -432,7 +486,7 @@ export function Stem3DLabPrototype() {
 
         <div className="lab3d-code-checks">
           <div className={readiness.sketch.ok ? "lab3d-check ok" : "lab3d-check"}><span>{readiness.sketch.ok ? "✓" : "!"}</span><div><strong>Code mapping</strong><small>{readiness.sketch.ok ? "Code matches the reviewed pin map" : readiness.sketch.messages[0]}</small></div></div>
-          <div className={readiness.missingConnections.length === 0 ? "lab3d-check ok" : "lab3d-check"}><span>{readiness.missingConnections.length === 0 ? "✓" : "!"}</span><div><strong>Wiring</strong><small>{readiness.missingConnections.length === 0 ? "All required paths connected" : `${readiness.missingConnections.length} connection(s) missing`}</small></div></div>
+          <div className={wiringReady ? "lab3d-check ok" : "lab3d-check"}><span>{wiringReady ? "✓" : "!"}</span><div><strong>Wiring</strong><small>{wiringReady ? (hasPhysicalCircuit ? "Physical breadboard circuit is electrically complete" : "All guided paths connected") : (hasPhysicalCircuit ? physicalValidation?.message : `${readiness.missingConnections.length} connection(s) missing`)}</small></div></div>
           <div className={placed.length === project.parts.length ? "lab3d-check ok" : "lab3d-check"}><span>{placed.length === project.parts.length ? "✓" : "!"}</span><div><strong>Assembly</strong><small>{placed.length}/{project.parts.length} parts placed</small></div></div>
         </div>
 
@@ -455,13 +509,13 @@ export function Stem3DLabPrototype() {
             <button type="button" className="btn" onClick={()=>stopSimulation("Simulation stopped.")}>■ Stop</button>
           </div>
 
-          {project.inputMode === "button" ? <button type="button" className={buttonPressed ? "lab3d-virtual-button pressed" : "lab3d-virtual-button"} disabled={!running || !readiness.ready} onPointerDown={()=>setButtonPressed(true)} onPointerUp={()=>setButtonPressed(false)} onPointerCancel={()=>setButtonPressed(false)} onPointerLeave={()=>setButtonPressed(false)}>
+          {project.inputMode === "button" ? <button type="button" className={buttonPressed ? "lab3d-virtual-button pressed" : "lab3d-virtual-button"} disabled={!running || !effectiveReady} onPointerDown={()=>setButtonPressed(true)} onPointerUp={()=>setButtonPressed(false)} onPointerCancel={()=>setButtonPressed(false)} onPointerLeave={()=>setButtonPressed(false)}>
             <span>{buttonPressed ? "Button pressed" : "Press and hold virtual button"}</span><small>D2 reads {buttonPressed ? "LOW" : "HIGH"}</small>
           </button> : null}
 
-          <div className={running && readiness.ready ? "lab3d-sim-card running" : "lab3d-sim-card"}>
+          <div className={running && effectiveReady ? "lab3d-sim-card running" : "lab3d-sim-card"}>
             <div><span className={ledOn ? "sim-led on" : "sim-led"} /><strong>Virtual LED</strong></div>
-            <span>{running && readiness.ready ? (ledOn ? "D8 HIGH" : "D8 LOW") : "Stopped"}</span>
+            <span>{running && effectiveReady ? (ledOn ? "D8 HIGH" : "D8 LOW") : "Stopped"}</span>
           </div>
 
           {firmwareMeta && engineMode==="firmware" ? <div className="lab3d-firmware-result"><strong>Real firmware compiled ✓</strong><span>{firmwareMeta.flashBytes.toLocaleString()} flash bytes · {(firmwareMeta.compileMs/1000).toFixed(1)} s compile</span></div> : null}
