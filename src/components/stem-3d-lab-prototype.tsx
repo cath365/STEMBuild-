@@ -8,6 +8,7 @@ import {
   lab3dProject,
   lab3dProjects,
   labReadiness,
+  parseLabProjectBackup,
   supportsFastSketch,
   type Lab3DProject,
 } from "@/lib/lab3d";
@@ -26,8 +27,18 @@ type EngineMode = "fast" | "firmware";
 
 export function Stem3DLabPrototype({ active = true }: { active?: boolean }) {
   const [projectSlug, setProjectSlug] = useState<Lab3DProject["slug"]>("led-blink");
+  useEffect(() => {
+    try {
+      const previous = localStorage.getItem("stembuild-3d-lab-last-project-v1");
+      if (previous === "led-blink" || previous === "button-light") setProjectSlug(previous);
+    } catch { /* A blocked storage provider leaves the default sample usable. */ }
+  }, []);
+  function chooseProject(slug: Lab3DProject["slug"]) {
+    setProjectSlug(slug);
+    try { localStorage.setItem("stembuild-3d-lab-last-project-v1",slug); } catch {}
+  }
   // A separate session per project prevents cross-project saves and stale runs.
-  return <LabProjectSession key={projectSlug} projectSlug={projectSlug} onProjectChange={setProjectSlug} active={active} />;
+  return <LabProjectSession key={projectSlug} projectSlug={projectSlug} onProjectChange={chooseProject} active={active} />;
 }
 
 function LabProjectSession({projectSlug,onProjectChange,active}: {projectSlug:Lab3DProject["slug"];onProjectChange:(slug:Lab3DProject["slug"])=>void;active:boolean}) {
@@ -288,6 +299,36 @@ function LabProjectSession({projectSlug,onProjectChange,active}: {projectSlug:La
     setMessage(`Downloaded ${project.downloadName}.`);
   }
 
+  function saveNow() {
+    try {
+      localStorage.setItem(storageKey(project), JSON.stringify({placed,connected,code}));
+      setStorageAvailable(true);
+      setMessage("Circuit project saved. It will reopen in this browser after restarting the computer.");
+    } catch { setStorageAvailable(false); setMessage("Browser saving failed. Download a project backup."); }
+  }
+
+  function downloadProjectBackup() {
+    const backup={version:1,slug:project.slug,placed,connected,code};
+    const blob=new Blob([JSON.stringify(backup,null,2)],{type:"application/json"});
+    const url=URL.createObjectURL(blob);
+    const link=document.createElement("a");link.href=url;link.download=`stembuild-${project.slug}-project.json`;
+    link.click();URL.revokeObjectURL(url);
+    setMessage("Circuit project backup downloaded.");
+  }
+
+  async function importProjectBackup(file:File) {
+    try {
+      if(file.size>100_000)throw Error("Circuit project backup is too large.");
+      const backup=parseLabProjectBackup(JSON.parse(await file.text()));
+      if(backup.slug!==project.slug)throw Error(`Select the ${lab3dProject(backup.slug).shortTitle} project above before importing this backup.`);
+      stopSimulation();
+      setPlaced(backup.placed);setConnected(backup.connected);setCode(backup.code);setPendingTerminal(null);
+      setMessage("Saved circuit parts, wires and Arduino code restored.");
+    } catch(cause) {
+      setMessage(cause instanceof Error?cause.message:"Could not import this circuit project.");
+    }
+  }
+
   function reset() {
     stopSimulation();
     setPlaced([]);
@@ -424,6 +465,15 @@ function LabProjectSession({projectSlug,onProjectChange,active}: {projectSlug:La
         <div className="lab3d-panel-actions">
           <button type="button" className="btn" onClick={autoAssemble}>Auto assemble demo</button>
           <button type="button" className="btn" onClick={reset}>Reset project</button>
+        </div>
+        <div className="lab-project-save">
+          <strong>Continue after a computer restart</strong>
+          <p className="small muted">Your parts, wiring and sketch autosave in this browser. Use a project backup if you change devices or clear browser data.</p>
+          <div className="lab3d-panel-actions">
+            <button type="button" className="btn" onClick={saveNow}>Save project</button>
+            <button type="button" className="btn" onClick={downloadProjectBackup}>Download project backup</button>
+            <label className="btn">Import project backup<input type="file" accept="application/json,.json" onChange={async e=>{const file=e.target.files?.[0];if(file)await importProjectBackup(file);e.target.value="";}} /></label>
+          </div>
         </div>
       </aside>
 

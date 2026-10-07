@@ -30,3 +30,21 @@
 @media (prefers-reduced-motion: reduce) {
   .lab-mode-tab { transition: none; }
 }
+
+/* Local project persistence controls use existing button patterns. */
+.lab-project-save { margin: 16px 0 18px; padding: 15px; border: 1px solid #cedde9; border-radius: 12px; background: #f4f8ff; min-width: 0; }
+.lab-project-save > p { color: #3e5163; font-size: 13px; line-height: 1.6; margin: 8px 0; }
+.lab-project-save > strong { display: block; font-size: 14px; line-height: 1.5; }
+.lab-project-save > .inline { margin: 10px 0; }
+.lab-project-save .btn { min-height: 44px; white-space: normal; }
+.lab-project-save label.btn { position: relative; cursor: pointer; overflow: hidden; }
+.lab-project-save label.btn input[type="file"] { position: absolute; width: 1px; height: 1px; opacity: 0; left: -1000px; }
+.lab-project-save label.btn:focus-within { outline: 3px solid #0b3d91; outline-offset: 3px; }
+.lab3d-panel .lab-project-save { margin-bottom: 0; }
+@media (max-width: 600px) {
+ .lab-project-save { padding: 12px; }
+ .lab-project-save .inline { display: grid; grid-template-columns: minmax(0, 1fr); }
+ .lab-project-save .btn { width: 100%; justify-content: center; }
+}
+
+.lab-modes-heading .lab-saved-notice { background: #eaf5ef; border: 1px solid #c0e0ca; border-radius: 9px; color: #245e3a; font-size: 13px; padding: 12px 14px; line-height: 1.6; }

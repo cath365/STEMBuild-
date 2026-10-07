@@ -16,6 +16,35 @@ export function RobotCADWorkspace({active=true}:{active?:boolean}){
  const cameraAction=useRef<((view:string)=>void)|null>(null);
  const [fit,setFit]=useState('Contact check not run.'),[dimensions,setDimensions]=useState('Launch 3D to measure the rendered part.');
  const fitAction=useRef<(()=>void)|null>(null);
+
+ const [restored,setRestored]=useState(false),[autosaveAllowed,setAutosaveAllowed]=useState(true);
+ const [autosaveStatus,setAutosaveStatus]=useState('Checking for saved CAD work…');
+ // Auto-restore from the last edit; retain the older manual-save slot unchanged
+ // so Save assembly / Load assembly continue to work as snapshots.
+ useEffect(()=>{
+  try{
+   const raw=localStorage.getItem('stembuild-robot-cad-autosave-v1')??localStorage.getItem('stembuild-robot-cad-v1');
+   if(raw){
+    setHistory({past:[],current:parseAssembly(JSON.parse(raw)),future:[]});
+    setAutosaveStatus('Your last CAD assembly was restored.');
+   }else setAutosaveStatus('Autosave enabled for CAD edits.');
+  }catch{
+   setAutosaveAllowed(false);
+   setAutosaveStatus('Could not restore the saved CAD file. Existing data has been kept; import a backup.');
+  }
+  setRestored(true);
+ },[]);
+ useEffect(()=>{
+  if(!restored||!autosaveAllowed)return;
+  try{
+   localStorage.setItem('stembuild-robot-cad-autosave-v1',JSON.stringify(history.current));
+   setAutosaveStatus('CAD changes saved automatically on this device.');
+  }catch{
+   setAutosaveAllowed(false);
+   setAutosaveStatus('Browser storage is unavailable. Export an assembly backup.');
+  }
+ },[history.current,restored,autosaveAllowed]);
+
  function commit(a:CADAssembly){setHistory(h=>({past:[...h.past,h.current].slice(-50),current:a,future:[]}));}
  useEffect(()=>{latest.current={assembly:history.current,selected,mode,snap};commitRef.current=commit;selectRef.current=setSelected;},[history,selected,mode,snap]);
  useEffect(()=>{
@@ -53,7 +82,7 @@ export function RobotCADWorkspace({active=true}:{active?:boolean}){
  function save(){try{localStorage.setItem('stembuild-robot-cad-v1',JSON.stringify(history.current));setStatus('Assembly saved on this device.');}catch{setStatus('Device saving unavailable. Export the assembly instead.');}}
  function load(){try{const raw=localStorage.getItem('stembuild-robot-cad-v1');if(!raw)throw Error('No assembly saved on this device.');commit(parseAssembly(JSON.parse(raw)));setStatus('Saved assembly loaded.');}catch(e){setStatus(e instanceof Error?e.message:'Cannot load this assembly.');}}
  function exportFile(){const url=URL.createObjectURL(new Blob([JSON.stringify(history.current,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='stembuild-robot-assembly.json';a.click();URL.revokeObjectURL(url);}
- return <section className="robot-cad card" id="robot-cad"><div className="eyebrow">ROBOTICS CAD · ASSEMBLY EDITOR</div><h2>Design your robot in 3D</h2><p>Move and rotate kit components in centimetres. This editor changes the mechanical layout; the obstacle arena remains a separate control test.</p>
+ return <section className="robot-cad card" id="robot-cad"><div className="eyebrow">ROBOTICS CAD · ASSEMBLY EDITOR</div><h2>Design your robot in 3D</h2><p>Move and rotate kit components in centimetres. This editor changes the mechanical layout; the obstacle arena remains a separate control test.</p><p className="small muted" role="status">{autosaveStatus} Work is restored after restarting in this browser. Export an assembly backup to keep it if browser data is cleared.</p>
  <div className="inline"><button className="btn btn-primary" onClick={()=>setEnabled(v=>!v)}>{enabled?'Close CAD view':'Launch CAD workspace'}</button>{['Top','Front','Side','Perspective'].map(v=><button className="btn" key={v} disabled={!enabled} onClick={()=>cameraAction.current?.(v)}>{v} view</button>)}</div>
  {enabled?<div className="robot-cad-canvas" ref={mount} aria-label="3D CAD assembly workspace"/>:null}<p role="status">{status}</p>
  <div className="robot-cad-grid"><div><h3>Assembly tree</h3>{cadNames.map((name,i)=><button className="btn" key={name} aria-pressed={selected===i} onClick={()=>setSelected(i)}>{name}</button>)}<p className="small muted">Uno PCB footprint: 6.86 × 5.34 cm. Other parts represent generic kit variants. Coordinate offsets are relative to the reference mounting pose.</p></div><div><h3>{cadNames[selected]}</h3><p className="small muted">{dimensions}</p>

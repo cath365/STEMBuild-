@@ -1,14 +1,15 @@
 "use client";
 import {useState} from 'react';
+import type { RobotBuilderSnapshot, RobotPlacement } from '@/lib/robot-save';
 import {robotMounts,requiredRobotNets,terminal,terminalLabel,validateRobotCircuit,type RobotWire} from '@/lib/robot-circuit';
-type Placement={x:number;y:number;rotation:number};
-export function RobotBuilder({disabled,onChange}:{disabled:boolean;onChange:(parts:string[],ready:boolean)=>void}){
- const [placements,setPlacements]=useState<Record<number,Placement>>({});
- const [wires,setWires]=useState<RobotWire[]>([]),[pending,setPending]=useState<string|null>(null);
+type Placement=RobotPlacement;
+export function RobotBuilder({disabled,onChange,initial}:{disabled:boolean;onChange:(parts:string[],ready:boolean,snapshot:RobotBuilderSnapshot)=>void;initial?:RobotBuilderSnapshot}){
+ const [placements,setPlacements]=useState<Record<number,Placement>>(()=>initial?.placements??{});
+ const [wires,setWires]=useState<RobotWire[]>(()=>initial?.wires??[]),[pending,setPending]=useState<string|null>(null);
  const [selected,setSelected]=useState(0),[message,setMessage]=useState('Choose a part and tap its mounting zone, or drag it from the tray.');
  const [drag,setDrag]=useState<number|null>(null);
  const mounted=(ps:Record<number,Placement>)=>robotMounts.filter((m,i)=>ps[i]&&Math.hypot(ps[i].x-m.x,ps[i].y-m.y)<1&&ps[i].rotation===0).map(m=>m.name);
- function update(ps:Record<number,Placement>,ws:RobotWire[]){setPlacements(ps);setWires(ws);const parts=mounted(ps);onChange(parts,validateRobotCircuit(ws).ok);}
+ function update(ps:Record<number,Placement>,ws:RobotWire[]){setPlacements(ps);setWires(ws);const parts=mounted(ps);onChange(parts,validateRobotCircuit(ws).ok,{placements:ps,wires:ws});}
  function place(i:number,x:number,y:number){if(disabled)return;const m=robotMounts[i];const snap=Math.hypot(x-m.x,y-m.y)<35;const ps={...placements,[i]:{x:snap?m.x:Math.max(30,Math.min(370,x)),y:snap?m.y:Math.max(25,Math.min(270,y)),rotation:placements[i]?.rotation??0}};update(ps,wires);setMessage(snap?`${m.name} attached to its mounting zone.`:'Part placed. Move it onto its matching mounting zone.');}
  function point(e:React.PointerEvent<SVGSVGElement>){const r=e.currentTarget.getBoundingClientRect();return {x:(e.clientX-r.left)/r.width*400,y:(e.clientY-r.top)/r.height*300};}
  function connect(id:string){if(disabled)return;if(!pending){setPending(id);return;}if(id===pending){setPending(null);return;}if(!wires.some(w=>(w.from===pending&&w.to===id)||(w.from===id&&w.to===pending))){update(placements,[...wires,{from:pending,to:id}]);setMessage('Wire added. Check the circuit feedback below.');}setPending(null);}

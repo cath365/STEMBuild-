@@ -2,6 +2,8 @@
 import {RobotBuilder} from '@/components/robot-builder';
 import {createRobotModels} from '@/lib/robot-models';
 import {useEffect,useRef,useState} from 'react';
+import { robotMounts, validateRobotCircuit } from '@/lib/robot-circuit';
+import { ROBOT_PROJECT_KEY, parseSavedRobotProject, type RobotBuilderSnapshot, type SavedRobotProject } from '@/lib/robot-save';
 import {collides,initialRobot,robotParts,robotSketch,stepRobot,type Obstacle} from '@/lib/robot-arena';
 
 export function RobotArena({active=true}:{active?:boolean}){
@@ -11,12 +13,67 @@ export function RobotArena({active=true}:{active?:boolean}){
  const [robot,setRobot]=useState(initialRobot),[view,setView]=useState('Top view · low-data mode');
  const [show3D,setShow3D]=useState(false),[blockX,setBlockX]=useState(40),[blockZ,setBlockZ]=useState(-30);
  const [message,setMessage]=useState('Assemble the robot, review its wiring, then start the arena.');
+ const [builder,setBuilder]=useState<RobotBuilderSnapshot>({placements:{},wires:[]});
+ const [hydrated,setHydrated]=useState(false),[storageAllowed,setStorageAllowed]=useState(true),[builderRevision,setBuilderRevision]=useState(0);
+ const [saveStatus,setSaveStatus]=useState('Checking saved robot project…');
  const inspect=useRef<(()=>void)|null>(null);
  const mount=useRef<HTMLDivElement>(null),latest=useRef({robot,blocks,parts});
  // Preserve mounted assembly, but stop movement and free 3D resources while hidden.
  useEffect(()=>{if(!active){setRunning(false);setShow3D(false);}},[active]);
  useEffect(()=>{latest.current={robot,blocks,parts};},[robot,blocks,parts]);
  const ready=parts.length===robotParts.length&&wiringReady;
+
+ function snapshot():SavedRobotProject {
+  return {version:1,builder,blocks,threshold,updatedAt:new Date().toISOString()};
+ }
+ function restore(saved:SavedRobotProject){
+  setBuilder(saved.builder);
+  setBuilderRevision(v=>v+1);
+  const mounted=robotMounts.filter((m,i)=>{
+   const p=saved.builder.placements[i];
+   return p&&Math.hypot(p.x-m.x,p.y-m.y)<1&&p.rotation===0;
+  }).map(m=>m.name);
+  setParts(mounted);setWiringReady(validateRobotCircuit(saved.builder.wires).ok);
+  setBlocks(saved.blocks);setThreshold(saved.threshold);setRobot(initialRobot);setRunning(false);setShow3D(false);
+  setMessage('Saved robot assembly, wires and obstacles restored.');
+ }
+ useEffect(()=>{
+  try{
+   const raw=localStorage.getItem(ROBOT_PROJECT_KEY);
+   if(raw){restore(parseSavedRobotProject(JSON.parse(raw)));setSaveStatus('Your robot project was restored from this browser.');}
+   else setSaveStatus('Autosave is on for your robot project.');
+  }catch{
+   // Do not overwrite a corrupt save before the user has a chance to download a backup.
+   setStorageAllowed(false);
+   setSaveStatus('Existing robot save could not be opened. Autosave is paused to protect it; you can import a backup.');
+  }
+  setHydrated(true);
+ // Restore only once when this workspace mounts.
+ // eslint-disable-next-line react-hooks/exhaustive-deps
+ },[]);
+ useEffect(()=>{
+  if(!hydrated||!storageAllowed)return;
+  try{localStorage.setItem(ROBOT_PROJECT_KEY,JSON.stringify(snapshot()));setSaveStatus('Saved automatically on this device.');}
+  catch{setStorageAllowed(false);setSaveStatus('Browser storage is unavailable. Download a project backup.');}
+ // Saving follows every change to the project, not its running animation.
+ // eslint-disable-next-line react-hooks/exhaustive-deps
+ },[builder,blocks,threshold,hydrated,storageAllowed]);
+ function saveNow(){
+  try{localStorage.setItem(ROBOT_PROJECT_KEY,JSON.stringify(snapshot()));setStorageAllowed(true);setSaveStatus('Robot project saved. Reopen this browser to continue.');}
+  catch{setSaveStatus('Could not save on this device. Download a backup.');}
+ }
+ function exportProject(){
+  const url=URL.createObjectURL(new Blob([JSON.stringify(snapshot(),null,2)],{type:'application/json'}));
+  const a=document.createElement('a');a.href=url;a.download='stembuild-robot-project.json';a.click();URL.revokeObjectURL(url);
+ }
+ async function importProject(file:File){
+  try{
+   if(file.size>100_000)throw Error('Project backup is too large.');
+   const saved=parseSavedRobotProject(JSON.parse(await file.text()));
+   restore(saved);setStorageAllowed(true);setSaveStatus('Robot project imported and autosave resumed.');
+  }catch(error){setSaveStatus(error instanceof Error?error.message:'Could not import this project.');}
+ }
+
  useEffect(()=>{
   if(!running)return;
   let raf=0,last=0;
@@ -58,7 +115,14 @@ export function RobotArena({active=true}:{active?:boolean}){
  return <section className="robot-lab" id="robot-arena">
   <div className="eyebrow">ROBOTICS · BUILD AND TEST</div><h2>Obstacle-avoiding robot</h2>
   <p>Assemble a two-wheel Uno robot and add blocks to its test arena. This model tests the generated avoidance logic; arbitrary Arduino code execution and motor electronics are not connected to this arena yet.</p>
-  <div className="robot-lab-grid"><aside className="card"><RobotBuilder disabled={running} onChange={(assembled,wired)=>{setParts(assembled);setWiringReady(wired);}}/></aside>
+  <div className="lab-project-save">
+   <p role="status">{saveStatus}</p>
+   <div className="inline"><button type="button" className="btn" onClick={saveNow} disabled={!hydrated||running}>Save project</button><button type="button" className="btn" onClick={exportProject} disabled={!hydrated}>Download project backup</button>
+    <label className="btn">Import project backup<input type="file" accept="application/json,.json" onChange={async e=>{const file=e.target.files?.[0];if(file)await importProject(file);e.target.value='';}} /></label>
+   </div>
+   <p className="small muted">Autosave restores this assembly, its connections and obstacles after restarting the computer in the same browser. It is not cloud sync; download a backup before clearing browser data or changing devices.</p>
+  </div>
+  <div className="robot-lab-grid"><aside className="card">{hydrated?<RobotBuilder key={builderRevision} initial={builder} disabled={running} onChange={(assembled,wired,snapshot)=>{setParts(assembled);setWiringReady(wired);setBuilder(snapshot);}}/>:<p className="muted">Restoring your robot assembly…</p>}</aside>
   <div><button className="btn" onClick={()=>{setShow3D(s=>!s);setView(show3D?"Top view · low-data mode":"Loading 3D…");}}>{show3D?"Close robot 3D":"Launch robot 3D"}</button>{show3D?<button className="btn" onClick={()=>inspect.current?.()}>Inspect robot parts</button>:null}{show3D?<div className="robot-view" ref={mount} aria-label="3D robot arena"/>:null}<p className="small muted">{view} · orbit and zoom in 3D. Place obstacles using the top view below.</p>
   <svg className="robot-map" viewBox="-100 -100 200 200" role="img" aria-label="Robot top view: click to place an obstacle" onClick={e=>{const r=e.currentTarget.getBoundingClientRect();addBlock((e.clientX-r.left)/r.width*200-100,(e.clientY-r.top)/r.height*200-100);}}>
    <rect x="-99" y="-99" width="198" height="198" fill="#edf2f7" stroke="#64748b"/>{blocks.map(b=><rect key={b.id} x={b.x-b.size/2} y={b.z-b.size/2} width={b.size} height={b.size} fill="#da7650"/>)}

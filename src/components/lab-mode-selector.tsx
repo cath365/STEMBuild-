@@ -82,6 +82,7 @@ export function LabModeSelector() {
         <p className="eyebrow">CHOOSE YOUR WORKSPACE</p>
         <h2>One lab. Three ways to build.</h2>
         <p>Choose a workspace below. You can switch at any time without losing the assembly or code already entered on this page.</p>
+        <p className="lab-saved-notice">Projects now save automatically in this browser and restore after a restart. For another computer or protection from cleared browser data, download a project backup from the workspace. This is not account-based cloud storage yet.</p>
       </div>
 
       <div className="lab-modes-tabs" role="tablist" aria-label="3D Lab workspaces">
