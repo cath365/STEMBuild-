@@ -5,10 +5,10 @@ export type ComponentVisual = {
   src: string;
   alt: string;
   caption: string;
-  credit: string;
-  license: string;
-  licenseUrl: string;
-  sourceUrl: string;
+  credit?: string;
+  license?: string;
+  licenseUrl?: string;
+  sourceUrl?: string;
   kind: "photo";
   verified: true;
   local?: boolean;
@@ -31,7 +31,7 @@ const boardVisuals: ComponentVisual[] = boards.map((board) => ({
 const commonsVisuals: ComponentVisual[] = [
   {
     slug: "breadboard",
-    src: "https://commons.wikimedia.org/wiki/Special:Redirect/file/Electronics-White-Breadboard.jpg?width=1200",
+    src: "https://upload.wikimedia.org/wikipedia/commons/1/19/Electronics-White-Breadboard.jpg",
     alt: "Real white solderless electronics breadboard",
     caption: "Real solderless breadboard. Notice the centre gap, terminal rows and long power rails.",
     credit: "Evan-Amos",
@@ -43,7 +43,7 @@ const commonsVisuals: ComponentVisual[] = [
   },
   {
     slug: "jumper-wires",
-    src: "https://commons.wikimedia.org/wiki/Special:Redirect/file/A_few_Jumper_Wires.jpg?width=1200",
+    src: "https://upload.wikimedia.org/wikipedia/commons/5/5c/A_few_Jumper_Wires.jpg",
     alt: "Real jumper wires used for breadboard electronics",
     caption: "Real jumper wires. Connector type and length vary, so match the ends to your board and module.",
     credit: "oomlout",
@@ -55,7 +55,7 @@ const commonsVisuals: ComponentVisual[] = [
   },
   {
     slug: "led",
-    src: "https://commons.wikimedia.org/wiki/Special:Redirect/file/Electronic-Component-Red-LED.jpg?width=1200",
+    src: "https://upload.wikimedia.org/wikipedia/commons/9/90/Electronic-Component-Red-LED.jpg",
     alt: "Real red through-hole light emitting diode",
     caption: "Real through-hole LED. Lead length can help identify polarity, but always verify the actual part.",
     credit: "Evan-Amos",
@@ -67,7 +67,7 @@ const commonsVisuals: ComponentVisual[] = [
   },
   {
     slug: "resistor-330",
-    src: "https://commons.wikimedia.org/wiki/Special:Redirect/file/Resistor.jpg?width=1200",
+    src: "https://upload.wikimedia.org/wikipedia/commons/e/e6/Resistor.jpg",
     alt: "Real 330 ohm through-hole resistor with colour bands",
     caption: "Real 330 Ω resistor example. This photograph shows a 330 Ω, 5% resistor; colour bands and body size can vary.",
     credit: "Nunikasi",
@@ -79,7 +79,7 @@ const commonsVisuals: ComponentVisual[] = [
   },
   {
     slug: "push-button",
-    src: "https://commons.wikimedia.org/wiki/Special:Redirect/file/Push_button_switch.jpg?width=1200",
+    src: "https://upload.wikimedia.org/wikipedia/commons/e/ea/Push_button_switch.jpg",
     alt: "Real push button switch electronic component",
     caption: "Real push-button switch example. Tactile breadboard buttons can look different and may have internally paired legs.",
     credit: "Achalshanth",
@@ -91,7 +91,7 @@ const commonsVisuals: ComponentVisual[] = [
   },
   {
     slug: "dht11-dht22",
-    src: "https://commons.wikimedia.org/wiki/Special:Redirect/file/Dht11_term_and_humidity_sensor.jpg?width=1200",
+    src: "https://upload.wikimedia.org/wikipedia/commons/c/c3/Dht11_term_and_humidity_sensor.jpg",
     alt: "Real DHT11 digital temperature and humidity sensor",
     caption: "Real DHT11 sensor. A DHT22 and breakout-module versions look different, so verify the exact sensor and pin labels.",
     credit: "Crackopl",
@@ -103,7 +103,7 @@ const commonsVisuals: ComponentVisual[] = [
   },
   {
     slug: "hc-sr04",
-    src: "https://commons.wikimedia.org/wiki/Special:Redirect/file/SparkFun_HC-SR04_Ultrasonic-Sensor_13959-01a.jpg?width=1200",
+    src: "https://upload.wikimedia.org/wikipedia/commons/9/99/SparkFun_HC-SR04_Ultrasonic-Sensor_13959-01a.jpg",
     alt: "Real HC-SR04 ultrasonic distance sensor module",
     caption: "Real HC-SR04 ultrasonic sensor. The familiar two circular transducers help learners recognise the module.",
     credit: "SparkFun",
@@ -115,7 +115,7 @@ const commonsVisuals: ComponentVisual[] = [
   },
   {
     slug: "servo",
-    src: "https://commons.wikimedia.org/wiki/Special:Redirect/file/Micro_servo.jpg?width=1200",
+    src: "https://upload.wikimedia.org/wikipedia/commons/d/d3/Micro_servo.jpg",
     alt: "Real small hobby micro servo motor",
     caption: "Real hobby micro servo example. Wire colours and connector order can vary by manufacturer.",
     credit: "oomlout",
@@ -127,7 +127,7 @@ const commonsVisuals: ComponentVisual[] = [
   },
   {
     slug: "dc-motor",
-    src: "https://commons.wikimedia.org/wiki/Special:Redirect/file/Gear_motor.jpg?width=1200",
+    src: "https://upload.wikimedia.org/wikipedia/commons/c/c1/Gear_motor.jpg",
     alt: "Real DC gear motor",
     caption: "Real gear motor example. Classroom robot motors may use different gearboxes, shafts and voltage ratings.",
     credit: "Jzest",
