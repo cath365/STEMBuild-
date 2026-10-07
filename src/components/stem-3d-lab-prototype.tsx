@@ -124,7 +124,11 @@ export function Stem3DLabPrototype() {
   function placePart(id: string) {
     setPlaced((current) => current.includes(id) ? current : [...current, id]);
     const part = project.parts.find((item) => item.id === id);
-    if (part) setMessage(`${part.label} placed on the workbench.`);
+    if (part) {
+      setMessage(webglEnabled
+        ? `${part.label} placed in the 3D workbench.`
+        : `${part.label} placed in the lightweight preview. Tap Launch 3D Workbench when you want the rotatable 3D view.`);
+    }
   }
 
   function removePart(id: string) {
@@ -331,8 +335,49 @@ export function Stem3DLabPrototype() {
         </div>
         <div className="lab3d-safe-status">
           <span>✓ Page loads without Three.js</span>
-          <span>✓ No WebGL allocation until launch</span>
+          <span>✓ Placed parts stay visible before 3D launch</span>
           <span>✓ Full Firmware Mode stays opt-in</span>
+        </div>
+
+        <div className="lab3d-light-preview">
+          <div className="lab3d-light-preview-head">
+            <div>
+              <div className="eyebrow">LIGHTWEIGHT ASSEMBLY PREVIEW</div>
+              <strong>{placed.length ? `${placed.length}/${project.parts.length} parts visible` : "Place a part to see it here"}</strong>
+            </div>
+            {placed.length ? <button type="button" className="lab3d-mini-btn" onClick={()=>setWebglEnabled(true)}>Open these parts in 3D</button> : null}
+          </div>
+
+          <div className="lab3d-light-preview-stage" aria-label="Placed component preview">
+            <div className="lab3d-light-grid" aria-hidden="true" />
+            {project.parts.map((part) => {
+              const isPlaced = placed.includes(part.id);
+              const visual = partImage(part.componentSlug);
+              return <div
+                key={part.id}
+                className={isPlaced ? "lab3d-light-part placed" : "lab3d-light-part"}
+                style={{
+                  left:`${part.target.left}%`,
+                  top:`${part.target.top}%`,
+                  width:`${part.target.width}%`,
+                  height:`${part.target.height}%`,
+                }}
+              >
+                {isPlaced ? <>
+                  {visual ? <img src={visual} alt={part.label} /> : <div className="lab3d-light-part-fallback">{part.label}</div>}
+                  <span>{part.label}</span>
+                </> : <small>{part.label}</small>}
+              </div>;
+            })}
+
+            <svg className="lab3d-light-wires" viewBox="0 0 1000 620" preserveAspectRatio="none" aria-hidden="true">
+              {project.connections.filter((wire)=>connected.includes(wire.id)).map((wire)=>
+                <path key={wire.id} d={wire.path} className={`wire ${wire.wireClass}`}/>
+              )}
+            </svg>
+          </div>
+
+          <p className="small muted">This preview is intentionally lightweight for phones. It shows every part as soon as you press Place. Launch 3D only when you want rotation, zoom and clickable 3D pin nodes.</p>
         </div>
       </section>
     )}

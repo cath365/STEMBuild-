@@ -431,3 +431,29 @@
   .lab3d-webgl-launch-actions{align-items:flex-start;flex-direction:column}
   .lab3d-webgl-launch-actions .btn{width:100%}
 }
+
+.lab3d-light-preview{grid-column:1/-1;display:grid;gap:10px;margin-top:2px;padding:12px;border:1px solid var(--border);border-radius:11px;background:#fff}
+.lab3d-light-preview-head{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.lab3d-light-preview-head strong{display:block;margin-top:4px;font-size:12px}
+.lab3d-light-preview-stage{position:relative;aspect-ratio:1.58/1;min-height:280px;overflow:hidden;border:1px solid #cbd6de;border-radius:10px;background:linear-gradient(160deg,#fdfefe,#e5edf2)}
+.lab3d-light-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(15,61,145,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(15,61,145,.06) 1px,transparent 1px);background-size:28px 28px}
+.lab3d-light-part{position:absolute;display:grid;place-items:center;border:2px dashed rgba(11,61,145,.22);border-radius:8px;background:rgba(255,255,255,.32);overflow:visible;z-index:2}
+.lab3d-light-part small{padding:4px;text-align:center;font-size:8px;font-weight:800;color:rgba(47,74,98,.7)}
+.lab3d-light-part.placed{border-style:solid;border-color:rgba(11,61,145,.18);background:#fff;box-shadow:0 5px 12px rgba(35,51,65,.12)}
+.lab3d-light-part img{display:block;width:100%;height:100%;object-fit:contain;border-radius:6px}
+.lab3d-light-part>span{position:absolute;left:50%;top:100%;transform:translate(-50%,4px);padding:3px 6px;border-radius:999px;background:#1c2934;color:#fff;font-size:7px;font-weight:800;white-space:nowrap}
+.lab3d-light-part-fallback{display:grid;place-items:center;width:100%;height:100%;font-size:9px;font-weight:800;color:var(--primary);padding:5px;text-align:center}
+.lab3d-light-wires{position:absolute;inset:0;width:100%;height:100%;z-index:4;pointer-events:none}
+.lab3d-light-wires .wire{fill:none;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 2px 1px rgba(0,0,0,.16))}
+.lab3d-light-wires .wire-blue{stroke:#2979ff}
+.lab3d-light-wires .wire-red{stroke:#e44444}
+.lab3d-light-wires .wire-black{stroke:#2d3338}
+.lab3d-light-wires .wire-green{stroke:#2f9b60}
+@media(max-width:760px){
+  .lab3d-light-preview-head{align-items:flex-start;flex-direction:column}
+  .lab3d-light-preview-head .lab3d-mini-btn{width:100%}
+  .lab3d-light-preview-stage{min-height:320px}
+}
+@media(max-width:480px){
+  .lab3d-light-preview-stage{min-height:300px;aspect-ratio:1.22/1}
+}
