@@ -79,6 +79,14 @@ export function RobotCADWorkspace({active=true}:{active?:boolean}){
   void boot();return ()=>{dead=true;cancelAnimationFrame(raf);observer?.disconnect();gizmo?.dispose();orbit?.dispose();cameraAction.current=null;fitAction.current=null;scene?.traverse((o:any)=>{o.geometry?.dispose();o.material?.map?.dispose();o.material?.dispose();});renderer?.dispose();renderer?.domElement?.remove();};
  },[enabled]);
  const part=history.current.parts[selected];
+ function nudgeSelected(axis:number,amount:number){
+  const offset=[...part.offset] as [number,number,number];
+  const value=Math.round((offset[axis]+amount)*100)/100;
+  if(value<-360||value>360){setStatus('This part exceeds the supported movement range.');return;}
+  offset[axis]=value;
+  commit(editCADPart(history.current,selected,{...part,offset}));
+  setStatus(`${cadNames[selected]} moved ${amount>0?"+":""}${amount} cm on ${["X","Y","Z"][axis]}.`);
+ }
  function save(){try{localStorage.setItem('stembuild-robot-cad-v1',JSON.stringify(history.current));setStatus('Assembly saved on this device.');}catch{setStatus('Device saving unavailable. Export the assembly instead.');}}
  function load(){try{const raw=localStorage.getItem('stembuild-robot-cad-v1');if(!raw)throw Error('No assembly saved on this device.');commit(parseAssembly(JSON.parse(raw)));setStatus('Saved assembly loaded.');}catch(e){setStatus(e instanceof Error?e.message:'Cannot load this assembly.');}}
  function exportFile(){const url=URL.createObjectURL(new Blob([JSON.stringify(history.current,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='stembuild-robot-assembly.json';a.click();URL.revokeObjectURL(url);}
@@ -88,6 +96,16 @@ export function RobotCADWorkspace({active=true}:{active?:boolean}){
  <div className="robot-cad-grid"><div><h3>Assembly tree</h3>{cadNames.map((name,i)=><button className="btn" key={name} aria-pressed={selected===i} onClick={()=>setSelected(i)}>{name}</button>)}<p className="small muted">Uno PCB footprint: 6.86 × 5.34 cm. Other parts represent generic kit variants. Coordinate offsets are relative to the reference mounting pose.</p></div><div><h3>{cadNames[selected]}</h3><p className="small muted">{dimensions}</p>
  <div className="inline"><button className="btn" aria-pressed={mode==='translate'} onClick={()=>setMode('translate')}>Move</button><button className="btn" aria-pressed={mode==='rotate'} onClick={()=>setMode('rotate')}>Rotate</button><label><input type="checkbox" checked={snap} onChange={e=>setSnap(e.target.checked)}/> Grid snap: 0.5 cm / 15°</label></div>
  {(['offset','rotation'] as const).map(field=><div className="inline" key={field}>{['X','Y','Z'].map((axis,i)=><label key={axis}>{axis} {field==='offset'?'offset (cm)':'rotation (°)'}<input type="number" min="-360" max="360" step={field==='offset'?.5:15} value={part[field][i]} onChange={e=>{const n=Number(e.target.value);if(!Number.isFinite(n)||Math.abs(n)>360)return;const a=[...part[field]] as [number,number,number];a[i]=n;commit(editCADPart(history.current,selected,{...part,[field]:a}));}}/></label>)}</div>)}
+ <div className="cad-nudge" role="group" aria-label="Move selected CAD part in half centimetre steps">
+  <strong>Fine-position selected part</strong>
+  <p className="small muted">Adjust by 0.5 cm. Every movement can be undone and is saved automatically.</p>
+  <div className="cad-nudge-controls">
+   {(["X","Y","Z"] as const).map((axis,i)=><div key={axis}><span>{axis} axis</span>
+     <button type="button" className="btn" aria-label={`Nudge ${axis} minus 0.5 cm`} onClick={()=>nudgeSelected(i,-.5)}>− 0.5</button>
+     <button type="button" className="btn" aria-label={`Nudge ${axis} plus 0.5 cm`} onClick={()=>nudgeSelected(i,.5)}>+ 0.5</button>
+   </div>)}
+  </div>
+ </div>
  <div className="inline"><button className="btn" onClick={()=>commit(editCADPart(history.current,selected,{offset:[0,0,0],rotation:[0,0,0],visible:true}))}>Snap to reference mount</button><button className="btn" onClick={()=>commit(editCADPart(history.current,selected,{...part,visible:!part.visible}))}>{part.visible?'Hide selected part':'Show selected part'}</button></div></div></div>
  <div className="inline"><button className="btn" disabled={!history.past.length} onClick={()=>setHistory(h=>({past:h.past.slice(0,-1),current:h.past.at(-1)!,future:[h.current,...h.future]}))}>Undo CAD edit</button><button className="btn" disabled={!history.future.length} onClick={()=>setHistory(h=>({past:[...h.past,h.current],current:h.future[0],future:h.future.slice(1)}))}>Redo CAD edit</button><button className="btn" onClick={save}>Save assembly</button><button className="btn" onClick={load}>Load assembly</button><button className="btn" onClick={exportFile}>Export assembly</button><label className="btn">Import assembly<input type="file" accept="application/json,.json" onChange={async e=>{const f=e.target.files?.[0];if(!f)return;try{if(f.size>100000)throw Error('Assembly file is too large.');commit(parseAssembly(JSON.parse(await f.text())));setStatus('Assembly imported.');}catch(err){setStatus(err instanceof Error?err.message:'Import failed.');}e.target.value='';}}/></label></div>
  <button className="btn" disabled={!enabled} onClick={()=>fitAction.current?.()}>Check electronics overlap</button><p role="status">{fit}</p><p className="small muted">Overlap checks use bounding boxes for the Uno, driver, battery holder and sensor. Mounting holes, shafts, fasteners, cable routing and manufacturing tolerances are not validated yet. Export is a STEMBuild assembly file, not DWG or STEP.</p>
