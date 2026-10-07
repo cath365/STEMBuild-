@@ -216,3 +216,44 @@ export function supportsFastSketch(project: Lab3DProject, source: string) {
   const delays = [...normalizedSource(source).matchAll(/delay\s*\(\s*(\d+)\s*\)/g)].map(m=>Number(m[1]));
   return delays.every(n=>Number.isSafeInteger(n) && n <= 60_000) && canonical(source) === canonical(project.defaultSketch);
 }
+
+
+// Backups are deliberately small text documents; never import arbitrary hardware,
+// code or wire IDs into a different project or use saved file data as trusted markup.
+export type LabProjectBackup = {
+  version: 1;
+  slug: Lab3DProject["slug"];
+  placed: string[];
+  connected: string[];
+  code: string;
+};
+
+export function parseLabProjectBackup(value: unknown): LabProjectBackup {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw Error("Invalid STEMBuild circuit project backup.");
+  }
+  const raw = value as Record<string, unknown>;
+  if (raw.version !== 1 || (raw.slug !== "led-blink" && raw.slug !== "button-light") ||
+      !Array.isArray(raw.placed) || !Array.isArray(raw.connected) ||
+      raw.placed.length > 20 || raw.connected.length > 30 ||
+      typeof raw.code !== "string" || raw.code.length > 50_000) {
+    throw Error("Unsupported STEMBuild circuit backup.");
+  }
+  const project = lab3dProject(raw.slug);
+  const partIds = new Set(project.parts.map((part) => part.id));
+  const wireIds = new Set(project.connections.map((wire) => wire.id));
+  if (raw.placed.some((id: unknown) => typeof id !== "string" || !partIds.has(id)) ||
+      raw.connected.some((id: unknown) => typeof id !== "string" || !wireIds.has(id))) {
+    throw Error("Circuit backup contains unknown components or wires.");
+  }
+  const placed = [...new Set(raw.placed)] as string[];
+  const connected = [...new Set(raw.connected)] as string[];
+  const selected = new Set(placed);
+  if (project.connections.filter((wire) => connected.includes(wire.id)).some((wire) =>
+    !selected.has(project.terminals.find((pin) => pin.id === wire.fromTerminal)?.partId ?? "") ||
+    !selected.has(project.terminals.find((pin) => pin.id === wire.toTerminal)?.partId ?? "")
+  )) {
+    throw Error("Circuit backup has wires connected to missing parts.");
+  }
+  return { version: 1, slug: raw.slug, placed, connected, code: raw.code };
+}
