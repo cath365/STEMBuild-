@@ -10,12 +10,12 @@ export default function manifest(): MetadataRoute.Manifest {
     scope: "/",
     display: "standalone",
     background_color: "#f7f8fa",
-    theme_color: "#b52163",
+    theme_color: "#0B3D91",
     categories: ["education"],
     icons: [
-      { src: "/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
-      { src: "/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
-      { src: "/icon-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+      { src: "/brand/stembuild-icon-192x192.png", sizes: "192x192", type: "image/png", purpose: "any" },
+      { src: "/brand/stembuild-icon-512x512.png", sizes: "512x512", type: "image/png", purpose: "any" },
+      { src: "/brand/stembuild-icon-512x512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
     ],
   };
 }
