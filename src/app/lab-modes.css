@@ -46,3 +46,5 @@
  .lab-project-save .inline { display: grid; grid-template-columns: minmax(0, 1fr); }
  .lab-project-save .btn { width: 100%; justify-content: center; }
 }
+
+.lab-modes-heading .lab-saved-notice { background: #eaf5ef; border: 1px solid #c0e0ca; border-radius: 9px; color: #245e3a; font-size: 13px; padding: 12px 14px; line-height: 1.6; }
