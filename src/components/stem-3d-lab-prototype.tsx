@@ -80,8 +80,6 @@ export function Stem3DLabPrototype() {
     setFirmwareError("");
     setFirmwareMeta(null);
     setWebglEnabled(false);
-    setPhysicalPlacements({});
-    setPhysicalJumpers([]);
     setMessage(`Loaded ${project.shortTitle}. Assemble the parts first.`);
 
     try {
@@ -299,6 +297,8 @@ export function Stem3DLabPrototype() {
     stopSimulation();
     setPlaced([]);
     setConnected([]);
+    setPhysicalPlacements({});
+    setPhysicalJumpers([]);
     setCode(project.defaultSketch);
     setButtonPressed(false);
     setPendingTerminal(null);
