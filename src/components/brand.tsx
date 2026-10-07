@@ -13,7 +13,14 @@ export function Brand() {
         unoptimized
         aria-hidden="true"
       />
-      <span className="brand-name">STEMBuild</span>
+      <Image
+        className="brand-wordmark"
+        src="/brand/stembuild-wordmark.png"
+        alt="STEMBuild"
+        width={170}
+        height={30}
+        unoptimized
+      />
     </Link>
   );
 }

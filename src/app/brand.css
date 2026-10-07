@@ -1,0 +1,32 @@
+/* Official STEMBuild wordmark sizing. Kept separate from the broader UI theme. */
+.brand-wordmark {
+  display: block;
+  width: 146px;
+  height: auto;
+  object-fit: contain;
+  flex: 0 0 auto;
+}
+
+.sidebar .brand-wordmark {
+  width: 150px;
+}
+
+.public-header .brand-wordmark {
+  width: 146px;
+}
+
+@media (max-width: 760px) {
+  .brand-wordmark {
+    width: 132px;
+  }
+
+  .sidebar .brand-wordmark {
+    width: 140px;
+  }
+}
+
+@media (max-width: 480px) {
+  .brand-wordmark {
+    width: 120px;
+  }
+}
