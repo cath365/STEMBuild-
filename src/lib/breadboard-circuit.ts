@@ -22,7 +22,7 @@ export function parseBreadboardHole(id: string) {
   if (!match) return null;
   const row = match[1] as typeof ROWS[number];
   const column = Number(match[2]);
-  if (column < 1 || column > 10) return null;
+  if (column < 1 || column > 30) return null;
   return { row, column };
 }
 
@@ -35,7 +35,7 @@ export function breadboardNet(id: string) {
 
 export function breadboardHoleGrid() {
   return ROWS.flatMap((row, rowIndex) =>
-    Array.from({ length: 10 }, (_, index) => {
+    Array.from({ length: 30 }, (_, index) => {
       const column = index + 1;
       return {
         id: breadboardHoleId(row, column),
