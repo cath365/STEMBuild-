@@ -36,6 +36,7 @@ export function Stem3DLabPrototype() {
   const [message, setMessage] = useState("Start by placing the real-world parts onto their matching snap zones.");
   const [hydrated, setHydrated] = useState(false);
   const [engineMode, setEngineMode] = useState<EngineMode>("fast");
+  const [webglEnabled, setWebglEnabled] = useState(false);
   const [firmwareStatus, setFirmwareStatus] = useState<"idle"|"compiling"|"starting"|"running"|"error">("idle");
   const [firmwareError, setFirmwareError] = useState("");
   const [firmwareMeta, setFirmwareMeta] = useState<{flashBytes:number;compileMs:number}|null>(null);
@@ -62,6 +63,7 @@ export function Stem3DLabPrototype() {
     setCode(project.defaultSketch);
     setFirmwareError("");
     setFirmwareMeta(null);
+    setWebglEnabled(false);
     setMessage(`Loaded ${project.shortTitle}. Assemble the parts first.`);
 
     try {
@@ -305,7 +307,35 @@ export function Stem3DLabPrototype() {
       <div>{progress}% ready · saved locally</div>
     </section>
 
-    <Stem3DWebGLWorkbench project={project} placed={placed} connected={connected} ledOn={ledOn} pendingTerminal={pendingTerminal} onTerminalSelect={tapTerminal} />
+    {webglEnabled ? (
+      <div className="lab3d-webgl-launch-wrap">
+        <div className="lab3d-webgl-launch-actions">
+          <div>
+            <div className="eyebrow">3D WORKBENCH ACTIVE</div>
+            <strong>WebGL loads only after you ask for it.</strong>
+          </div>
+          <button type="button" className="btn" onClick={()=>setWebglEnabled(false)}>Close 3D view</button>
+        </div>
+        <Stem3DWebGLWorkbench project={project} placed={placed} connected={connected} ledOn={ledOn} pendingTerminal={pendingTerminal} onTerminalSelect={tapTerminal} />
+      </div>
+    ) : (
+      <section className="lab3d-safe-launch">
+        <div>
+          <div className="eyebrow">SAFE MOBILE START</div>
+          <h2>Open the page first. Launch 3D only when you are ready.</h2>
+          <p className="muted">The 3D engine is no longer downloaded automatically when this page opens. This keeps the lab usable on slower phones, embedded browsers and unstable networks. You can still assemble, wire, edit code and use Fast Simulation below.</p>
+          <div className="inline" style={{marginTop:12}}>
+            <button type="button" className="btn btn-primary" onClick={()=>setWebglEnabled(true)}>Launch 3D Workbench</button>
+            <button type="button" className="btn" onClick={()=>document.getElementById("lab-assemble")?.scrollIntoView({behavior:"smooth"})}>Use lightweight mode</button>
+          </div>
+        </div>
+        <div className="lab3d-safe-status">
+          <span>✓ Page loads without Three.js</span>
+          <span>✓ No WebGL allocation until launch</span>
+          <span>✓ Full Firmware Mode stays opt-in</span>
+        </div>
+      </section>
+    )}
 
     <div className="lab3d-grid lab3d-grid-controls">
       <aside id="lab-assemble" className="lab3d-panel lab3d-parts-panel">
