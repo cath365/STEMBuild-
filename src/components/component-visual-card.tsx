@@ -30,11 +30,11 @@ export function ComponentVisualCard({
       {!compact ? (
         <figcaption>
           <p>{visual.caption}</p>
-          <div className="component-photo-credit">
-            Photo: <a href={visual.sourceUrl} target="_blank" rel="noreferrer">{visual.credit}</a>
-            {" · "}
-            <a href={visual.licenseUrl} target="_blank" rel="noreferrer">{visual.license}</a>
-          </div>
+          {(visual.credit || visual.license) ? <div className="component-photo-credit">
+            {visual.sourceUrl ? <>Photo: <a href={visual.sourceUrl} target="_blank" rel="noreferrer">{visual.credit || "source"}</a></> : visual.credit ? <>Photo: {visual.credit}</> : null}
+            {visual.credit && visual.license ? " · " : null}
+            {visual.licenseUrl ? <a href={visual.licenseUrl} target="_blank" rel="noreferrer">{visual.license}</a> : visual.license ? visual.license : null}
+          </div> : null}
         </figcaption>
       ) : null}
     </figure>
