@@ -326,3 +326,54 @@
   .lab3d-parity-grid{grid-template-columns:1fr}
   .lab3d-hero h1{font-size:42px}
 }
+
+/* STEMBuild 3D Lab v0.2 improvements */
+.lab3d-project-switcher{display:flex;justify-content:space-between;gap:18px;align-items:end;padding:18px;border:1px solid var(--border);border-radius:12px;background:#fff}
+.lab3d-project-switcher h2{font-size:28px;margin:7px 0}
+.lab3d-project-switcher p{max-width:720px;margin:0}
+.lab3d-project-buttons{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.lab3d-mobile-steps{display:none}
+.lab3d-terminal{position:absolute;z-index:8;transform:translate(-50%,-50%) translateZ(50px);border:2px solid #fff;background:#123d75;color:#fff;border-radius:999px;padding:4px 7px;font-size:8px;font-weight:900;box-shadow:0 3px 8px rgba(17,38,58,.3);cursor:pointer}
+.lab3d-terminal:hover,.lab3d-terminal.selected{background:#0b6bdc;box-shadow:0 0 0 4px rgba(11,107,220,.18),0 3px 8px rgba(17,38,58,.3)}
+.lab3d-wire-header{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.lab3d-run-section{margin-top:14px;padding-top:14px;border-top:1px solid var(--border);scroll-margin-top:90px}
+.lab3d-virtual-button{width:100%;display:grid;gap:4px;justify-items:center;margin-top:10px;padding:15px;border:1px solid #9eb3c4;border-bottom-width:5px;border-radius:10px;background:#eef3f7;color:#263846;font-weight:800;transition:transform .08s,border-bottom-width .08s,background .08s}
+.lab3d-virtual-button small{font-weight:600;color:var(--muted)}
+.lab3d-virtual-button:not(:disabled):active,.lab3d-virtual-button.pressed{transform:translateY(3px);border-bottom-width:2px;background:#dfeaf3}
+.lab3d-virtual-button:disabled{opacity:.55}
+.lab3d-success{display:grid;gap:4px;margin-top:10px;padding:11px 12px;border:1px solid #b9dfc8;border-radius:9px;background:#eff9f3}
+.lab3d-success strong{font-size:11px;color:#247348}
+.lab3d-success span{font-size:10px;line-height:1.45;color:#4a6657}
+.lab3d-stage-wrap:fullscreen{background:radial-gradient(circle at 50% 15%,#fff 0%,#eef3f7 50%,#d7e2e9 100%);padding:22px}
+.lab3d-stage-wrap:fullscreen .lab3d-plane{width:min(96vw,1100px)}
+.lab3d-stage-wrap:fullscreen .lab3d-stage-help{font-size:12px}
+.lab3d-wire-panel,.lab3d-code-panel,.lab3d-parts-panel{scroll-margin-top:90px}
+.wire-green{stroke:#2f9b60}
+@media(max-width:900px){
+  .lab3d-project-switcher{align-items:flex-start;flex-direction:column}
+  .lab3d-project-buttons{justify-content:flex-start}
+  .lab3d-mobile-steps{position:sticky;top:0;z-index:40;display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:6px;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,.96);backdrop-filter:blur(8px)}
+  .lab3d-mobile-steps button{border:0;border-radius:7px;background:#f0f3f6;padding:9px 4px;font-size:9px;font-weight:800;color:#33485b}
+  .lab3d-mobile-steps button:active{background:#e2edf7;color:var(--primary)}
+  .lab3d-stage-wrap{min-height:520px}
+  .lab3d-stage-help{left:10px;right:10px;text-align:center}
+}
+@media(max-width:650px){
+  .lab3d-section{padding-inline:10px}
+  .lab3d-project-switcher{padding:14px}
+  .lab3d-project-switcher h2{font-size:23px}
+  .lab3d-project-buttons{display:grid;grid-template-columns:1fr 1fr;width:100%}
+  .lab3d-project-buttons .btn{width:100%;padding-inline:8px}
+  .lab3d-statusbar{position:relative}
+  .lab3d-stage-wrap{min-height:470px}
+  .lab3d-stage-wrap .lab3d-plane{width:98%}
+  .lab3d-toolbar{position:relative}
+  .lab3d-view-controls{display:grid;grid-template-columns:1fr 1fr;width:100%}
+  .lab3d-view-controls label{justify-content:space-between}
+  .lab3d-view-controls input{width:82px}
+  .lab3d-view-controls .lab3d-mini-btn{width:100%}
+  .lab3d-terminal{font-size:7px;padding:3px 5px}
+  .lab3d-code-editor{min-height:420px;font-size:12px}
+  .lab3d-run-controls{grid-template-columns:1fr}
+  .lab3d-run-controls .btn{width:100%}
+}
