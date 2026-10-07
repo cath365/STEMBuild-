@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import "./brand.css";
+import "./learn.css";
 import { PwaRegister } from "@/components/pwa-register";
 import { ConnectivityStatus } from "@/components/connectivity-status";
 
