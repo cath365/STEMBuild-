@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PublicHeader } from "@/components/public-header";
 import { PublicFooter } from "@/components/public-footer";
+import { ComponentVisualCard } from "@/components/component-visual-card";
 import { componentBySlug, componentCatalog, projectsUsingComponent } from "@/lib/build-catalog";
 
 export function generateStaticParams() {
@@ -39,6 +40,13 @@ export default async function ComponentDetailPage({ params }: { params: Promise<
 
       <div className="container component-detail-layout">
         <article className="stack">
+          <section className="card component-recognition-card">
+            <div className="eyebrow">Recognise it in real life</div>
+            <h2 style={{marginTop:8}}>What should I look for?</h2>
+            <ComponentVisualCard slug={item.slug} />
+            <p className="small muted">This is a recognition aid, not a substitute for the markings or datasheet on the exact component in your hand. Clones and revisions can look different.</p>
+          </section>
+
           <section className="card">
             <div className="eyebrow">What it is</div>
             <h2 style={{marginTop:8}}>What does this component do?</h2>
