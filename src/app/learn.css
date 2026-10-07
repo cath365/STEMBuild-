@@ -207,3 +207,122 @@
 .pinout-role{font-size:13px;line-height:1.55;color:var(--muted)}
 .pinout-caution{margin-top:6px;padding:7px 9px;border-radius:6px;background:#fff3dd;color:#875c13;font-size:11px}
 @media(max-width:560px){.pinout-row{grid-template-columns:1fr}}
+
+/* STEMBuild 3D Lab proof of concept */
+.lab3d-hero{padding:56px 0 38px;background:linear-gradient(180deg,#eef6fb 0%,#fff 100%);border-bottom:1px solid var(--border)}
+.lab3d-hero h1{font-size:clamp(42px,7vw,76px);line-height:.98;letter-spacing:-.035em;margin:14px 0 20px;max-width:980px}
+.lab3d-hero h1 span{color:var(--primary)}
+.lab3d-section{padding-block:34px 52px}
+.lab3d-shell{display:grid;gap:16px}
+.lab3d-statusbar{display:grid;grid-template-columns:auto minmax(160px,1fr) auto;gap:14px;align-items:center;padding:11px 14px;border:1px solid var(--border);border-radius:10px;background:#fff;font-size:12px;font-weight:700}
+.lab3d-statusbar>div:first-child{display:flex;align-items:center;gap:8px}
+.lab3d-live-dot{width:9px;height:9px;border-radius:50%;background:#2a9d65;box-shadow:0 0 0 4px rgba(42,157,101,.12)}
+.lab3d-progress{height:7px;border-radius:999px;background:#edf0f3;overflow:hidden}
+.lab3d-progress span{display:block;height:100%;border-radius:inherit;background:var(--primary);transition:width .25s ease}
+.lab3d-grid{display:grid;grid-template-columns:260px minmax(0,1fr) 330px;gap:14px;align-items:start}
+.lab3d-panel{border:1px solid var(--border);border-radius:12px;background:#fff;padding:16px;min-width:0}
+.lab3d-panel h2{font-size:23px;margin:7px 0}
+.lab3d-parts-list{display:grid;gap:9px;margin-top:14px}
+.lab3d-part-card{display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:9px;align-items:center;padding:8px;border:1px solid var(--border);border-radius:9px;background:#fff;cursor:grab}
+.lab3d-part-card:active{cursor:grabbing}
+.lab3d-part-card.placed{background:#f3faf6;border-color:#b9dfc8;cursor:default}
+.lab3d-part-thumb{display:grid;place-items:center;width:52px;height:45px;border-radius:7px;background:#f6f8fa;overflow:hidden}
+.lab3d-part-thumb img{display:block;width:100%;height:100%;object-fit:contain}
+.lab3d-part-thumb span{font-size:10px;font-weight:900;color:var(--primary)}
+.lab3d-part-card strong{display:block;font-size:12px;line-height:1.25}
+.lab3d-part-card small{display:block;margin-top:2px;font-size:10px;color:var(--muted);line-height:1.35}
+.lab3d-mini-btn{border:1px solid var(--border);background:#fff;border-radius:7px;padding:7px 9px;font-size:10px;font-weight:800;white-space:nowrap}
+.lab3d-mini-btn:hover:not(:disabled),.lab3d-mini-btn.active{border-color:var(--primary);color:var(--primary);background:#f4f8fc}
+.lab3d-mini-btn:disabled{opacity:.55}
+.lab3d-panel-actions{display:grid;gap:8px;margin-top:14px}
+.lab3d-workbench-column{display:grid;gap:12px;min-width:0}
+.lab3d-toolbar{display:flex;justify-content:space-between;gap:16px;align-items:center;padding:11px 13px;border:1px solid var(--border);border-radius:10px;background:#fff}
+.lab3d-toolbar strong{display:block;font-size:13px}
+.lab3d-toolbar span{display:block;font-size:10px;color:var(--muted);margin-top:2px}
+.lab3d-view-controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.lab3d-view-controls label{display:flex;gap:6px;align-items:center;font-size:10px;font-weight:700;color:var(--muted)}
+.lab3d-view-controls input{width:72px;accent-color:var(--primary)}
+.lab3d-stage-wrap{position:relative;display:grid;place-items:center;min-height:550px;border:1px solid #cdd5dc;border-radius:14px;overflow:hidden;background:radial-gradient(circle at 50% 15%,#ffffff 0%,#eef3f7 50%,#dde5eb 100%);perspective:1100px}
+.lab3d-stage-wrap:before{content:"";position:absolute;inset:auto 12% 7% 12%;height:17%;border-radius:50%;background:rgba(25,42,58,.18);filter:blur(22px)}
+.lab3d-plane{position:relative;width:min(92%,760px);aspect-ratio:1.58/1;border:1px solid #b8c5cf;border-radius:18px;background:linear-gradient(160deg,#fdfefe,#dfe7ed);box-shadow:0 32px 55px rgba(36,51,64,.26);transform-style:preserve-3d;transition:transform .25s ease}
+.lab3d-grid-lines{position:absolute;inset:0;border-radius:inherit;background-image:linear-gradient(rgba(15,61,145,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(15,61,145,.06) 1px,transparent 1px);background-size:34px 34px;pointer-events:none}
+.lab3d-table-label{position:absolute;left:3%;bottom:3%;font-size:10px;font-weight:900;letter-spacing:.08em;color:rgba(11,61,145,.45)}
+.lab3d-snap-zone{position:absolute;display:grid;place-items:center;border:2px dashed rgba(11,61,145,.3);border-radius:10px;background:rgba(255,255,255,.24);transform:translateZ(10px);transition:transform .35s ease,border-color .2s ease,background .2s ease;overflow:visible}
+.lab3d-snap-zone:hover{border-color:var(--primary);background:rgba(255,255,255,.48)}
+.lab3d-snap-zone.filled{border-style:solid;border-color:rgba(15,61,145,.18);background:#fff;box-shadow:0 6px 14px rgba(33,49,62,.15);transform:translateZ(22px)}
+.lab3d-plane.exploded .lab3d-snap-zone.filled{transform:translate3d(var(--explode-x),var(--explode-y),72px) scale(1.03)}
+.lab3d-snap-zone img{display:block;width:100%;height:100%;object-fit:contain;border-radius:8px}
+.lab3d-snap-zone small{font-size:9px;color:var(--muted);font-weight:800;text-align:center;padding:4px}
+.lab3d-snap-plus{font-size:25px;color:rgba(11,61,145,.35);line-height:1}
+.lab3d-part-tag{position:absolute;left:50%;top:100%;transform:translate(-50%,6px);padding:4px 7px;border-radius:999px;background:#19232d;color:#fff;font-size:8px;font-weight:800;white-space:nowrap;box-shadow:0 3px 8px rgba(0,0,0,.15)}
+.lab3d-led-glow{position:absolute;left:51%;top:32%;width:18px;height:18px;border-radius:50%;background:#7f1010;opacity:.35;transform:translateZ(12px);transition:.15s}
+.lab3d-led-glow.on{background:#ff2a2a;opacity:1;box-shadow:0 0 12px #ff4444,0 0 28px rgba(255,44,44,.8),0 0 52px rgba(255,44,44,.38)}
+.lab3d-wires{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none;transform:translateZ(35px)}
+.lab3d-wires .wire{fill:none;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 2px 1px rgba(0,0,0,.18))}
+.lab3d-wires .wire-blue{stroke:#2979ff}
+.lab3d-wires .wire-red{stroke:#e44444}
+.lab3d-wires .wire-black{stroke:#2d3338}
+.lab3d-stage-help{position:absolute;bottom:10px;right:12px;padding:7px 9px;border-radius:8px;background:rgba(20,29,37,.78);color:#fff;font-size:9px;backdrop-filter:blur(6px)}
+.lab3d-message{padding:11px 13px;border-radius:9px;border:1px solid #d6e4f2;background:#f4f8fc;color:#244866;font-size:12px;line-height:1.5}
+.lab3d-wire-panel{border:1px solid var(--border);border-radius:11px;background:#fff;padding:14px}
+.lab3d-wire-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px}
+.lab3d-wire-row{display:grid;grid-template-columns:26px minmax(0,1fr);gap:8px;align-items:start;padding:10px;border:1px solid var(--border);border-radius:8px}
+.lab3d-wire-row.done{border-color:#b9dfc8;background:#f3faf6}
+.lab3d-wire-row .lab3d-mini-btn{grid-column:1/-1;width:100%}
+.lab3d-wire-number{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:#eef3f7;color:var(--primary);font-size:10px;font-weight:900}
+.lab3d-wire-row strong{display:block;font-size:11px;line-height:1.35}
+.lab3d-wire-row small{display:block;margin-top:3px;font-size:9px;line-height:1.35;color:var(--muted)}
+.lab3d-code-panel{position:sticky;top:12px}
+.lab3d-code-editor{display:block;width:100%;min-height:355px;resize:vertical;border:1px solid #27323b;border-radius:9px;background:#11171d;color:#e7eef4;padding:13px;font:11px/1.55 ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;tab-size:2}
+.lab3d-code-editor:focus{outline:2px solid rgba(11,61,145,.28);outline-offset:2px}
+.lab3d-code-checks{display:grid;gap:7px;margin-top:10px}
+.lab3d-check{display:grid;grid-template-columns:24px minmax(0,1fr);gap:8px;align-items:start;padding:8px;border:1px solid #ead5ad;border-radius:8px;background:#fff9ed}
+.lab3d-check.ok{border-color:#b9dfc8;background:#f3faf6}
+.lab3d-check>span{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#d58d20;color:#fff;font-size:10px;font-weight:900}
+.lab3d-check.ok>span{background:#2a8a59}
+.lab3d-check strong{display:block;font-size:10px}
+.lab3d-check small{display:block;margin-top:2px;font-size:9px;color:var(--muted);line-height:1.35}
+.lab3d-run-controls{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:12px}
+.lab3d-sim-card{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:10px;padding:12px;border:1px solid var(--border);border-radius:9px;background:#f7f9fb;font-size:10px}
+.lab3d-sim-card>div{display:flex;align-items:center;gap:8px}
+.lab3d-sim-card.running{border-color:#b9dfc8;background:#f3faf6}
+.sim-led{width:18px;height:18px;border-radius:50%;background:#661414;border:2px solid #3c1515;box-shadow:inset 0 0 0 2px rgba(255,255,255,.1);transition:.12s}
+.sim-led.on{background:#ff2727;border-color:#e01818;box-shadow:0 0 14px rgba(255,39,39,.85)}
+.lab3d-export{margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
+.lab3d-parity{display:grid;grid-template-columns:minmax(190px,.4fr) minmax(0,1fr);gap:18px;padding:20px;border:1px solid var(--border);border-radius:12px;background:#fff}
+.lab3d-parity h2{font-size:26px;margin-top:6px}
+.lab3d-parity-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.lab3d-parity-grid>div{padding:12px;border:1px solid var(--border);border-radius:8px;background:#f8fafb}
+.lab3d-parity-grid strong{display:block;font-size:12px;color:#247348}
+.lab3d-parity-grid span{display:block;margin-top:5px;font-size:10px;line-height:1.45;color:var(--muted)}
+.lab3d-parity-grid .prototype strong{color:#9a6719}
+.lab3d-next-section{padding-bottom:58px}
+@media(max-width:1180px){
+  .lab3d-grid{grid-template-columns:220px minmax(0,1fr)}
+  .lab3d-code-panel{grid-column:1/-1;position:static}
+  .lab3d-code-panel{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(300px,.75fr);gap:12px}
+  .lab3d-code-panel>.eyebrow,.lab3d-code-panel>h2,.lab3d-code-panel>p{grid-column:1/-1}
+  .lab3d-code-editor{grid-row:4/9;min-height:330px}
+  .lab3d-code-checks,.lab3d-run-controls,.lab3d-sim-card,.lab3d-export{grid-column:2}
+}
+@media(max-width:900px){
+  .lab3d-grid{grid-template-columns:1fr}
+  .lab3d-parts-list{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .lab3d-workbench-column{grid-row:1}
+  .lab3d-parts-panel{grid-row:2}
+  .lab3d-code-panel{grid-row:3;display:block}
+  .lab3d-stage-wrap{min-height:470px}
+  .lab3d-wire-list{grid-template-columns:1fr}
+  .lab3d-parity{grid-template-columns:1fr}
+}
+@media(max-width:650px){
+  .lab3d-statusbar{grid-template-columns:1fr auto}
+  .lab3d-progress{grid-column:1/-1;grid-row:2}
+  .lab3d-toolbar{align-items:flex-start;flex-direction:column}
+  .lab3d-view-controls{justify-content:flex-start}
+  .lab3d-stage-wrap{min-height:380px}
+  .lab3d-plane{width:96%}
+  .lab3d-parts-list{grid-template-columns:1fr}
+  .lab3d-parity-grid{grid-template-columns:1fr}
+  .lab3d-hero h1{font-size:42px}
+}
