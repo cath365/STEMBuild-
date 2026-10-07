@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { BuildProject, LearningLevel, StemComponent } from "@/lib/build-catalog";
+import { ComponentVisualCard } from "@/components/component-visual-card";
 
 type Props = {
   project: BuildProject;
@@ -64,7 +65,7 @@ export function BuildMode({ project, components }: Props) {
     },
     {
       title: "Check your components",
-      body: <><p className="muted">Tick only the parts physically in front of you. This checklist is saved on this device and is not assessment evidence.</p><div className="build-parts">{required.map((item) => <label className="build-part" key={item.slug}><input type="checkbox" checked={checkedParts.includes(item.slug)} onChange={() => togglePart(item.slug)}/><span><strong>{item.name}</strong><small>{item.summary}</small></span></label>)}</div>{optional.length ? <><h3 style={{marginTop:20}}>Optional upgrades</h3><div className="build-parts">{optional.map((item) => <label className="build-part optional" key={item.slug}><input type="checkbox" checked={checkedParts.includes(item.slug)} onChange={() => togglePart(item.slug)}/><span><strong>{item.name}</strong><small>{item.summary}</small></span></label>)}</div></> : null}<p className={missingCount ? "notice" : "badge badge-green"} style={{marginTop:16}}>{missingCount ? `You still need to confirm ${missingCount} required part${missingCount === 1 ? "" : "s"}.` : "Required parts confirmed."}</p></>,
+      body: <><p className="muted">Tick only the parts physically in front of you. This checklist is saved on this device and is not assessment evidence.</p><div className="build-parts">{required.map((item) => <label className="build-part" key={item.slug}><ComponentVisualCard slug={item.slug} compact /><input type="checkbox" checked={checkedParts.includes(item.slug)} onChange={() => togglePart(item.slug)}/><span><strong>{item.name}</strong><small>{item.summary}</small><Link className="text-link" href={`/components/${item.slug}`} onClick={(event) => event.stopPropagation()}>See this part →</Link></span></label>)}</div>{optional.length ? <><h3 style={{marginTop:20}}>Optional upgrades</h3><div className="build-parts">{optional.map((item) => <label className="build-part optional" key={item.slug}><ComponentVisualCard slug={item.slug} compact /><input type="checkbox" checked={checkedParts.includes(item.slug)} onChange={() => togglePart(item.slug)}/><span><strong>{item.name}</strong><small>{item.summary}</small><Link className="text-link" href={`/components/${item.slug}`} onClick={(event) => event.stopPropagation()}>See this part →</Link></span></label>)}</div></> : null}<p className={missingCount ? "notice" : "badge badge-green"} style={{marginTop:16}}>{missingCount ? `You still need to confirm ${missingCount} required part${missingCount === 1 ? "" : "s"}.` : "Required parts confirmed."}</p></>,
     },
     {
       title: "Safety before power",

@@ -58,6 +58,14 @@ enum EvidenceType {
   CODE
 }
 
+enum ComponentMediaKind {
+  PHOTO
+  PINOUT
+  WIRING
+  EXPECTED_RESULT
+  COMMON_MISTAKE
+}
+
 enum BadgeKind {
   MODULE
   COURSE
@@ -351,6 +359,28 @@ model Component {
   description String
   isDemo      Boolean            @default(false)
   variants    VariantComponent[]
+}
+
+model ComponentMedia {
+  id            String             @id @default(cuid())
+  componentSlug String
+  kind          ComponentMediaKind @default(PHOTO)
+  storagePath   String
+  originalName  String
+  mimeType      String
+  sizeBytes     Int
+  altText       String
+  caption       String
+  credit        String?
+  licenseName   String?
+  licenseUrl    String?
+  sourceUrl     String?
+  verified      Boolean            @default(false)
+  sortOrder     Int                @default(0)
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  @@index([componentSlug, verified, sortOrder])
 }
 
 model LessonHardwareVariant {
