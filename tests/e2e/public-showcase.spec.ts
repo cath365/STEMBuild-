@@ -7,6 +7,7 @@ test('public sample adapts wiring and code, teaches honestly and works on a phon
   await page.goto('/');
   await page.getByRole('link',{name:'Try a complete sample lesson'}).click();
   await expect(page.getByRole('heading',{level:1})).toContainText('Smart Environment');
+  await expect.poll(()=>page.locator('header .brand-icon').evaluate((img:HTMLImageElement)=>img.complete && img.naturalWidth>0)).toBe(true);
   await page.getByRole('button',{name:'ESP32',exact:true}).click();
   await expect(page.locator('#step-4')).toContainText('GPIO4');
   await expect(page.locator('pre')).toContainText('Serial.begin(115200)');
@@ -29,6 +30,7 @@ test('public sample adapts wiring and code, teaches honestly and works on a phon
   await context.setOffline(true);
   await page.reload();
   await expect(page.getByRole('heading',{level:1})).toContainText('Smart Environment');
+  await expect.poll(()=>page.locator('header .brand-icon').evaluate((img:HTMLImageElement)=>img.complete && img.naturalWidth>0)).toBe(true);
   await page.getByRole('button',{name:'ESP32',exact:true}).click();
   await expect(page.locator('pre')).toContainText('Serial.begin(115200)');
   await context.setOffline(false);

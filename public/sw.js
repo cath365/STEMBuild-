@@ -1,7 +1,8 @@
-const SHELL_CACHE = "stembuild-shell-v6";
-const STATIC_CACHE = "stembuild-static-v6";
+const SHELL_CACHE = "stembuild-shell-v7";
+const STATIC_CACHE = "stembuild-static-v7";
 const PUBLIC_PAGES = ["/", "/offline", "/offline-lesson.html", "/showcase/smart-environment-monitor", "/teachers", "/about"];
-const SHELL_URLS = [...PUBLIC_PAGES, "/icon-192.png", "/icon-512.png", "/lessons/smart-monitor-uno.ino", "/lessons/smart-monitor-esp32.ino", "/lessons/reading-log.csv", "/lessons/pilot-planning-brief.md"];
+const BRAND_ICON = "/brand/stembuild-icon-64x64.png";
+const SHELL_URLS = [...PUBLIC_PAGES, BRAND_ICON, "/icon-192.png", "/icon-512.png", "/lessons/smart-monitor-uno.ino", "/lessons/smart-monitor-esp32.ino", "/lessons/reading-log.csv", "/lessons/pilot-planning-brief.md"];
 const DB_NAME = "stembuild_offline_v1";
 const DB_VERSION = 2;
 
@@ -102,6 +103,10 @@ self.addEventListener("fetch", (event) => {
   if (request.method !== "GET" || url.origin !== self.location.origin || request.headers.get("RSC") === "1") return;
 
   const imageSource = url.searchParams.get("url") || "";
+  if (url.pathname === BRAND_ICON) {
+    event.respondWith(caches.open(SHELL_CACHE).then(async (cache) => (await cache.match(request)) || fetch(request)));
+    return;
+  }
   const publicBoardPhoto = url.pathname.startsWith("/hardware/") || url.pathname === "/electronics-workbench.jpg" ||
     (url.pathname === "/_next/image" && (imageSource.startsWith("/hardware/") || imageSource === "/electronics-workbench.jpg"));
   if (url.pathname.startsWith("/_next/static/") || publicBoardPhoto || SHELL_URLS.includes(url.pathname) && url.pathname.startsWith("/lessons/")) {

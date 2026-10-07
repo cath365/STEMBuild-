@@ -192,7 +192,7 @@ tbody tr:hover { background:#fcfcfd; }
 .public-footer { display:flex; justify-content:space-between; gap:30px; padding-block:32px 52px; color:var(--muted); font-size:13px; }
 .public-footer nav { display:flex; flex-wrap:wrap; gap:24px; align-items:center; }
 .public-footer .brand { color:var(--text); }
-.sample-hero { padding:56px 0 40px; background:#fcf3f2; border-bottom:1px solid var(--border); }
+.sample-hero { padding:56px 0 40px; background:#f0f7fc; border-bottom:1px solid var(--border); }
 .sample-hero h1,.guide-page h1 { font-size:clamp(36px,5.4vw,64px); line-height:1.08; margin-top:14px; }
 .sample-hero h1 span,.guide-page h1 span { color:var(--primary); }
 .sample-hero>.container>.small { max-width:740px; line-height:1.65; margin-top:24px; }

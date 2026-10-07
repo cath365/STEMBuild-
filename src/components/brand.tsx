@@ -10,6 +10,7 @@ export function Brand() {
         alt=""
         width={40}
         height={40}
+        unoptimized
         aria-hidden="true"
       />
       <span className="brand-name">STEMBuild</span>
