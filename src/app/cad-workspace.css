@@ -1,0 +1,23 @@
+.cad-workspace-layout{display:grid;grid-template-columns:220px minmax(0,1fr) 320px;gap:12px;min-width:0}
+.cad-library-panel,.cad-wiring-panel,.cad-stage-panel{min-width:0;padding:12px;border:1px solid var(--border);background:var(--surface);border-radius:6px}
+.cad-workspace-layout h3{font-size:15px;margin:0 0 8px}.cad-workspace-layout p{font-size:12px;margin:6px 0;line-height:1.5}
+.cad-workspace-layout .btn,.cad-project-toolbar .btn,.cad-project-details .btn{font-size:11px;padding:7px 9px;border-radius:4px}
+.cad-workspace-layout .inline{gap:5px;margin:6px 0}.cad-library-panel>.btn{display:block;width:100%;margin:4px 0;text-align:left}
+.cad-library-panel input{width:100%}.cad-library-panel .cad-library{grid-template-columns:repeat(2,minmax(0,1fr));max-height:320px}.cad-library img{max-width:90px}
+.cad-stage-panel{display:flex;flex-direction:column}.cad-stage-panel .robot-cad-canvas{min-height:260px;flex:1;margin:8px 0;border-radius:4px}
+.cad-stage-panel>.inline .btn{padding:6px 7px;min-height:32px}.cad-stage-panel>.inline{gap:3px;flex-shrink:0}
+.cad-launch-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:260px;flex:1;text-align:center;background:var(--surface-2);padding:24px;border-radius:4px}
+.cad-launch-placeholder p{max-width:320px}.cad-properties{border-top:1px solid var(--border);padding-top:8px;max-height:260px;overflow:auto}
+.cad-properties summary,.cad-project-details summary,.cad-code summary{font-size:12px;font-weight:700;cursor:pointer;padding:6px 0}.cad-properties label{font-size:11px}.cad-properties .cad-nudge p{display:none}
+.cad-wiring-panel{display:flex;flex-direction:column}.cad-wire-tools{flex:1;min-height:0;max-height:500px;overflow:auto}.cad-test{order:-1;flex-shrink:0;padding:10px;margin:0 0 12px;border-radius:4px}.cad-test p{font-size:11px}.cad-test>.inline{display:flex;flex-wrap:wrap}.cad-test .btn{flex:1}.cad-test [aria-live]{font-weight:700;color:var(--logo-action)}
+.cad-code{margin:6px 0}.cad-code textarea{width:100%;min-height:160px;font-size:11px}.cad-wiring-panel label{font-size:11px;margin:4px 0}.cad-wiring-panel select{display:block;width:100%;background:var(--surface);color:var(--text);border:1px solid var(--border);padding:7px;border-radius:4px}
+.cad-wiring-panel .robot-pins{display:flex;gap:4px;flex-wrap:wrap;margin:6px 0}.cad-wiring-panel .robot-wire-list{font-size:11px;max-height:140px;overflow:auto}.cad-wiring-panel .robot-wire-list button{font-size:10px}
+.cad-project-details{margin-top:8px;border-top:1px solid var(--border)}
+.lab-focus .robot-cad{display:flex;flex-direction:column;overflow:hidden;padding:0;min-height:0;border:0;background:transparent}
+.lab-focus .robot-cad>.eyebrow,.lab-focus .robot-cad>h2,.lab-focus .robot-cad>p{display:none}
+.lab-focus .cad-project-toolbar{flex-shrink:0;margin:0 0 8px}.lab-focus .cad-workspace-layout{flex:1;min-height:0}
+.lab-focus .cad-library-panel{overflow:auto}.lab-focus .cad-wiring-panel{overflow:hidden}.lab-focus .cad-stage-panel{min-height:0;overflow:hidden}
+.lab-focus .cad-stage-panel .robot-cad-canvas{height:auto;min-height:140px}.lab-focus .cad-launch-placeholder{min-height:140px}.lab-focus .cad-properties{max-height:180px;flex-shrink:0}
+.lab-focus .cad-project-details{max-height:75px;overflow:auto;flex-shrink:0}.lab-focus .cad-test{background:var(--surface)}
+@media(max-width:1100px){.cad-workspace-layout{grid-template-columns:180px minmax(0,1fr) 280px}.cad-stage-panel,.cad-library-panel,.cad-wiring-panel{padding:8px}}
+@media(max-width:760px){.cad-workspace-layout{display:flex;flex-direction:column}.lab-focus .cad-workspace-layout{overflow:auto}.cad-library-panel .cad-library{max-height:160px;grid-template-columns:repeat(4,minmax(0,1fr))}.cad-stage-panel .robot-cad-canvas,.lab-focus .cad-stage-panel .robot-cad-canvas{height:340px;min-height:340px;flex:none}.lab-focus .cad-stage-panel{overflow:visible;flex-shrink:0}.cad-properties{max-height:180px}.cad-wiring-panel{overflow:visible}.lab-focus .cad-wiring-panel{overflow:visible;flex-shrink:0}.lab-focus .cad-test{position:static}}

@@ -7,6 +7,7 @@ import "./lab-modes.css";
 import "./logo-theme.css";
 import "./circuit-studio.css";
 import "./workspace-focus.css";
+import "./cad-workspace.css";
 import { PwaRegister } from "@/components/pwa-register";
 import { ConnectivityStatus } from "@/components/connectivity-status";
 
