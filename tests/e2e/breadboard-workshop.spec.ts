@@ -61,3 +61,22 @@ test("free-build project export imports without touching guided lab state",async
  await workshop.getByRole("button",{name:"Close 3D assembly"}).click();
  await expect(workshop.getByText("Live 3D assembly mirror")).toHaveCount(0);
 });
+
+test("dragging a physical resistor snaps both leads to new breadboard holes",async({page})=>{
+ await page.goto("/3d-lab");
+ const workshop=page.getByRole("region",{name:"Free-build interactive breadboard"});
+ await workshop.getByRole("button",{name:"Load working example"}).click();
+ const resistor=workshop.getByRole("img",{name:"Move placed resistor by dragging"});
+ const position=await resistor.boundingBox();
+ expect(position).toBeTruthy();
+ const x=position!.x+position!.width/2,y=position!.y+position!.height/2;
+ await page.mouse.move(x,y);
+ await page.mouse.down();
+ await page.mouse.move(x+25,y,{steps:8});
+ await page.mouse.up();
+ await expect(workshop).toContainText("330 Ω resistor: E7 ↔ F7");
+ // New position no longer bridges the old D8 wire and LED strip.
+ await expect(workshop.getByRole("button",{name:"Run blink preview"})).toBeDisabled();
+ await page.reload();
+ await expect(workshop).toContainText("330 Ω resistor: E7 ↔ F7");
+});
