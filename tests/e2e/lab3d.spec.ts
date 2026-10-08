@@ -164,7 +164,7 @@ test('CAD workspace edits real 3D parts, undo/redo and device save restore assem
  }
  await page.goto('/3d-lab');await page.getByRole('tab',{name:/CAD Workspace/}).click();const cad=page.locator('#robot-cad');
  if(process.env.TEST_THREE_BUNDLES){await cad.getByRole('button',{name:'Launch CAD workspace',exact:true}).click();await expect(cad).toContainText('3D assembly ready.');}
- const x=cad.getByLabel('X offset (cm)',{exact:true});await x.fill('4');
+ await cad.getByRole('button',{name:'Load robot template',exact:true}).click();const x=cad.getByLabel('X offset (cm)',{exact:true});await x.fill('4');
  if(process.env.TEST_THREE_BUNDLES){await expect(cad.locator('canvas')).toHaveAttribute('data-cad-offset','[4,0,0]');await expect(cad.locator('canvas')).toHaveAttribute('data-cad-position','[4,7.5,-4]');}
  await cad.getByRole('button',{name:'Undo CAD edit',exact:true}).click();await expect(x).toHaveValue('0');
  await cad.getByRole('button',{name:'Redo CAD edit',exact:true}).click();await expect(x).toHaveValue('4');
@@ -180,9 +180,9 @@ test('CAD workspace edits real 3D parts, undo/redo and device save restore assem
  if(process.env.TEST_THREE_BUNDLES){const root=process.env.TEST_THREE_BUNDLES;await page.route('https://esm.sh/three@0.180.0',async r=>r.fulfill({contentType:'text/javascript',body:await readFile(`${root}/three.js`,'utf8')}));for(const [name,file]of [['OrbitControls','orbit'],['TransformControls','transform']])await page.route(`https://esm.sh/three@0.180.0/examples/jsm/controls/${name}.js`,async r=>r.fulfill({contentType:'text/javascript',body:await readFile(`${root}/${file}.js`,'utf8')}));}
  await page.goto('/3d-lab#robot-cad');await page.getByRole('tab',{name:/CAD Workspace/}).click();const cad=page.locator('#robot-cad');
  await cad.getByLabel('Search components').fill('Red LED');await cad.getByRole('button',{name:'Add Red LED',exact:true}).click();await cad.getByRole('button',{name:'Add Red LED',exact:true}).click();
- await expect(cad).toContainText('Assembly tree (9/100)');await cad.getByRole('button',{name:'Anode +',exact:true}).click();await cad.getByRole('button',{name:'Red LED #1',exact:true}).click();await cad.getByRole('button',{name:'Cathode −',exact:true}).click();
- await expect(cad.locator('.robot-wire-list')).toContainText('Red LED #2 Anode + → Red LED #1 Cathode −');if(process.env.TEST_THREE_BUNDLES){await cad.getByRole('button',{name:'Launch CAD workspace',exact:true}).click();await expect(cad.locator('canvas')).toHaveAttribute('data-cad-selection','Red LED #1');await expect(cad.locator('canvas')).toHaveAttribute('data-cad-position','[12,0,0]');}
- await cad.getByRole('button',{name:'Save assembly',exact:true}).click();await page.reload();await page.getByRole('tab',{name:/CAD Workspace/}).click();await expect(cad).toContainText('Assembly tree (9/100)');await expect(cad.locator('.robot-wire-list')).toContainText('Red LED #2 Anode +');expect(errors).toEqual([]);
+ await expect(cad).toContainText('Assembly tree (2/100)');await cad.getByRole('button',{name:'Anode +',exact:true}).click();await cad.getByRole('button',{name:'Red LED #1',exact:true}).click();await cad.getByRole('button',{name:'Cathode −',exact:true}).click();
+ await expect(cad.locator('.robot-wire-list')).toContainText('Red LED #2 Anode + → Red LED #1 Cathode −');if(process.env.TEST_THREE_BUNDLES){await cad.getByRole('button',{name:'Launch CAD workspace',exact:true}).click();await expect(cad.locator('canvas')).toHaveAttribute('data-cad-selection','Red LED #1');await expect(cad.locator('canvas')).toHaveAttribute('data-cad-position','[0,0,0]');}
+ await cad.getByRole('button',{name:'Save assembly',exact:true}).click();await page.reload();await page.getByRole('tab',{name:/CAD Workspace/}).click();await expect(cad).toContainText('Assembly tree (2/100)');await expect(cad.locator('.robot-wire-list')).toContainText('Red LED #2 Anode +');expect(errors).toEqual([]);
  });
 
 test('every hardware model renders together without WebGL or geometry errors',async({page})=>{
@@ -192,13 +192,29 @@ test('every hardware model renders together without WebGL or geometry errors',as
  await page.route('https://esm.sh/three@0.180.0',async r=>r.fulfill({contentType:'text/javascript',body:await readFile(`${root}/three.js`,'utf8')}));
  for(const [name,file]of [['OrbitControls','orbit'],['TransformControls','transform']])await page.route(`https://esm.sh/three@0.180.0/examples/jsm/controls/${name}.js`,async r=>r.fulfill({contentType:'text/javascript',body:await readFile(`${root}/${file}.js`,'utf8')}));
  await page.goto('/3d-lab#robot-cad');await page.getByRole('tab',{name:/CAD Workspace/}).click();const cad=page.locator('#robot-cad');
+ await cad.getByRole('button',{name:'Launch CAD workspace',exact:true}).click();await expect(cad.locator('canvas')).toHaveAttribute('data-cad-selection','No part selected');
  const add=cad.locator('.cad-library button');expect(await add.count()).toBe(40);
  for(const button of await add.all())await button.click();
- await expect(cad).toContainText('Assembly tree (47/100)');
- await cad.getByRole('button',{name:'Launch CAD workspace',exact:true}).click();
+ await expect(cad).toContainText('Assembly tree (40/100)');
  await expect(cad).toContainText('3D assembly ready.');
  await expect(cad.locator('canvas')).toHaveAttribute('data-cad-selection','LM2596 buck converter #40');
  await cad.getByRole('button',{name:'Top view',exact:true}).click();
  await cad.getByRole('button',{name:'Close CAD view',exact:true}).click();
  await expect(cad.locator('canvas')).toHaveCount(0);expect(errors).toEqual([]);
+});
+
+test('empty CAD builds and tests a wired LED circuit, stops on edits and can undo clearing',async({page})=>{
+ const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
+ if(process.env.TEST_THREE_BUNDLES){const root=process.env.TEST_THREE_BUNDLES;await page.route('https://esm.sh/three@0.180.0',async r=>r.fulfill({contentType:'text/javascript',body:await readFile(`${root}/three.js`,'utf8')}));for(const [name,file]of [['OrbitControls','orbit'],['TransformControls','transform']])await page.route(`https://esm.sh/three@0.180.0/examples/jsm/controls/${name}.js`,async r=>r.fulfill({contentType:'text/javascript',body:await readFile(`${root}/${file}.js`,'utf8')}));}
+ await page.goto('/3d-lab');await page.getByRole('tab',{name:/CAD Workspace/}).click();const cad=page.locator('#robot-cad');
+ if(process.env.TEST_THREE_BUNDLES){await cad.getByRole('button',{name:'Launch CAD workspace',exact:true}).click();await expect(cad.locator('canvas')).toHaveAttribute('data-cad-selection','No part selected');}await expect(cad).toContainText('Your table is empty.');await expect(cad).toContainText('Assembly tree (0/100)');
+ for(const name of ['Arduino Uno','Resistor','Red LED']){await cad.getByLabel('Search components').fill(name);await cad.getByRole('button',{name:`Add ${name}`,exact:true}).click();}
+ await expect(cad.getByRole('button',{name:'Run circuit preview',exact:true})).toBeDisabled();
+ async function wire(from:string,pin:string,to:string,end:string){await cad.getByRole('button',{name:from,exact:true}).click();await cad.getByRole('button',{name:pin,exact:true}).click();await cad.getByRole('button',{name:to,exact:true}).click();await cad.getByRole('button',{name:end,exact:true}).click();}
+ await wire('Arduino Uno #1','D8','Resistor #2','Lead 1');await wire('Resistor #2','Lead 2','Red LED #3','Anode +');await wire('Red LED #3','Cathode −','Arduino Uno #1','GND');
+ await cad.getByRole('button',{name:'Run circuit preview',exact:true}).click();await expect(cad).toContainText('LED ON · preview running');if(process.env.TEST_THREE_BUNDLES)await expect(cad.locator('canvas')).toHaveAttribute('data-cad-led','on');
+ await cad.getByRole('button',{name:'Remove CAD wire 1',exact:true}).click();await expect(cad).toContainText('LED OFF · preview stopped');await expect(cad.getByRole('button',{name:'Run circuit preview',exact:true})).toBeDisabled();
+ await cad.getByRole('button',{name:'New empty project',exact:true}).click();await expect(cad).toContainText('Assembly tree (0/100)');await cad.getByRole('button',{name:'Undo CAD edit',exact:true}).click();await expect(cad).toContainText('Assembly tree (3/100)');
+ await cad.getByRole('button',{name:'Red LED #3',exact:true}).click();await cad.getByRole('button',{name:'Remove selected component',exact:true}).click();await expect(cad).toContainText('Assembly tree (2/100)');
+ await page.reload();await page.getByRole('tab',{name:/CAD Workspace/}).click();await expect(cad).toContainText('Assembly tree (2/100)');expect(errors).toEqual([]);
 });

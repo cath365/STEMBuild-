@@ -1,0 +1,7 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {defaultAssembly,type CADAssembly} from '../../src/lib/robot-cad';
+import {checkCADCircuit} from '../../src/lib/cad-circuit-test';
+function circuit():CADAssembly{const a=defaultAssembly();for(const kind of ['uno','resistor','led'])a.parts.push({kind,offset:[0,0,0],rotation:[0,0,0],visible:true});a.wires=[{from:0,fromPin:'D8',to:1,toPin:'Lead 1',color:'#297aad'},{from:1,fromPin:'Lead 2',to:2,toPin:'Anode +',color:'#297aad'},{from:2,fromPin:'Cathode −',to:0,toPin:'GND',color:'#297aad'}];return a;}
+test('direct CAD blink accepts connected series path and reversed wire direction',()=>{const a=circuit();assert.equal(checkCADCircuit(a).ready,true);a.wires=a.wires!.map(w=>({...w,from:w.to,fromPin:w.toPin,to:w.from,toPin:w.fromPin}));assert.equal(checkCADCircuit(a).ready,true);});
+test('CAD blink blocks open paths, reversed LEDs, shorts, resistor bypass and unsupported firmware',()=>{for(const change of [(a:CADAssembly)=>a.wires!.pop(),(a:CADAssembly)=>{a.wires![1].toPin='Cathode −';a.wires![2].fromPin='Anode +';},(a:CADAssembly)=>a.wires!.push({from:0,fromPin:'D8',to:0,toPin:'GND',color:'#297aad'}),(a:CADAssembly)=>a.wires!.push({from:1,fromPin:'Lead 1',to:1,toPin:'Lead 2',color:'#297aad'}),(a:CADAssembly)=>{a.code='void loop(){}';},(a:CADAssembly)=>a.parts.push({kind:'motor',offset:[0,0,0],rotation:[0,0,0],visible:true})]){const a=circuit();change(a);assert.equal(checkCADCircuit(a).ready,false);}});

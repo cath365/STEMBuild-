@@ -11,7 +11,7 @@ The `/3d-lab#robot-cad` section adds a mechanical assembly editor separate from 
 - Top, front, side and perspective camera positions; orbit and zoom.
 - Snap to reference mount restores the model's default mounting pose. It does not find physical mounting holes or validate fasteners.
 - Hide/show parts, undo/redo up to 50 edits.
-- Save/load on the device, export/import a validated version-1 STEMBuild assembly JSON file. Import rejects malformed parts, nonfinite numbers, unsupported versions and coordinates outside ±360.
+- Save/load on the device, export/import a validated version-1 or version-2 STEMBuild assembly JSON file. Fresh projects are empty; saved legacy templates remain importable. Import rejects malformed parts, nonfinite numbers, unsupported versions and coordinates outside ±360.
 - Rendered model bounding dimensions omit labels. Electronics overlap checks use bounding boxes for Uno, driver, battery holder and sensor, omitting chassis/wheels/motors because their reference assemblies intentionally contact.
 
 ## Accuracy boundaries
@@ -31,3 +31,9 @@ The CAD editor now supports 40 searchable representative component types, repeat
 The library covers controllers, prototyping, passive parts, inputs, sensors, actuators, drivers, outputs, displays, communications and power. Pin lists are a selected educational subset, not full pinouts. Models use distinct procedural hardware geometry: connector housings, headers, PCB markings, breadboard holes, resistor bands, motor shafts and sensor housings. They load without third-party image downloads. The catalogue uses lazy-loaded WebP previews rendered from the same models, so browsing requires no WebGL engine. These are representative models, not scanned or manufacturer-certified digital twins. Dimensions remain approximate for generic variants. Breadboard layout models expose rail labels only; the separate hole workshop provides its supported electrical hole topology. CAD wire curves route between model origins, not precise physical connector positions. Colours identify layout routes; these new wires have no electrical solver or firmware behaviour. The existing guided LED and obstacle robot simulations remain separate.
 
 An assembly supports 100 total parts and 300 wires to bound import size and rendering work on phones. This is an expandable catalogue, not a claim of unlimited components or universal simulation. Add a catalogue definition and model adapter for further types, followed by manufacturer pinout review, physical validation and simulation implementation as required.
+
+## Empty projects and supported testing
+
+Fresh CAD sessions now start with an empty version-2 assembly. New empty project clears the current table as an undoable edit; Load robot template explicitly adds the legacy seven-part version-1 preset. Existing autosaves and manual backups still restore without being discarded. Version-2 projects can remove individual components; incident wires are removed and remaining endpoints reindexed. Both versions retain import/export and device saving.
+
+Check circuit / Run circuit preview support only one visible Arduino Uno, one red LED and one 330 Ω resistor with direct-terminal series wiring on D8. Connections, LED polarity, component bypass, power-to-ground shorts and starter sketch compatibility are checked. Numeric delay changes affect the blink and the 3D LED glows when enabled. Edits, Stop, and leaving the CAD workspace stop the preview. No arbitrary code, breadboard bus topology, analogue electrical solver, or free-form robot physics is provided by this CAD test. Other parts remain design-only; the dedicated builders retain their supported simulations.
