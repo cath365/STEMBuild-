@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import { componentVisualFor, type ComponentVisual } from "@/lib/component-visuals";
 
 export function ComponentVisualCard({
@@ -9,7 +12,9 @@ export function ComponentVisualCard({
   compact?: boolean;
   visual?: ComponentVisual | null;
 }) {
+  const [failedPhoto, setFailedPhoto] = useState<string | null>(null);
   const visual = providedVisual ?? componentVisualFor(slug);
+  const photoUnavailable = Boolean(visual && failedPhoto === visual.src);
 
   if (!visual) {
     return (
@@ -26,8 +31,20 @@ export function ComponentVisualCard({
   return (
     <figure className={compact ? "component-visual component-visual-compact" : "component-visual"}>
       <div className="component-visual-image">
-        <img src={visual.src} alt={visual.alt} loading="lazy" />
-        <span className="component-photo-badge">✓ Verified real photo</span>
+        {photoUnavailable ? (
+          <div className="component-visual-photo-unavailable" role="status">
+            <span className="component-visual-placeholder" aria-hidden="true">◎</span>
+            <strong>Photo temporarily unavailable</strong>
+            <small>The image host did not load. Check the component name and pin labels before building.</small>
+          </div>
+        ) : (
+          <>
+            {/* External photo hosts may rate-limit requests; never leave a broken image icon or pretend a different part is pictured. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={visual.src} alt={visual.alt} loading="lazy" onError={() => setFailedPhoto(visual.src)} />
+            <span className="component-photo-badge">✓ Verified real photo</span>
+          </>
+        )}
       </div>
       {!compact ? (
         <figcaption>
