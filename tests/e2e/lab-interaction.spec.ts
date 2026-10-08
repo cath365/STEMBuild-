@@ -34,7 +34,9 @@ test("robot obstacles can be selected and keyboard-moved without overlaps",async
  await page.getByRole("tab",{name:/Robot Builder/}).click();
  await expect(arena.getByRole("button",{name:"Select obstacle 1"})).toHaveAttribute("x","-11");
  // Selection is transient UI state; the saved obstacle itself is restored.
- await arena.getByRole("button",{name:"Select obstacle 1"}).click();
+ await arena.getByRole("button",{name:"Select obstacle 1"}).focus();
+ await page.keyboard.press("Enter");
+ await expect(arena.getByRole("button",{name:"Remove selected block"})).toBeEnabled();
  await arena.getByRole("button",{name:"Remove selected block"}).click();
  await expect(arena).toContainText("0/20 obstacles");
 });
