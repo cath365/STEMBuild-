@@ -25,9 +25,7 @@ test("free breadboard builds a real conductive path, simulates and restores afte
 test("free build placement uses real named holes and jumper occupancy",async({page})=>{
  await page.goto("/3d-lab");
  const workshop=page.getByRole("region",{name:"Free-build interactive breadboard"});
- await workshop.getByRole("button",{name:"Start empty board"}).click();
- page.on("dialog",async dialog=>dialog.accept());
- // A clean browser context begins with an empty board; no reset is needed here.
+ // Each Playwright context uses fresh browser storage and starts with an empty board.
  await workshop.getByRole("button",{name:/Place 330 Ω resistor/}).click();
  await workshop.getByRole("button",{name:"Hole E6"}).click();
  await workshop.getByRole("button",{name:"Hole F6"}).click();
