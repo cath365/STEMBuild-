@@ -116,19 +116,28 @@ export function BreadboardWorkshop({ active = true }: { active?: boolean }) {
   }, [doc, hydrated, storageReady]);
 
   useEffect(() => {
-    if (!running || !active || !result.ready) { setLit(false); return; }
-    let on = true;
+    let stopped = false;
     let timeout: ReturnType<typeof setTimeout>;
+    if (!running || !active || !result.ready) {
+      queueMicrotask(() => { if (!stopped) setLit(false); });
+      return () => { stopped = true; };
+    }
+    let on = true;
     function tick() {
+      if (stopped) return;
       setLit(on);
       timeout = setTimeout(() => { on = !on; tick(); }, Math.max(50, on ? result.sketch.highDelayMs : result.sketch.lowDelayMs));
     }
-    tick();
-    return () => clearTimeout(timeout);
+    timeout = setTimeout(tick, 0);
+    return () => { stopped = true; clearTimeout(timeout); };
   }, [running, active, result]);
 
   useEffect(() => {
-    if (!active) { setRunning(false); setShow3D(false); }
+    let cancelled = false;
+    if (!active) queueMicrotask(() => {
+      if (!cancelled) { setRunning(false); setShow3D(false); }
+    });
+    return () => { cancelled = true; };
   }, [active]);
 
   function update(next: BreadboardDocument, text: string) {
