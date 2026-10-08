@@ -174,3 +174,13 @@ test('CAD workspace edits real 3D parts, undo/redo and device save restore assem
  const dl=page.waitForEvent('download');await cad.getByRole('button',{name:'Export assembly',exact:true}).click();expect((await dl).suggestedFilename()).toBe('stembuild-robot-assembly.json');
  expect(errors).toEqual([]);
 });
+
+ test('CAD library adds repeated components and saves named pin wires',async({page})=>{
+ const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
+ if(process.env.TEST_THREE_BUNDLES){const root=process.env.TEST_THREE_BUNDLES;await page.route('https://esm.sh/three@0.180.0',async r=>r.fulfill({contentType:'text/javascript',body:await readFile(`${root}/three.js`,'utf8')}));for(const [name,file]of [['OrbitControls','orbit'],['TransformControls','transform']])await page.route(`https://esm.sh/three@0.180.0/examples/jsm/controls/${name}.js`,async r=>r.fulfill({contentType:'text/javascript',body:await readFile(`${root}/${file}.js`,'utf8')}));}
+ await page.goto('/3d-lab#robot-cad');await page.getByRole('tab',{name:/CAD Workspace/}).click();const cad=page.locator('#robot-cad');
+ await cad.getByLabel('Search components').fill('Red LED');await cad.getByRole('button',{name:'Add Red LED',exact:true}).click();await cad.getByRole('button',{name:'Add Red LED',exact:true}).click();
+ await expect(cad).toContainText('Assembly tree (9/100)');await cad.getByRole('button',{name:'Anode +',exact:true}).click();await cad.getByRole('button',{name:'Red LED #1',exact:true}).click();await cad.getByRole('button',{name:'Cathode −',exact:true}).click();
+ await expect(cad.locator('.robot-wire-list')).toContainText('Red LED #2 Anode + → Red LED #1 Cathode −');if(process.env.TEST_THREE_BUNDLES){await cad.getByRole('button',{name:'Launch CAD workspace',exact:true}).click();await expect(cad.locator('canvas')).toHaveAttribute('data-cad-selection','Red LED #1');await expect(cad.locator('canvas')).toHaveAttribute('data-cad-position','[12,0,0]');}
+ await cad.getByRole('button',{name:'Save assembly',exact:true}).click();await page.reload();await page.getByRole('tab',{name:/CAD Workspace/}).click();await expect(cad).toContainText('Assembly tree (9/100)');await expect(cad.locator('.robot-wire-list')).toContainText('Red LED #2 Anode +');expect(errors).toEqual([]);
+ });

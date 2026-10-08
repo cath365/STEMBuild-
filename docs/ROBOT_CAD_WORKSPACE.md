@@ -23,3 +23,11 @@ The Uno PCB footprint follows published dimensions. Component envelopes include 
 ## Verification
 
 Unit checks exercise immutable edits and invalid import rejection. Browser checks use actual Three.js and TransformControls with matching local bundles and software WebGL: numeric edits alter the actual selected model position, undo/redo restore it, device saves load correctly, camera views and overlap checks work, and closing releases the canvas. Existing robot wiring/movement and LED/firmware lifecycle suites remain included. Physical mobile performance and manufacturing fit have not been validated.
+
+## Expandable component library
+
+The CAD editor now supports 22 searchable generic component types, repeated instances, labelled terminal pairs and removable assembly wires. Saved legacy seven-part assemblies remain valid. Library instances append to the assembly; files and autosaves retain each type, transform and wire endpoint. The renderer adds/releases instance geometry when undo/redo or imports change the list.
+
+The library covers controllers, prototyping, passive parts, inputs, sensors, actuators, drivers, outputs, displays, communications and power. Pin lists are a selected educational subset, not full pinouts. Models are illustrative generic envelopes. Breadboard layout models expose rail labels only; the separate hole workshop provides its supported electrical hole topology. CAD wire curves route between model origins, not precise physical connector positions. Colours identify layout routes; these new wires have no electrical solver or firmware behaviour. The existing guided LED and obstacle robot simulations remain separate.
+
+An assembly supports 100 total parts and 300 wires to bound import size and rendering work on phones. This is an expandable catalogue, not a claim of unlimited components or universal simulation. Add a catalogue definition and model adapter for further types, followed by manufacturer pinout review, physical validation and simulation implementation as required.

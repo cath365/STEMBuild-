@@ -479,3 +479,5 @@
 .robot-tray,.robot-pins{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}.robot-tray .btn,.robot-pins .btn{font-size:12px;padding:8px}.robot-tray [aria-pressed=true],.robot-pins [aria-pressed=true]{outline:2px solid #16869b}.robot-assembly{display:block;width:100%;touch-action:none;margin:16px 0}.robot-wire-list{padding-left:18px;font-size:12px;overflow-wrap:anywhere}.robot-wire-list li{margin:8px 0}
 
 .robot-cad{margin:36px 0}.robot-cad-canvas{height:460px;margin:16px 0;border-radius:12px;overflow:hidden;touch-action:none}.robot-cad-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:24px;margin:20px 0}.robot-cad-grid .btn{margin:4px}.robot-cad input[type=number]{display:block;width:100px;padding:8px}.robot-cad [aria-pressed=true]{outline:2px solid #16869b}.robot-cad input[type=file]{max-width:200px}@media(max-width:760px){.robot-cad-grid{grid-template-columns:minmax(0,1fr)}.robot-cad-canvas{height:340px}}
+
+.cad-library{max-height:280px;overflow-y:auto;display:flex;flex-wrap:wrap;gap:4px}.cad-library small{display:block;font-size:10px}.robot-cad input:not([type]){display:block;max-width:100%;padding:8px}
