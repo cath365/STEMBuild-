@@ -18,7 +18,7 @@ test("open paths and LED polarity errors never report a successful circuit", () 
  assert.equal(evaluateBreadboard({ ...demo,led:{a:demo.led!.b,b:demo.led!.a} }).ready,false);
  assert.equal(evaluateBreadboard({ ...demo,led:{a:"E6",b:"F11"} }).ready,false);
  assert.equal(evaluateBreadboard({ ...demo,resistor:{a:"A6",b:"B6"} }).ready,false);
- assert.equal(evaluateBreadboard({ ...demo,wires:[...demo.wires,{id:"bad",from:"D8",to:"GND"}] }).ready,false);
+ assert.equal(evaluateBreadboard({ ...demo,wires:[...demo.wires,{id:"bad",from:"UNO:D8",to:"UNO:GND"}] }).ready,false);
 });
 
 test("breadboard rows share five-hole groups but the central trench is separate",()=>{
@@ -27,7 +27,7 @@ test("breadboard rows share five-hole groups but the central trench is separate"
  const wrongBridge={...demo,wires:[demo.wires[0],{id:"miswire",from:"A7",to:"A11"},demo.wires[2]]};
  assert.equal(evaluateBreadboard(wrongBridge).ready,false);
  // The first and last hole in a top or bottom five-hole group are connected.
- const alternative={...demo,wires:[{id:"one",from:"D8",to:"D6"},{id:"two",from:"G6",to:"E11"},{id:"three",from:"I11",to:"GND"}]};
+ const alternative={...demo,wires:[{id:"one",from:"UNO:D8",to:"D6"},{id:"two",from:"G6",to:"E11"},{id:"three",from:"I11",to:"UNO:GND"}]};
  assert.equal(evaluateBreadboard(alternative).ready,true);
 });
 
@@ -37,11 +37,11 @@ test("parts and jumper leads each occupy one physical hole",()=>{
  assert.equal(canPlaceComponent(doc,"led","A6","C6"),null);
  const placed={...doc,led:{a:"E6",b:"F6"}};
  assert.match(canPlaceComponent(placed,"resistor","E6","F7")??"",/already contains/);
- assert.throws(()=>addBoardWire(placed,"E6","GND"),/occupied/);
+ assert.throws(()=>addBoardWire(placed,"E6","UNO:GND"),/occupied/);
  assert.throws(()=>addBoardWire(placed,"A7","A7"),/different/);
- const wired=addBoardWire(placed,"D8","A6");
+ const wired=addBoardWire(placed,"UNO:D8","A6");
  assert.equal(wired.wires.length,1);
- assert.throws(()=>addBoardWire(wired,"D8","A8"),/occupied/);
+ assert.throws(()=>addBoardWire(wired,"UNO:D8","A8"),/occupied/);
 });
 
 test("snap positions, file format and conflicting leads are validated",()=>{
