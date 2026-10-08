@@ -26,11 +26,11 @@ export const holes: { id: string; x: number; y: number; rail: boolean }[] = [
       rail: row === "P" || row === "N",
     }))
   ),
-  { id: "D8", x: 133, y: 224, rail: false },
-  { id: "GND", x: 133, y: 280, rail: false },
+  { id: "UNO:D8", x: 133, y: 224, rail: false },
+  { id: "UNO:GND", x: 133, y: 280, rail: false },
 ];
 export const holePositions = new Map(holes.map(hole => [hole.id, { x: hole.x, y: hole.y }]));
-export const breadboardHoleIds = new Set(holes.filter(hole => hole.id !== "D8" && hole.id !== "GND").map(hole => hole.id));
+export const breadboardHoleIds = new Set(holes.filter(hole => hole.id !== "UNO:D8" && hole.id !== "UNO:GND").map(hole => hole.id));
 
 export function createBreadboard(): BreadboardDocument {
   return { version: 1, led: null, resistor: null, wires: [], code: defaultLedSketch };
@@ -42,9 +42,9 @@ export function demoBreadboard(): BreadboardDocument {
     resistor: { a: "E6", b: "F6" },
     led: { a: "E11", b: "F11" },
     wires: [
-      { id: "demo-1", from: "D8", to: "A6" },
+      { id: "demo-1", from: "UNO:D8", to: "A6" },
       { id: "demo-2", from: "J6", to: "A11" },
-      { id: "demo-3", from: "J11", to: "GND" },
+      { id: "demo-3", from: "J11", to: "UNO:GND" },
     ],
     code: defaultLedSketch,
   };
@@ -97,7 +97,7 @@ export function closestBreadboardHole(x: number, y: number, maxDistance = 17): s
   let best: string | null = null;
   let distance = maxDistance;
   for (const hole of holes) {
-    if (hole.id === "D8" || hole.id === "GND") continue;
+    if (hole.id === "UNO:D8" || hole.id === "UNO:GND") continue;
     const delta = Math.hypot(hole.x - x, hole.y - y);
     if (delta < distance) { distance = delta; best = hole.id; }
   }
@@ -157,13 +157,13 @@ export function evaluateBreadboard(doc: BreadboardDocument) {
   for (const wire of doc.wires) join(wire.from, wire.to);
   const equal = (a: string, b: string) => root(a) === root(b);
   const { led, resistor } = doc;
-  if (equal("D8", "GND")) return { ready: false, message: "Short circuit: Arduino D8 is directly connected to GND.", sketch };
+  if (equal("UNO:D8", "UNO:GND")) return { ready: false, message: "Short circuit: Arduino D8 is directly connected to GND.", sketch };
   if (equal(led.a, led.b)) return { ready: false, message: "LED anode and cathode are shorted together.", sketch };
   if (equal(resistor.a, resistor.b)) return { ready: false, message: "Both resistor leads are connected to the same electrical strip.", sketch };
 
   const forward = (r1: string, r2: string) =>
-    (equal("D8", r1) && equal(r2, led.a) && equal(led.b, "GND")) ||
-    (equal("D8", led.a) && equal(led.b, r1) && equal(r2, "GND"));
+    (equal("UNO:D8", r1) && equal(r2, led.a) && equal(led.b, "UNO:GND")) ||
+    (equal("UNO:D8", led.a) && equal(led.b, r1) && equal(r2, "UNO:GND"));
   const circuitReady = forward(resistor.a, resistor.b) || forward(resistor.b, resistor.a);
   if (!circuitReady) return {
     ready: false,
