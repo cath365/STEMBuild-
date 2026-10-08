@@ -39,6 +39,8 @@ test("switching workspace retains circuit assembly and preserves robotics and CA
   await page.getByRole("tab", { name: /CAD Workspace/ }).click();
   const cad = page.locator("#robot-cad");
   await expect(cad).toBeVisible();
+  // CAD now opens on an empty worktable; add a component before editing coordinates.
+  await cad.getByRole("button", { name: "Add Arduino Uno", exact: true }).click();
   await cad.getByLabel("X offset (cm)", { exact: true }).fill("4");
 
   await page.getByRole("tab", { name: /Circuit Builder/ }).click();
