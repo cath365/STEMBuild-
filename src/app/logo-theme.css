@@ -145,3 +145,62 @@ tbody tr:hover { background:var(--logo-canvas); }
 .build-part .component-visual-photo-unavailable .component-visual-placeholder { font-size:20px; }
 .build-part .component-visual-photo-unavailable strong { font-size:10px; }
 .build-part .component-visual-photo-unavailable small { display:none; }
+
+/* Authentic STEMBuild circuit hero: crisp local schematic instead of a decorative
+   pseudo-Arduino / floating LED. Diagram matches the supported Uno starter lab. */
+.lab3d-hero.lab-ux-hero .lab-ux-hero-visual.circuit-hero {
+  border: 1px solid rgba(98,193,212,.65);
+  border-radius: 17px;
+  padding: 13px;
+  min-height: 0;
+  background: linear-gradient(155deg,#0e3462,#0454aa);
+  box-shadow: 0 16px 46px rgba(4,35,77,.22);
+  gap: 11px;
+}
+.circuit-hero-head,.circuit-hero-bottom {
+  min-width:0; display:flex; justify-content:space-between;
+  align-items:center; gap:10px; flex-wrap:wrap;
+}
+.circuit-hero-head .lab-ux-diagram-top { color:#c2e1f8; font-size:10px; }
+.circuit-hero-check {
+  border:1px solid rgba(6,190,153,.75);
+  border-radius:20px; padding:5px 8px;
+  color:#ddf8f1; font-size:9px; font-weight:850;
+  letter-spacing:.055em; background:rgba(6,190,153,.15);
+}
+.circuit-hero-figure {
+  min-width:0; margin:0;
+  background:#ffffff; border-radius:11px;
+  overflow:hidden; border:1px solid #c2d9ed;
+  box-shadow:0 7px 24px rgba(14,52,98,.17);
+}
+.circuit-hero-picture { display:block; width:100%; height:auto; aspect-ratio:920/510; }
+.circuit-hero-figure figcaption {
+  display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center;
+  gap:5px 10px; padding:10px 12px; border-top:1px solid #e1f0ff;
+  background:#ffffff; color:#0e3462;
+}
+.circuit-hero-figure figcaption strong { font-size:12px; letter-spacing:.01em; }
+.circuit-hero-figure figcaption span {
+  font:700 11px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;
+  color:#0454aa; white-space:nowrap;
+}
+.circuit-hero-bottom .lab-ux-diagram-bottom { text-align:left; color:#c2e1f8; font-size:9px; }
+.circuit-hero-link {
+  display:inline-flex; align-items:center; gap:5px;
+  min-height:36px; color:#ffffff; border:1px solid #62c1d4;
+  border-radius:7px; padding:7px 10px;
+  font-size:11px; font-weight:800; text-decoration:none;
+  background:rgba(1,114,229,.34);
+}
+.circuit-hero-link:hover { background:rgba(1,114,229,.68); color:#ffffff; }
+.circuit-hero-link:focus-visible { outline:3px solid #f6b14a; outline-offset:3px; }
+@media (max-width:760px){
+ .lab3d-hero.lab-ux-hero .lab-ux-hero-visual.circuit-hero { max-width:100%; padding:10px; gap:9px; }
+ .circuit-hero-head .lab-ux-diagram-top { font-size:9px; }
+ .circuit-hero-figure figcaption { padding:9px 10px; }
+ .circuit-hero-figure figcaption span { font-size:10px; }
+ .circuit-hero-bottom { align-items:center; }
+ .circuit-hero-bottom .lab-ux-diagram-bottom { flex:1 1 165px; }
+ .circuit-hero-link { min-height:42px; }
+}
