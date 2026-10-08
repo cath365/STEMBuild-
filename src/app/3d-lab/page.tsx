@@ -6,7 +6,7 @@ import { LabModeSelector } from "@/components/lab-mode-selector";
 
 export const metadata: Metadata = {
   title: "3D Lab",
-  description: "Assemble real-world parts in WebGL, wire them, program Arduino Uno source, and optionally compile and execute real AVR firmware.",
+  description: "Build free breadboard circuits, assemble an obstacle-avoiding robot and design CAD assemblies. Guided Arduino lessons have their own page.",
 };
 
 export default function ThreeDLabPage() {
@@ -17,9 +17,10 @@ export default function ThreeDLabPage() {
         <div className="container">
           <div className="eyebrow">STEMBUILD 3D LAB · LEARN BY MAKING</div>
           <h1>Build it in 3D.<br/><span>Understand how it works.</span></h1>
-          <p className="lead">Start with an Arduino circuit, build a robot or adjust a 3D assembly. Choose a workspace, test what the models support and take your code or design to real hardware. Fast learning mode works without downloading the optional firmware compiler.</p>
+          <p className="lead">Build circuits freely on a breadboard, assemble an obstacle-avoiding robot or design your robot in CAD. Choose one workspace at a time. Guided Arduino lessons are available separately.</p>
           <div className="inline" style={{marginTop:18}}>
-            <a className="btn btn-primary" href="#workbench">Open the 3D workbench</a>
+            <a className="btn btn-primary" href="#workbench">Open Free Build</a>
+            <Link className="btn" href="/3d-lab/guided">Guided circuit lessons</Link>
             <Link className="btn" href="/learning-paths/first-robot">First Robot Path</Link>
           </div>
         </div>
@@ -32,8 +33,8 @@ export default function ThreeDLabPage() {
       <section className="container lab3d-next-section">
         <div className="card">
           <div className="eyebrow">ENGINE BOUNDARIES</div>
-          <h2 style={{marginTop:8}}>Real firmware does not mean imaginary hardware is perfect.</h2>
-          <p className="muted">The Arduino Uno model uses the official 68.6 × 53.4 mm board footprint. Generic breadboards, LEDs, resistors and tactile buttons use dimensioned educational geometry and can vary between manufacturers. Full Firmware Mode executes compiled ATmega328P machine code, but a physical build can still differ because of battery condition, loose wires, component tolerances, motor load and module revisions.</p>
+          <h2 style={{marginTop:8}}>Simulation is a learning tool, not a substitute for physical testing.</h2>
+          <p className="muted">The Free Build breadboard checks the supported electrical connections for a starter LED circuit. For compiled ATmega328P machine code and reviewed step-by-step wiring, use the <Link href="/3d-lab/guided">guided circuit lessons</Link>. Real hardware can differ because of power supplies, wiring, tolerances and component revisions.</p>
         </div>
       </section>
     </main>

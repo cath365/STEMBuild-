@@ -1,7 +1,7 @@
 import {test,expect} from "@playwright/test";
 
 test("a circuit learner can disconnect one mistaken wire without resetting code",async({page})=>{
- await page.goto("/3d-lab");
+ await page.goto("/3d-lab/guided");
  await page.getByRole("button",{name:"Auto assemble demo",exact:true}).click();
  while(await page.getByRole("button",{name:"Connect",exact:true}).count()){
    await page.getByRole("button",{name:"Connect",exact:true}).first().click();
@@ -34,7 +34,9 @@ test("robot obstacles can be selected and keyboard-moved without overlaps",async
  await page.getByRole("tab",{name:/Robot Builder/}).click();
  await expect(arena.getByRole("button",{name:"Select obstacle 1"})).toHaveAttribute("x","-11");
  // Selection is transient UI state; the saved obstacle itself is restored.
- await arena.getByRole("button",{name:"Select obstacle 1"}).click();
+ await arena.getByRole("button",{name:"Select obstacle 1"}).focus();
+ await page.keyboard.press("Enter");
+ await expect(arena.getByRole("button",{name:"Remove selected block"})).toBeEnabled();
  await arena.getByRole("button",{name:"Remove selected block"}).click();
  await expect(arena).toContainText("0/20 obstacles");
 });

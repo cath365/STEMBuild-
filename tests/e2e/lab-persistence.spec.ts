@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test("circuit code and selected project survive full reload", async ({ page }) => {
- await page.goto("/3d-lab");
+ await page.goto("/3d-lab/guided");
  await page.getByRole("button", { name: "Push-Button Light", exact: true }).click();
  await page.getByRole("button", { name: "Place", exact: true }).first().click();
  const code=page.getByLabel("Arduino sketch editor");
@@ -10,7 +10,7 @@ test("circuit code and selected project survive full reload", async ({ page }) =
  await page.reload();
  await expect(page.getByRole("button", { name: "Push-Button Light", exact: true })).toHaveClass(/btn-primary/);
  await expect(page.getByLabel("Arduino sketch editor")).toHaveValue(/\/\/ my own test notes/);
- await expect(page.locator("#lab-panel-circuit")).toContainText("1/5 parts");
+ await expect(page.locator("#lab-code")).toContainText("1/5 parts");
 });
 
 test("robot assembly, wires, obstacles and threshold survive browser reload",async ({page})=>{

@@ -12,7 +12,7 @@ test('phone placement, isolated project saves, honest preview and button keyboar
   await page.setViewportSize({width:390,height:844});
   const errors:string[]=[];
   page.on('pageerror',e=>errors.push(e.message));
-  await page.goto('/3d-lab');
+  await page.goto('/3d-lab/guided');
   await page.getByRole('button',{name:'Place',exact:true}).first().click();
   await expect(page.getByRole('img',{name:'Arduino Uno',exact:true})).toBeVisible();
   await expect.poll(()=>page.getByRole('img',{name:'Arduino Uno',exact:true}).evaluate((i:HTMLImageElement)=>i.naturalWidth>0)).toBe(true);
@@ -46,7 +46,7 @@ test('phone placement, isolated project saves, honest preview and button keyboar
 for (const outcome of ['success','failure']) test(`stopped firmware ${outcome} cannot restart the session`, async ({page}) => {
   // Controlled compiler response tests the asynchronous boundary, not GCC correctness.
   await page.route('https://cdn.jsdelivr.net/npm/@horang-corp/avr-gcc-wasm@0.2.0/index.js',route=>route.fulfill({contentType:'text/javascript',body:`export async function compile(){ await new Promise(r=>setTimeout(r,1000)); ${outcome==='success'?'return {hex:":00000001FF",flashBytes:8,fitsTarget:true};':'throw new Error("late compiler result");'} }`}));
-  await page.goto('/3d-lab');
+  await page.goto('/3d-lab/guided');
   await assembleAndWire(page);
   await page.getByRole('button',{name:/Full Firmware Mode Real AVR-GCC/}).click();
   await page.getByRole('button',{name:'▶ Compile & run firmware',exact:true}).click();
@@ -73,7 +73,7 @@ test('WebGL replays parts and wires after loading and releases its renderer on c
   for (const [file,name] of [['GLTFLoader','loader'],['OrbitControls','orbit']]) {
     await page.route(`https://esm.sh/three@0.180.0/examples/jsm/${file==='GLTFLoader'?'loaders':'controls'}/${file}.js`,async route=>route.fulfill({contentType:'text/javascript',body:await readFile(`${root}/${name}.js`,'utf8')}));
   }
-  await page.goto('/3d-lab');
+  await page.goto('/3d-lab/guided');
   await assembleAndWire(page);
   await page.getByRole('button',{name:'Launch 3D Workbench',exact:true}).click();
   await expect(page.getByRole('button',{name:'Reset camera',exact:true})).toBeVisible();
@@ -103,7 +103,7 @@ test('AVR engine drives D8 from real machine instructions and Stop resets output
   const hex=':08000000'+bytes.map(b=>b.toString(16).padStart(2,'0')).join('')+checksum.toString(16).padStart(2,'0')+'\n:00000001FF';
   await page.route('https://cdn.jsdelivr.net/npm/@horang-corp/avr-gcc-wasm@0.2.0/index.js',route=>route.fulfill({contentType:'text/javascript',body:`export async function compile(){ return {hex:${JSON.stringify(hex)},flashBytes:8,fitsTarget:true}; }`}));
   await page.route('https://esm.sh/avr8js@0.21.1',async route=>route.fulfill({contentType:'text/javascript',body:await readFile(`${process.env.TEST_THREE_BUNDLES}/avr.js`,'utf8')}));
-  await page.goto('/3d-lab');
+  await page.goto('/3d-lab/guided');
   await assembleAndWire(page);
   await page.getByRole('button',{name:/Full Firmware Mode Real AVR-GCC/}).click();
   await page.getByRole('button',{name:'▶ Compile & run firmware',exact:true}).click();

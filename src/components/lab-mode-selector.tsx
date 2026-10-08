@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { RobotArena } from "@/components/robot-arena";
 import { RobotCADWorkspace } from "@/components/robot-cad-workspace";
-import { Stem3DLabPrototype } from "@/components/stem-3d-lab-prototype";
 import { BreadboardWorkshop } from "@/components/breadboard-workshop";
+import Link from "next/link";
 
 type LabMode = "circuit" | "robot" | "cad";
 const modes: {
@@ -109,13 +109,14 @@ export function LabModeSelector() {
       </div>
 
       <div id="lab-panel-circuit" role="tabpanel" aria-labelledby="lab-tab-circuit" tabIndex={0} className="lab-mode-panel" hidden={mode !== "circuit"}>
-        <BreadboardWorkshop active={mode === "circuit"} />
-        <div className="bb-guided-divider">
-          <span className="eyebrow">GUIDED CIRCUIT BUILDER · EXISTING LESSONS</span>
-          <h2>Prefer a guided build?</h2>
-          <p className="muted">The original step-by-step Arduino labs, firmware compilation and 3D circuit workbench are still available below. Free Build above is an additional practical workspace.</p>
+        <div className="bb-workshop-choices">
+          <div>
+            <p className="eyebrow">CIRCUIT BUILDER · FREE WORKSPACE</p>
+            <p>Build freely on the breadboard below. Looking for lessons with step-by-step instructions and full AVR firmware simulation?</p>
+          </div>
+          <Link className="btn" href="/3d-lab/guided">Open guided circuit lessons →</Link>
         </div>
-        <Stem3DLabPrototype active={mode === "circuit"} />
+        <BreadboardWorkshop active={mode === "circuit"} />
       </div>
       <div id="lab-panel-robot" role="tabpanel" aria-labelledby="lab-tab-robot" tabIndex={0} className="lab-mode-panel" hidden={mode !== "robot"}>
         <RobotArena active={mode === "robot"} />
