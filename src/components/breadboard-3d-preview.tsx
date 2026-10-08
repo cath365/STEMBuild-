@@ -56,7 +56,7 @@ function paintAssembly(state: SceneState, doc: BreadboardDocument, ledOn: boolea
     return new THREE.Vector3(point.x, 1.55, point.z);
   }
   const wireColor = (a: string, b: string) =>
-    a === "D8" || b === "D8" ? 0xe34a41 : a === "GND" || b === "GND" ? 0x344657 : 0x26a598;
+    a === "UNO:D8" || b === "UNO:D8" ? 0xe34a41 : a === "UNO:GND" || b === "UNO:GND" ? 0x344657 : 0x26a598;
   for (const wire of doc.wires) {
     line(holeVector(wire.from), holeVector(wire.to), wireColor(wire.from,wire.to), .28, 6);
   }
@@ -164,7 +164,7 @@ export function Breadboard3DPreview({ document: doc, ledOn, onClose }: Props) {
         }
         const holeGeometry = new THREE.CylinderGeometry(.23,.23,.17,9);
         for (const hole of holes) {
-          if (hole.id === "D8" || hole.id === "GND") continue;
+          if (hole.id === "UNO:D8" || hole.id === "UNO:GND") continue;
           const material = new THREE.MeshStandardMaterial({color:hole.rail?0x384859:0x273746});
           const mesh = new THREE.Mesh(holeGeometry,material);
           const point = position(hole.id);
@@ -175,7 +175,7 @@ export function Breadboard3DPreview({ document: doc, ledOn, onClose }: Props) {
           new THREE.MeshStandardMaterial({color:0x156d94,roughness:.5}));
         unoBody.position.set(-36,0,1.5);
         scene.add(unoBody);
-        for (const id of ["D8","GND"]) {
+        for (const id of ["UNO:D8","UNO:GND"]) {
           const point=position(id);
           const pin=new THREE.Mesh(new THREE.BoxGeometry(1.5,.3,1.5),
             new THREE.MeshStandardMaterial({color:0xe9e2c5,metalness:.5}));
