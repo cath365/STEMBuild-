@@ -481,3 +481,5 @@
 .robot-cad{margin:36px 0}.robot-cad-canvas{height:460px;margin:16px 0;border-radius:12px;overflow:hidden;touch-action:none}.robot-cad-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:24px;margin:20px 0}.robot-cad-grid .btn{margin:4px}.robot-cad input[type=number]{display:block;width:100px;padding:8px}.robot-cad [aria-pressed=true]{outline:2px solid #16869b}.robot-cad input[type=file]{max-width:200px}@media(max-width:760px){.robot-cad-grid{grid-template-columns:minmax(0,1fr)}.robot-cad-canvas{height:340px}}
 
 .cad-library{max-height:280px;overflow-y:auto;display:flex;flex-wrap:wrap;gap:4px}.cad-library small{display:block;font-size:10px}.robot-cad input:not([type]){display:block;max-width:100%;padding:8px}
+
+.cad-library{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;max-height:420px}.cad-library .btn{display:flex;flex-direction:column;align-items:center;white-space:normal;text-align:center;padding:8px;min-width:0;font-size:12px;line-height:1.35}.cad-library img{width:100%;max-width:160px;height:auto;border-radius:6px;margin-bottom:6px}.cad-library small{margin-top:4px;color:var(--muted)}

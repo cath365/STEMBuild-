@@ -15,3 +15,16 @@ test('CAD supports repeated library components and validates saved wire endpoint
  a.wires=[{from:7,fromPin:'Anode +',to:8,toPin:'Cathode −',color:'#297aad'}];assert.equal(parseAssembly(a).parts.length,9);
  a.wires[0].toPin='unknown';assert.throws(()=>parseAssembly(a));a.wires=[];a.parts[7].kind='unknown';assert.throws(()=>parseAssembly(a));
 });
+
+test('expanded catalogue types survive assembly import with their terminal labels',async()=>{
+ const {cadLibrary}=await import('../../src/lib/cad-component-library');
+ assert.equal(new Set(cadLibrary.map(c=>c.id)).size,cadLibrary.length);
+ const a=defaultAssembly();a.wires=[];
+ for(const c of cadLibrary){
+  assert.ok(c.size.every(n=>Number.isFinite(n)&&n>0));
+  const index=a.parts.length;a.parts.push({kind:c.id,offset:[index,0,0],rotation:[0,0,0],visible:true});
+  if(c.pins.length)a.wires!.push({from:1,fromPin:'GND',to:index,toPin:c.pins[0],color:'#297aad'});
+ }
+ const restored=parseAssembly(JSON.parse(JSON.stringify(a)));
+ assert.deepEqual(restored,a);
+});

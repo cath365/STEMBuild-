@@ -184,3 +184,21 @@ test('CAD workspace edits real 3D parts, undo/redo and device save restore assem
  await expect(cad.locator('.robot-wire-list')).toContainText('Red LED #2 Anode + → Red LED #1 Cathode −');if(process.env.TEST_THREE_BUNDLES){await cad.getByRole('button',{name:'Launch CAD workspace',exact:true}).click();await expect(cad.locator('canvas')).toHaveAttribute('data-cad-selection','Red LED #1');await expect(cad.locator('canvas')).toHaveAttribute('data-cad-position','[12,0,0]');}
  await cad.getByRole('button',{name:'Save assembly',exact:true}).click();await page.reload();await page.getByRole('tab',{name:/CAD Workspace/}).click();await expect(cad).toContainText('Assembly tree (9/100)');await expect(cad.locator('.robot-wire-list')).toContainText('Red LED #2 Anode +');expect(errors).toEqual([]);
  });
+
+test('every hardware model renders together without WebGL or geometry errors',async({page})=>{
+ test.skip(!process.env.TEST_THREE_BUNDLES,'Requires matching Three.js bundles and WebGL');
+ const root=process.env.TEST_THREE_BUNDLES!;const errors:string[]=[];
+ page.on('pageerror',e=>errors.push(e.message));
+ await page.route('https://esm.sh/three@0.180.0',async r=>r.fulfill({contentType:'text/javascript',body:await readFile(`${root}/three.js`,'utf8')}));
+ for(const [name,file]of [['OrbitControls','orbit'],['TransformControls','transform']])await page.route(`https://esm.sh/three@0.180.0/examples/jsm/controls/${name}.js`,async r=>r.fulfill({contentType:'text/javascript',body:await readFile(`${root}/${file}.js`,'utf8')}));
+ await page.goto('/3d-lab#robot-cad');await page.getByRole('tab',{name:/CAD Workspace/}).click();const cad=page.locator('#robot-cad');
+ const add=cad.locator('.cad-library button');expect(await add.count()).toBe(40);
+ for(const button of await add.all())await button.click();
+ await expect(cad).toContainText('Assembly tree (47/100)');
+ await cad.getByRole('button',{name:'Launch CAD workspace',exact:true}).click();
+ await expect(cad).toContainText('3D assembly ready.');
+ await expect(cad.locator('canvas')).toHaveAttribute('data-cad-selection','LM2596 buck converter #40');
+ await cad.getByRole('button',{name:'Top view',exact:true}).click();
+ await cad.getByRole('button',{name:'Close CAD view',exact:true}).click();
+ await expect(cad.locator('canvas')).toHaveCount(0);expect(errors).toEqual([]);
+});
