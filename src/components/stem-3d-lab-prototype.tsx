@@ -358,31 +358,46 @@ function LabProjectSession({projectSlug,onProjectChange,active}: {projectSlug:La
 
   const displayedLed = engineMode === "fast" && project.inputMode === "button" ? running && readiness.ready && buttonPressed : ledOn;
   const progress = Math.round(((placed.length + connected.length + (readiness.sketch.ok ? 1 : 0)) / (project.parts.length + project.connections.length + 1)) * 100);
+  const assemblyDone = placed.length === project.parts.length;
+  const wiringDone = readiness.missingConnections.length === 0;
+  const guidedNext = !assemblyDone
+    ? {label:"Place the parts",detail:`Add the remaining ${project.parts.length - placed.length} part(s) using the parts tray.`,id:"lab-assemble"}
+    : !wiringDone
+    ? {label:"Connect the wires",detail:`Complete the ${readiness.missingConnections.length} missing connection(s) in the reviewed pin list.`,id:"lab-wire"}
+    : !readiness.sketch.ok
+    ? {label:"Check your Arduino sketch",detail:"Fix the pin or setup mapping highlighted by the code checks.",id:"lab-code"}
+    : {label: running ? "Observe the simulation" : "Run your circuit",detail: running ? "The virtual board is running. Check the output and stop when finished." : "Your reviewed project is ready for a simulated run.",id:"lab-run"};
 
   return <div className="lab3d-shell">
     <div className="lab3d-project-switcher">
       <div>
-        <div className="eyebrow">CHOOSE A 3D PROJECT</div>
+        <div className="eyebrow">YOUR GUIDED PROJECT</div>
         <h2>{project.title}</h2>
         <p className="small muted">{project.description}</p>
       </div>
       <div className="lab3d-project-buttons">
-        {lab3dProjects.map((item) => <button key={item.slug} type="button" className={item.slug === project.slug ? "btn btn-primary" : "btn"} onClick={() => onProjectChange(item.slug)}>{item.shortTitle}</button>)}
+        {lab3dProjects.map((item) => <button key={item.slug} type="button" aria-pressed={item.slug === project.slug} className={item.slug === project.slug ? "btn btn-primary" : "btn"} onClick={() => onProjectChange(item.slug)}>{item.shortTitle}</button>)}
       </div>
     </div>
 
-    <nav className="lab3d-mobile-steps" aria-label="3D Lab steps">
-      <button type="button" onClick={()=>document.getElementById("lab-assemble")?.scrollIntoView({behavior:"smooth"})}>1 Assemble</button>
-      <button type="button" onClick={()=>document.getElementById("lab-wire")?.scrollIntoView({behavior:"smooth"})}>2 Wire</button>
-      <button type="button" onClick={()=>document.getElementById("lab-code")?.scrollIntoView({behavior:"smooth"})}>3 Program</button>
-      <button type="button" onClick={()=>document.getElementById("lab-run")?.scrollIntoView({behavior:"smooth"})}>4 Run</button>
+    <nav className="lab3d-mobile-steps" aria-label="Guided build steps">
+      {[
+        {id:"lab-assemble",label:"Assemble",done:assemblyDone},
+        {id:"lab-wire",label:"Wire",done:wiringDone},
+        {id:"lab-code",label:"Program",done:readiness.sketch.ok},
+        {id:"lab-run",label:"Run",done:running && readiness.ready},
+      ].map((item,index) => <button key={item.id} type="button" className={item.done ? "done" : guidedNext.id === item.id ? "current" : ""} onClick={()=>document.getElementById(item.id)?.scrollIntoView({behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"start"})}><span>{item.done ? "✓" : String(index+1).padStart(2,"0")}</span>{item.label}</button>)}
     </nav>
 
     <section className="lab3d-statusbar">
-      <div><span className="lab3d-live-dot" /> 3D Lab real-engine preview</div>
+      <div><span className="lab3d-live-dot" /> GUIDED CIRCUIT WORKSPACE</div>
       <div className="lab3d-progress"><span style={{width:`${progress}%`}} /></div>
       <div>{progress}% assembled and mapped · {storageAvailable ? "saved on this device" : "saving unavailable — download your sketch"}</div>
     </section>
+    <div className="lab3d-next-action">
+      <div><span className="bb-overline">NEXT ACTION</span><strong>{guidedNext.label}</strong><p>{guidedNext.detail}</p></div>
+      <button type="button" className="btn" onClick={()=>document.getElementById(guidedNext.id)?.scrollIntoView({behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"start"})}>Go to step →</button>
+    </div>
 
     {webglEnabled ? (
       <div className="lab3d-webgl-launch-wrap">
@@ -398,18 +413,18 @@ function LabProjectSession({projectSlug,onProjectChange,active}: {projectSlug:La
     ) : (
       <section className="lab3d-safe-launch">
         <div>
-          <div className="eyebrow">SAFE MOBILE START</div>
-          <h2>Open the page first. Launch 3D only when you are ready.</h2>
-          <p className="muted">The 3D engine is no longer downloaded automatically when this page opens. This keeps the lab usable on slower phones, embedded browsers and unstable networks. You can still assemble, wire, edit code and use Fast Simulation below.</p>
+          <div className="eyebrow">3D VIEW · OPTIONAL</div>
+          <h2>Build first. Explore it in 3D when you're ready.</h2>
+          <p className="muted">The lesson starts in a lightweight view to save mobile data. Place parts, wire the circuit and edit Arduino code below, or open the full 3D view for rotation and clickable pins.</p>
           <div className="inline" style={{marginTop:12}}>
             <button type="button" className="btn btn-primary" onClick={()=>setWebglEnabled(true)}>Launch 3D Workbench</button>
             <button type="button" className="btn" onClick={()=>document.getElementById("lab-assemble")?.scrollIntoView({behavior:"smooth"})}>Use lightweight mode</button>
           </div>
         </div>
         <div className="lab3d-safe-status">
-          <span>✓ Page loads without Three.js</span>
-          <span>✓ Placed parts stay visible before 3D launch</span>
-          <span>✓ Full Firmware Mode stays opt-in</span>
+          <span>✓ Works in low-data mode</span>
+          <span>✓ Parts and code save locally</span>
+          <span>✓ Full firmware compilation is optional</span>
         </div>
 
         <div className="lab3d-light-preview">
@@ -509,7 +524,7 @@ function LabProjectSession({projectSlug,onProjectChange,active}: {projectSlug:La
       <aside id="lab-code" className="lab3d-panel lab3d-code-panel">
         <div className="eyebrow">3 · PROGRAM</div>
         <h2>Arduino sketch</h2>
-        <p className="small muted">The exported .ino remains your text. Full Firmware Mode mirrors standard Arduino .ino preprocessing by adding Arduino.h only when the browser compiler needs it.</p>
+        <p className="small muted">Edit this Arduino sketch and download it for your physical Uno. Full Firmware Mode can compile custom changes when needed.</p>
         <textarea className="lab3d-code-editor" value={code} onChange={(event)=>{setCode(event.target.value);stopSimulation();}} spellCheck={false} aria-label="Arduino sketch editor"/>
 
         <div className="lab3d-code-checks">
@@ -559,14 +574,14 @@ function LabProjectSession({projectSlug,onProjectChange,active}: {projectSlug:La
       </aside>
     </div>
 
-    <section className="lab3d-parity">
-      <div><div className="eyebrow">REAL ENGINE LAYER</div><h2>What changed</h2></div>
+    <details className="lab3d-parity-details">
+      <summary><span><span className="bb-overline">ABOUT THIS SIMULATOR</span><strong>How the 3D and firmware engines work</strong></span><span aria-hidden="true">＋</span></summary>
       <div className="lab3d-parity-grid">
         <div><strong>✓ True WebGL</strong><span>Three.js renders dimensioned 3D parts, orbit/zoom, 3D wires and clickable pin nodes.</span></div>
         <div><strong>✓ glTF/CAD path</strong><span>The Uno and breadboard load as reusable glTF assets; smaller parts use dimensioned procedural CAD geometry.</span></div>
         <div><strong>✓ Real AVR compilation</strong><span>Full Firmware Mode compiles Arduino source into Intel HEX with AVR-GCC/WebAssembly.</span></div>
         <div><strong>✓ ATmega328P execution</strong><span>AVR8js executes the compiled machine code; D8 output and D2 input drive the virtual hardware.</span></div>
       </div>
-    </section>
+    </details>
   </div>;
 }

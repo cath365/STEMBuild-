@@ -13,15 +13,27 @@ export default function ThreeDLabPage() {
   return <div>
     <PublicHeader />
     <main>
-      <section className="lab3d-hero">
-        <div className="container">
-          <div className="eyebrow">STEMBUILD 3D LAB · LEARN BY MAKING</div>
-          <h1>Build it in 3D.<br/><span>Understand how it works.</span></h1>
-          <p className="lead">Build circuits freely on a breadboard, assemble an obstacle-avoiding robot or design your robot in CAD. Choose one workspace at a time. Guided Arduino lessons are available separately.</p>
-          <div className="inline" style={{marginTop:18}}>
-            <a className="btn btn-primary" href="#workbench">Open Free Build</a>
-            <Link className="btn" href="/3d-lab/guided">Guided circuit lessons</Link>
-            <Link className="btn" href="/learning-paths/first-robot">First Robot Path</Link>
+      <section className="lab3d-hero lab-ux-hero free">
+        <div className="container lab-ux-hero-layout">
+          <div className="lab-ux-hero-copy">
+            <div className="lab-ux-breadcrumb"><Link href="/">Home</Link><span aria-hidden="true">/</span><span>3D Lab</span></div>
+            <div className="eyebrow">STEMBUILD · INTERACTIVE MAKER SPACE</div>
+            <h1>Build something.<br/><span>Make it work.</span></h1>
+            <p className="lead">Place parts on a breadboard, connect real pin locations, test circuits and design robots. Start small and keep building.</p>
+            <div className="lab-ux-hero-actions">
+              <a className="btn btn-primary" href="#workbench">Open Free Build <span aria-hidden="true">→</span></a>
+              <Link className="btn" href="/3d-lab/guided">Try guided lessons</Link>
+            </div>
+            <p className="lab-ux-hero-footnote">Free to explore · Projects save in this browser</p>
+          </div>
+          <div className="lab-ux-hero-visual free" aria-label="Illustration of connected electronic circuit modules">
+            <span className="lab-ux-diagram-top">CIRCUIT WORKBENCH / ONLINE</span>
+            <div className="lab-ux-circuit-diagram" aria-hidden="true">
+              <div className="lab-ux-uno"><span>ARDUINO</span><strong>UNO</strong><small>Digital pin D8</small></div>
+              <span className="lab-ux-trace"><i/><i/><i/></span>
+              <div className="lab-ux-led"><span>LED</span><i/><small>Output</small></div>
+            </div>
+            <span className="lab-ux-diagram-bottom">COMPONENTS · WIRING · CODE · SIMULATION</span>
           </div>
         </div>
       </section>

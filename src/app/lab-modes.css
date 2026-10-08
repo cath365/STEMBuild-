@@ -158,3 +158,141 @@
   .bb-workshop-choices, .guided-lab-route-intro { flex-direction: column; align-items: stretch; padding: 14px; gap: 12px; }
   .bb-workshop-choices .btn, .guided-lab-route-intro .btn { width: 100%; }
 }
+
+/* STEMBuild 3D Lab UI refresh — presentation only, no changes to simulation logic. */
+.lab3d-hero.lab-ux-hero {
+  position: relative; overflow: hidden;
+  padding: 54px 0 58px; border-bottom: none;
+  background: #0c2038; color: #fff;
+}
+.lab3d-hero.lab-ux-hero::before { content: ""; position: absolute; inset: 0; opacity: .55; pointer-events: none; background:
+ radial-gradient(circle at 71% 31%, rgba(23,142,175,.35), transparent 40%),
+ linear-gradient(118deg,transparent 63%,rgba(255,255,255,.025) 63%,rgba(255,255,255,.025) 65%, transparent 65%); }
+.lab3d-hero.lab-ux-hero.guided { background: #162640; }
+.lab-ux-hero-layout { position: relative; display: grid; grid-template-columns: minmax(0,1fr) minmax(290px,.81fr); gap: clamp(28px,5vw,70px); align-items: center; }
+.lab-ux-hero-copy { min-width: 0; }
+.lab-ux-breadcrumb { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; font-size: 12px; color: #b2cbe0; }
+.lab-ux-breadcrumb a { color: #d4e3ef; text-underline-offset: 3px; }
+.lab-ux-breadcrumb a:hover { color: #fff; }
+.lab3d-hero.lab-ux-hero .eyebrow { font-size: 11px; color: #7fdfd2; letter-spacing: .11em; }
+.lab3d-hero.lab-ux-hero.guided .eyebrow { color: #f4c77e; }
+.lab3d-hero.lab-ux-hero h1 { max-width: 790px; margin: 18px 0 18px; color: #fff; font-size: clamp(43px,5.7vw,80px); line-height: .99; letter-spacing: -.045em; }
+.lab3d-hero.lab-ux-hero h1 span { color: #8ce5d8; }
+.lab3d-hero.lab-ux-hero.guided h1 span { color: #ffd58a; }
+.lab3d-hero.lab-ux-hero .lead { color: #c7d7e5; max-width: 610px; font-size: clamp(14px,1.5vw,17px); line-height: 1.7; }
+.lab-ux-hero-actions { display: flex; flex-wrap: wrap; gap: 11px; margin-top: 24px; }
+.lab-ux-hero-actions .btn { display: inline-flex; gap: 12px; min-height: 48px; align-items: center; justify-content: center; border-radius: 9px; font-size: 13px; font-weight: 790; padding: 11px 17px; }
+.lab-ux-hero-actions .btn-primary { color: #092d36; background: #8ce5d8; border-color: #8ce5d8; }
+.lab-ux-hero-actions .btn-primary:hover { background: #b6f5ed; border-color: #b6f5ed; }
+.lab-ux-hero.guided .lab-ux-hero-actions .btn-primary { color: #3c2a13; background: #ffcc7b; border-color: #ffcc7b; }
+.lab-ux-hero-actions .btn:not(.btn-primary) { color: #f0f6ff; border-color: #6e8299; background: rgba(255,255,255,.06); }
+.lab-ux-hero-actions .btn:not(.btn-primary):hover { background: rgba(255,255,255,.13); }
+.lab-ux-hero-footnote { margin: 18px 0 0; color: #a4bfd2; font-size: 12px; line-height: 1.5; }
+.lab-ux-hero-visual { min-width: 0; padding: 19px; min-height: 295px; border-radius: 20px; border: 1px solid rgba(167,221,233,.28);
+ box-shadow: 0 25px 65px rgba(1,7,19,.18),inset 0 1px 0 rgba(255,255,255,.08);
+ background: linear-gradient(148deg,rgba(41,74,103,.92),rgba(11,35,61,.94)); display: flex; flex-direction: column; justify-content: space-between; }
+.lab-ux-hero-visual.guided { background: linear-gradient(135deg,#313f55,#1a304f); border-color: rgba(255,210,142,.25); }
+.lab-ux-diagram-top,.lab-ux-diagram-bottom { color: #9bc2d1; font: 700 10px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace; letter-spacing: .11em; }
+.lab-ux-diagram-bottom { text-align: center; color: #c1dbe3; }
+.lab-ux-circuit-diagram { display: flex; align-items: center; gap: 0; margin: 24px 0; justify-content: center; min-width: 0; }
+.lab-ux-uno { width: 39%; min-height: 148px; border: 2px solid #61c1d6; background: #165476; border-radius: 10px; padding: 20px 14px; box-shadow: inset 0 0 0 6px rgba(255,255,255,.045); display: flex; flex-direction: column; justify-content: center; }
+.lab-ux-uno span { font-size: 12px; color: #b4e6f4; font-weight: 820; letter-spacing: .12em; }
+.lab-ux-uno strong { font-size: clamp(23px,3vw,37px); font-weight: 900; line-height: 1.2; color: #fff; }
+.lab-ux-uno small { color: #aee5ef; font-size: 10px; margin-top: 6px; }
+.lab-ux-trace { width: 25%; height: 4px; background: #92e2ce; position: relative; display: flex; align-items: center; justify-content: space-around; }
+.lab-ux-trace i { display: block; width: 7px; height: 7px; border-radius: 50%; background: #d5fcef; box-shadow: 0 0 11px #8ce5d8; }
+.lab-ux-led { width: 31%; display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 12px; font-weight: 900; color: #def6fc; }
+.lab-ux-led i { display: block; width: 52px; height: 62px; max-width: 100%; border-radius: 50% 50% 16px 16px; background: linear-gradient(140deg,#ff8b8b,#e43c4d 80%); box-shadow: 0 0 0 9px rgba(255,101,110,.12),0 0 30px rgba(255,60,60,.38); }
+.lab-ux-led small { font-weight: 600; color: #a9d6df; font-size: 11px; }
+.lab-ux-diagram-guided { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; margin: 20px 0; }
+.lab-ux-diagram-guided > span { min-width: 0; display: flex; flex-direction: column; gap: 5px; border: 1px solid rgba(255,255,255,.16); background: rgba(255,255,255,.07); border-radius: 12px; padding: 14px; }
+.lab-ux-diagram-guided b { color: #ffcc7b; font: 800 18px/1 ui-monospace,SFMono-Regular,monospace; }
+.lab-ux-diagram-guided strong { font-size: 17px; color: white; }
+.lab-ux-diagram-guided small { font-size: 11px; color: #c1d0e1; }
+.lab3d-section { scroll-margin-top: 22px; }
+.lab-modes-heading { max-width: 810px; }
+.lab-modes-heading > p:not(.eyebrow):not(.lab-saved-notice) { font-size: 15px; line-height: 1.65; }
+.lab-mode-tab { border-radius: 14px; position: relative; }
+.lab-mode-tab.selected::after { content: "ACTIVE"; position: absolute; bottom: 14px; right: 15px; font-size: 10px; color: #0b4d86; font-weight: 900; letter-spacing: .08em; }
+.lab-mode-tab.selected { background: #eff9fb; border-color: #0b7283; box-shadow: inset 0 0 0 1px #0b7283; }
+.bb-shell { background: #f7fafc; border-color: #d0e0e8; }
+.bb-progress-overview { border: 1px solid #ccdce5; background: #fff; border-radius: 13px; margin-bottom: 20px; padding: 17px 20px; }
+.bb-progress-title { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; align-items: center; }
+.bb-progress-title > div { display: flex; flex-direction: column; gap: 6px; }
+.bb-progress-title strong { color: #1c3046; font-size: 19px; letter-spacing: -.02em; }
+.bb-overline { font-size: 10px; line-height: 1.5; font-weight: 900; letter-spacing: .13em; color: #557184; }
+.bb-project-pill { font-size: 11px; color: #22634d; font-weight: 700; background: #e8f6ef; padding: 6px 10px; border-radius: 30px; }
+.bb-progress-steps { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 7px; margin: 16px 0; }
+.bb-progress-steps > span { border: 1px solid #dde5ec; background: #f5f7f9; border-radius: 8px; padding: 10px; color: #63788d; font-size: 12px; font-weight: 750; display: flex; gap: 7px; align-items: center; }
+.bb-progress-steps > span b { font: 900 13px/1 ui-monospace,SFMono-Regular,monospace; }
+.bb-progress-steps > span.current { border-color: #7fb4c8; color: #165775; background: #e9f5fc; }
+.bb-progress-steps > span.complete { border-color: #a6ddc5; color: #206245; background: #ebf8f0; }
+.bb-next-step,.lab3d-next-action { min-width: 0; border-radius: 9px; padding: 13px 15px; display: flex; gap: 15px; align-items: center; justify-content: space-between; background: #0f2841; color: #fff; }
+.bb-next-step strong,.lab3d-next-action strong { display: block; margin-top: 4px; font-size: 15px; line-height: 1.35; }
+.bb-next-step p,.lab3d-next-action p { font-size: 12px; line-height: 1.6; margin: 5px 0 0; color: #c4d5e1; }
+.bb-next-step .bb-overline,.lab3d-next-action .bb-overline { color: #8ee4d6; }
+.bb-next-step .btn,.lab3d-next-action .btn { min-height: 42px; flex-shrink: 0; border: 1px solid #adc6d8; color: #fff; background: rgba(255,255,255,.08); }
+.bb-next-step .btn:hover,.lab3d-next-action .btn:hover { background: rgba(255,255,255,.19); }
+.bb-board-controls { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.bb-board-controls > div:first-child { display: grid; gap: 3px; }
+.bb-board-controls strong { color: #253b50; font-size: 14px; }
+.bb-board-controls span { color: #64798a; font-size: 11px; line-height: 1.4; }
+.bb-view-toggle { display: flex; gap: 3px; padding: 4px; background: #e9eff3; border-radius: 9px; }
+.bb-view-toggle button { border: 0; padding: 8px 12px; border-radius: 6px; background: transparent; color: #486274; font-size: 12px; font-weight: 770; min-height: 38px; }
+.bb-view-toggle button.active { background: #fff; color: #17577c; box-shadow: 0 2px 5px rgba(10,34,58,.13); }
+.bb-view-toggle button:focus-visible { outline: 3px solid #14779c; outline-offset: 2px; }
+.bb-board-scroll.fit { overflow-x: hidden; }
+.bb-board.fit { width: 100%; height: auto; }
+.bb-toolbar button { transition: color .15s,background .15s,border-color .15s; }
+.bb-card { box-shadow: 0 4px 18px rgba(16,41,60,.035); }
+.bb-card h3 { color: #1b3850; }
+.bb-wire-list button,.bb-card .btn { min-height: 40px; }
+.bb-run-section { scroll-margin-top: 100px; }
+.guided-lab-route-intro { background: #f8fbff; }
+.guided-lab-route-intro .eyebrow { color: #496a88; }
+.lab3d-project-switcher { border-color: #cedce8; padding: 24px; background: #fff; border-radius: 15px; }
+.lab3d-project-switcher h2 { letter-spacing: -.035em; }
+.lab3d-project-buttons button[aria-pressed="true"] { background: #153958; border-color: #153958; }
+.lab3d-mobile-steps { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 8px; margin: 13px 0; }
+.lab3d-mobile-steps button { display: flex; align-items: center; justify-content: center; gap: 7px; min-width: 0; min-height: 48px; border: 1px solid #d7e3e9; border-radius: 9px; background: #fff; padding: 9px; color: #3d5368; font-size: 12px; font-weight: 800; }
+.lab3d-mobile-steps button span { color: #668195; font: 800 12px/1 ui-monospace,SFMono-Regular,monospace; }
+.lab3d-mobile-steps button.current { background: #e9f4ff; border-color: #80b8d5; color: #14537c; }
+.lab3d-mobile-steps button.done { background: #eff9f1; border-color: #b7ddc4; color: #226448; }
+.lab3d-mobile-steps button:focus-visible { outline: 3px solid #2c84a2; outline-offset: 2px; }
+.lab3d-next-action { margin: 13px 0; background: #153754; }
+.lab3d-statusbar { margin-top: 10px; border-radius: 11px; border-color: #ccdae7; background: #f8fbfd; }
+.lab3d-safe-launch { border-radius: 14px; }
+.lab3d-parity-details { margin-top: 22px; border: 1px solid #d3e0e7; border-radius: 12px; background: #fff; padding: 0 18px; }
+.lab3d-parity-details summary { display: flex; gap: 12px; justify-content: space-between; align-items: center; cursor: pointer; padding: 18px 3px; list-style: none; }
+.lab3d-parity-details summary::-webkit-details-marker { display: none; }
+.lab3d-parity-details summary strong { display: block; font-size: 16px; margin-top: 5px; color: #1b354b; }
+.lab3d-parity-details summary > span:last-child { font-size: 23px; color: #4f738a; }
+.lab3d-parity-details[open] summary > span:last-child { transform: rotate(45deg); }
+.lab3d-parity-details summary:focus-visible { outline: 3px solid #2c84a2; outline-offset: 4px; }
+.lab3d-parity-details .lab3d-parity-grid { padding: 2px 0 18px; }
+@media(max-width:960px) {
+  .lab-ux-hero-layout { grid-template-columns: minmax(0,1fr); }
+  .lab-ux-hero-visual { min-height: 240px; max-width: 620px; }
+  .lab-ux-circuit-diagram { max-width: 470px; width: 100%; margin-inline: auto; }
+}
+@media(max-width:760px) {
+  .lab3d-hero.lab-ux-hero { padding: 27px 0 33px; }
+  .lab-ux-breadcrumb { margin-bottom: 17px; }
+  .lab3d-hero.lab-ux-hero h1 { font-size: clamp(38px,10vw,54px); margin: 12px 0 14px; }
+  .lab-ux-hero-layout { gap: 20px; }
+  .lab-ux-hero-visual { min-height: 195px; padding: 14px; }
+  .lab-ux-uno { min-height: 105px; padding: 11px; }
+  .lab-ux-led i { width: 36px; height: 44px; }
+  .lab-ux-hero-actions .btn { flex: 1 1 150px; }
+  .lab3d-mobile-steps { position: sticky; top: 0; z-index: 35; gap: 4px; background: rgba(244,249,253,.96); padding: 6px; border: 1px solid #d7e5ed; border-radius: 11px; backdrop-filter: blur(8px); }
+  .lab3d-mobile-steps button { font-size: 10px; padding: 8px 2px; min-height: 44px; display: grid; justify-items: center; gap: 4px; }
+  .lab3d-mobile-steps button span { font-size: 11px; }
+  .bb-progress-overview { padding: 13px; }
+  .bb-progress-steps > span { flex-direction: column; gap: 4px; align-items: flex-start; font-size: 11px; padding: 9px; }
+  .bb-next-step,.lab3d-next-action { align-items: stretch; flex-direction: column; padding: 14px; gap: 10px; }
+  .bb-next-step .btn,.lab3d-next-action .btn { width: 100%; justify-content: center; }
+  .lab3d-project-switcher { padding: 16px; }
+}
+@media(prefers-reduced-motion:reduce) {
+  .bb-toolbar button { transition: none; }
+}
