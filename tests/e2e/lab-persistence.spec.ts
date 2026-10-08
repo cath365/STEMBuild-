@@ -40,6 +40,7 @@ test("CAD autosave survives reload without overwriting manual Save/Load slot",as
  await page.goto("/3d-lab");
  await page.getByRole("tab",{name:/CAD Workspace/}).click();
  const cad=page.locator("#robot-cad");
+ await cad.getByRole("button",{name:"Add Arduino Uno",exact:true}).click();
  const offset=cad.getByLabel("X offset (cm)",{exact:true});
  await offset.fill("4");
  await cad.getByRole("button",{name:"Save assembly",exact:true}).click();
