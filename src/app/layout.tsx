@@ -4,6 +4,7 @@ import "./globals.css";
 import "./brand.css";
 import "./learn.css";
 import "./lab-modes.css";
+import "./logo-theme.css";
 import { PwaRegister } from "@/components/pwa-register";
 import { ConnectivityStatus } from "@/components/connectivity-status";
 
