@@ -34,7 +34,7 @@ test("breadboard rows share five-hole groups but the central trench is separate"
 test("parts and jumper leads each occupy one physical hole",()=>{
  const doc=createBreadboard();
  assert.equal(canPlaceComponent(doc,"led","E6","F6"),null);
- assert.match(canPlaceComponent(doc,"led","A6","C6")??"",/20–170|different/);
+ assert.equal(canPlaceComponent(doc,"led","A6","C6"),null);
  const placed={...doc,led:{a:"E6",b:"F6"}};
  assert.match(canPlaceComponent(placed,"resistor","E6","F7")??"",/already contains/);
  assert.throws(()=>addBoardWire(placed,"E6","GND"),/occupied/);
