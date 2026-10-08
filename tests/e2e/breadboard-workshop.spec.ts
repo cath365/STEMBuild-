@@ -55,7 +55,8 @@ test("free-build project export imports without touching guided lab state",async
  const download=page.waitForEvent("download");
  await workshop.getByRole("button",{name:"Download breadboard backup"}).click();
  expect((await download).suggestedFilename()).toBe("stembuild-breadboard-project.json");
- await expect(page.getByRole("button",{name:"Auto assemble demo"})).toBeVisible();
+ await expect(page.getByRole("button",{name:"Auto assemble demo"})).toHaveCount(0);
+ await expect(page.getByRole("link",{name:/Open guided circuit lessons/})).toBeVisible();
  await workshop.getByRole("button",{name:"View this assembly in 3D"}).click();
  await expect(workshop.getByText("Live 3D assembly mirror")).toBeVisible();
  await workshop.getByRole("button",{name:"Close 3D assembly"}).click();
