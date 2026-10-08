@@ -112,7 +112,7 @@ export function LabModeSelector() {
         <div className="bb-workshop-choices">
           <div>
             <p className="eyebrow">CIRCUIT BUILDER · FREE WORKSPACE</p>
-            <p>Build freely on the breadboard below. Looking for lessons with step-by-step instructions and full AVR firmware simulation?</p>
+            <p>Build freely on the breadboard below. <Link href="/learn/arduino-led-blink">New to electronics? Start the complete Learn → Build → Remember LED journey.</Link> For step-by-step Arduino lessons and full AVR firmware simulation, use the guided circuit page.</p>
           </div>
           <Link className="btn" href="/3d-lab/guided">Open guided circuit lessons →</Link>
         </div>
