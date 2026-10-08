@@ -112,7 +112,7 @@ export function BreadboardWorkshop({ active = true }: { active?: boolean }) {
   useEffect(() => {
     if (!hydrated || !storageReady) return;
     try { window.localStorage.setItem(BOARD_STORAGE_KEY, JSON.stringify(doc)); }
-    catch { setStorageReady(false); setMessage("Browser storage is unavailable. Download a project backup."); }
+    catch { queueMicrotask(() => { setStorageReady(false); setMessage("Browser storage is unavailable. Download a project backup."); }); }
   }, [doc, hydrated, storageReady]);
 
   useEffect(() => {
