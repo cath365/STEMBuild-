@@ -27,7 +27,7 @@ test("Free Build shows progress, supports fit/detail zoom and keeps project save
 
 test("Guided project next-step panel follows saved assembly and wiring progress",async ({page})=>{
   await page.goto("/3d-lab/guided");
-  await expect(page.getByText("Place the parts",{exact:true})).toBeVisible();
+  await expect(page.locator(".lab3d-next-action").getByText("Place the parts",{exact:true})).toBeVisible();
   const steps=page.getByRole("navigation",{name:"Guided build steps"});
   await expect(steps.getByRole("button",{name:/Assemble/})).toHaveClass(/current/);
 
