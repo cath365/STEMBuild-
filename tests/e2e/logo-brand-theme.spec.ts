@@ -6,7 +6,7 @@ test("homepage takes the STEMBuild logo colours rather than the old blue/pink/ye
   await page.goto("/");
   const colors=await page.evaluate(()=>{
     const root=getComputedStyle(document.documentElement);
-    const hero=document.querySelector("main section") || document.querySelector('[class*="hero_"]');
+    const hero=document.querySelector('section[aria-labelledby="hero-title"]');
     const primary=hero?.querySelector('a[class*="primaryButton"]');
     return {
       navy:root.getPropertyValue("--brand-navy").trim(),
@@ -19,7 +19,9 @@ test("homepage takes the STEMBuild logo colours rather than the old blue/pink/ye
   });
   expect(colors).toMatchObject({navy:"#0e3462",blue:"#0172e5",teal:"#06be99",orange:"#f6b14a"});
   // Existing homepage hero is the recognisable navy/orange brand presentation.
-  expect(await page.locator('[class*="hero_"]').first().count()).toBe(1);
+  expect(await page.locator('section[aria-labelledby="hero-title"]').count()).toBe(1);
+  expect(colors.hero).toBe("rgb(14, 52, 98)");
+  expect(colors.action).toBe("rgb(246, 177, 74)");
   expect(errors).toEqual([]);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });
