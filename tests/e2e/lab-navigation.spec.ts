@@ -16,7 +16,8 @@ test("home highlights the 3D Lab and it opens in low-data Circuit Builder mode",
   await expect(page.locator("#lab-panel-robot")).toBeHidden();
   await expect(page.locator("#lab-panel-cad")).toBeHidden();
   // Explicit launch prevents loading heavy 3D libraries on slow/low-data devices.
-  await expect(page.getByRole("button", { name: "Launch 3D Workbench" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Build on a real breadboard layout." })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Launch 3D Workbench" })).toHaveCount(0);
   await expect(page.locator(".lab3d-renderer-mount canvas")).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   expect(errors).toEqual([]);
@@ -25,8 +26,8 @@ test("home highlights the 3D Lab and it opens in low-data Circuit Builder mode",
 test("switching workspace retains circuit assembly and preserves robotics and CAD work", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/3d-lab");
-  await page.getByRole("button", { name: "Place", exact: true }).first().click();
-  await expect(page.getByRole("img", { name: "Arduino Uno", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Load working example" }).click();
+  await expect(page.getByRole("button", { name: "Run blink preview" })).toBeEnabled();
 
   await page.getByRole("tab", { name: /Robot Builder/ }).click();
   await expect(page.locator("#lab-panel-robot")).toBeVisible();
@@ -41,7 +42,7 @@ test("switching workspace retains circuit assembly and preserves robotics and CA
   await cad.getByLabel("X offset (cm)", { exact: true }).fill("4");
 
   await page.getByRole("tab", { name: /Circuit Builder/ }).click();
-  await expect(page.getByRole("img", { name: "Arduino Uno", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Run blink preview" })).toBeEnabled();
   await expect(page.locator("#lab-panel-robot")).toBeHidden();
 
   await page.getByRole("tab", { name: /Robot Builder/ }).click();
