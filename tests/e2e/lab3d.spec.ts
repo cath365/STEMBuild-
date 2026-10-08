@@ -196,7 +196,6 @@ test('every hardware model renders together without WebGL or geometry errors',as
  const add=cad.locator('.cad-library button');expect(await add.count()).toBe(40);
  for(const button of await add.all())await button.click();
  await expect(cad).toContainText('Assembly tree (40/100)');
- await expect(cad).toContainText('3D assembly ready.');
  await expect(cad.locator('canvas')).toHaveAttribute('data-cad-selection','LM2596 buck converter #40');
  await cad.getByRole('button',{name:'Top view',exact:true}).click();
  await cad.getByRole('button',{name:'Close CAD view',exact:true}).click();

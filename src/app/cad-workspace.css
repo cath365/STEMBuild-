@@ -13,6 +13,8 @@
 .cad-code{margin:6px 0}.cad-code textarea{width:100%;min-height:160px;font-size:11px}.cad-wiring-panel label{font-size:11px;margin:4px 0}.cad-wiring-panel select{display:block;width:100%;background:var(--surface);color:var(--text);border:1px solid var(--border);padding:7px;border-radius:4px}
 .cad-wiring-panel .robot-pins{display:flex;gap:4px;flex-wrap:wrap;margin:6px 0}.cad-wiring-panel .robot-wire-list{font-size:11px;max-height:140px;overflow:auto}.cad-wiring-panel .robot-wire-list button{font-size:10px}
 .cad-project-details{margin-top:8px;border-top:1px solid var(--border)}
+.cad-project-picker{display:flex;align-items:center;gap:6px;font-size:11px}.cad-project-picker select{background:var(--surface);color:var(--text);border:1px solid var(--border);padding:7px;border-radius:4px}.cad-required ul{font-size:11px;padding-left:18px;margin:6px 0}.cad-required summary,.cad-wire-tools summary{cursor:pointer;font-size:12px;font-weight:700}.cad-wire-tools ol{font-size:11px;padding-left:18px}.cad-sound label{display:block}.cad-sound input{width:100%}.cad-test>details:not(.cad-code){font-size:11px}
+.lab-focus .cad-test{max-height:55%;overflow:auto}.lab-focus .cad-project-toolbar{max-height:80px;overflow:auto}
 .lab-focus .robot-cad{display:flex;flex-direction:column;overflow:hidden;padding:0;min-height:0;border:0;background:transparent}
 .lab-focus .robot-cad>.eyebrow,.lab-focus .robot-cad>h2,.lab-focus .robot-cad>p{display:none}
 .lab-focus .cad-project-toolbar{flex-shrink:0;margin:0 0 8px}.lab-focus .cad-workspace-layout{flex:1;min-height:0}
