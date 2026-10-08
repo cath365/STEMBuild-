@@ -12,8 +12,7 @@ import { Breadboard3DPreview } from "@/components/breadboard-3d-preview";
 type Tool = "wire" | "led" | "resistor";
 type Part = "led" | "resistor";
 type Drag = { part: Part; startX: number; startY: number; x: number; y: number };
-const railColors: Record<string, string> = { P: "#db4343", N: "#2876bc" };
-const wirePalette: Record<string, string> = { D8: "#e04838", GND: "#2b3a4d" };
+const wirePalette: Record<string, string> = { "UNO:D8": "#e04838", "UNO:GND": "#2b3a4d" };
 
 function downloadText(content: string, name: string, mime: string) {
   const url = URL.createObjectURL(new Blob([content], { type: mime }));
@@ -306,7 +305,7 @@ export function BreadboardWorkshop({ active = true }: { active?: boolean }) {
             <PartVisual part={doc.resistor} name="resistor" lit={false} dragging={drag} onStart={startDrag} />
             <PartVisual part={doc.led} name="led" lit={running && lit && result.ready} dragging={drag} onStart={startDrag} />
             {holes.map(hole => {
-              const isArduino = hole.id === "D8" || hole.id === "GND";
+              const isArduino = hole.id === "UNO:D8" || hole.id === "UNO:GND";
               const usedByPart = [doc.led?.a, doc.led?.b, doc.resistor?.a, doc.resistor?.b].includes(hole.id);
               const usedByWire = doc.wires.some(wire => wire.from === hole.id || wire.to === hole.id);
               const marked = first === hole.id;
@@ -317,13 +316,13 @@ export function BreadboardWorkshop({ active = true }: { active?: boolean }) {
                   fill={marked ? "#f6ca45" : usedByPart ? "#f7c98a" : usedByWire ? "#94ddd4" : isArduino ? "#e1f4fa" : "#25384a"}
                   stroke={marked ? "#de8610" : isArduino ? "#0f4561" : "#b8c6cc"}
                   strokeWidth={marked ? 3 : 1.5}
-                  role="button" tabIndex={0} aria-label={isArduino ? `Arduino ${hole.id}` : `Hole ${hole.id}`}
+                  role="button" tabIndex={0} aria-label={isArduino ? `Arduino ${hole.id.slice(4)}` : `Hole ${hole.id}`}
                   className="bb-hole"
                   onClick={() => tapHole(hole.id)}
                   onKeyDown={event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); tapHole(hole.id); } }}
                 />
-                <title>{isArduino ? `Arduino ${hole.id}` : `Breadboard hole ${hole.id}`}</title>
-                {isArduino ? <text x="110" y={hole.y+5} textAnchor="end" fontSize="12" fontWeight="800" fill="#fff" pointerEvents="none">{hole.id}</text> : null}
+                <title>{isArduino ? `Arduino ${hole.id.slice(4)}` : `Breadboard hole ${hole.id}`}</title>
+                {isArduino ? <text x="110" y={hole.y+5} textAnchor="end" fontSize="12" fontWeight="800" fill="#fff" pointerEvents="none">{hole.id.slice(4)}</text> : null}
               </g>;
             })}
             <text x="440" y="469" textAnchor="middle" fill="#40566b" fontWeight="800" fontSize="11">A–E share columns · F–J share columns · each power rail is continuous</text>
