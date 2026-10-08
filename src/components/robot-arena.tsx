@@ -135,7 +135,7 @@ export function RobotArena({active=true}:{active?:boolean}){
   <div className="robot-lab-grid"><aside className="card">{hydrated?<RobotBuilder key={builderRevision} initial={builder} disabled={running} onChange={(assembled,wired,snapshot)=>{setParts(assembled);setWiringReady(wired);setBuilder(snapshot);}}/>:<p className="muted">Restoring your robot assembly…</p>}</aside>
   <div><button className="btn" onClick={()=>{setShow3D(s=>!s);setView(show3D?"Top view · low-data mode":"Loading 3D…");}}>{show3D?"Close robot 3D":"Launch robot 3D"}</button>{show3D?<button className="btn" onClick={()=>inspect.current?.()}>Inspect robot parts</button>:null}{show3D?<div className="robot-view" ref={mount} aria-label="3D robot arena"/>:null}<p className="small muted">{view} · orbit and zoom in 3D. Place obstacles using the top view below.</p>
   <p className="small muted">Tap empty space to add an obstacle. Drag blocks to move them, or focus a block and use arrow keys. Obstacles cannot overlap each other or the robot.</p>
-  <svg className="robot-map" viewBox="-100 -100 200 200" role="img" aria-label="Robot top view: add, select and drag obstacles"
+  <svg className="robot-map" viewBox="-100 -100 200 200" role="group" aria-label="Robot top view: add, select and drag obstacles"
    onPointerMove={e=>{if(draggingBlock.current===null)return;const p=arenaPoint(e);moveBlock(draggingBlock.current,p.x,p.z);}}
    onPointerUp={e=>{if(draggingBlock.current!==null){draggingBlock.current=null;setMessage('Obstacle position updated.');if(e.currentTarget.hasPointerCapture(e.pointerId))e.currentTarget.releasePointerCapture(e.pointerId);}}}
    onPointerCancel={()=>{draggingBlock.current=null;}}
