@@ -73,7 +73,17 @@ function PartVisual({ part, name, lit, dragging, onStart }: {
   );
 }
 
-export function BreadboardWorkshop({ active = true }: { active?: boolean }) {
+export function BreadboardWorkshop({
+  active = true,
+  storageKey = BOARD_STORAGE_KEY,
+  learningMode = false,
+  onValidatedRun,
+}: {
+  active?: boolean;
+  storageKey?: string;
+  learningMode?: boolean;
+  onValidatedRun?: () => void;
+}) {
   const [doc, setDoc] = useState<BreadboardDocument>(createBreadboard);
   const [hydrated, setHydrated] = useState(false);
   const [storageReady, setStorageReady] = useState(true);
@@ -101,7 +111,7 @@ export function BreadboardWorkshop({ active = true }: { active?: boolean }) {
     queueMicrotask(() => {
       if (cancelled) return;
       try {
-        const saved = window.localStorage.getItem(BOARD_STORAGE_KEY);
+        const saved = window.localStorage.getItem(storageKey);
         if (saved) {
           setDoc(parseBreadboard(JSON.parse(saved)));
           setMessage("Saved breadboard circuit and code restored from this browser.");
@@ -113,13 +123,13 @@ export function BreadboardWorkshop({ active = true }: { active?: boolean }) {
       setHydrated(true);
     });
     return () => { cancelled = true; };
-  }, []);
+  }, [storageKey]);
 
   useEffect(() => {
     if (!hydrated || !storageReady) return;
-    try { window.localStorage.setItem(BOARD_STORAGE_KEY, JSON.stringify(doc)); }
+    try { window.localStorage.setItem(storageKey, JSON.stringify(doc)); }
     catch { queueMicrotask(() => { setStorageReady(false); setMessage("Browser storage is unavailable. Download a project backup."); }); }
-  }, [doc, hydrated, storageReady]);
+  }, [doc, hydrated, storageReady, storageKey]);
 
   useEffect(() => {
     let stopped = false;
@@ -355,7 +365,7 @@ export function BreadboardWorkshop({ active = true }: { active?: boolean }) {
         </div>
         <div className="bb-help-row"><span>● Empty hole</span><span>● Occupied by a component</span><span>● Jumper wire plugged in</span></div>
         <div className="bb-action-row">
-          <button type="button" className="btn" onClick={() => { update(demoBreadboard(), "Example loaded: realistic resistor, LED and jumper wiring. Press Run blink preview."); setTool("wire"); }}>Load working example</button>
+          {!learningMode ? <button type="button" className="btn" onClick={() => { update(demoBreadboard(), "Example loaded: realistic resistor, LED and jumper wiring. Press Run blink preview."); setTool("wire"); }}>Load working example</button> : null}
           <button type="button" className="btn" onClick={() => { setFirst(null); setMessage("Connection selection cancelled."); }} disabled={!first}>Cancel pin selection</button>
           <button type="button" className="btn" onClick={clearProject}>Start empty board</button>
         </div>
@@ -404,7 +414,7 @@ export function BreadboardWorkshop({ active = true }: { active?: boolean }) {
           <h3>4 · Check and run</h3>
           <p role="status" className={result.ready ? "bb-feedback ready" : "bb-feedback"}>{result.message}</p>
           <div className="bb-run-row">
-            <button type="button" className="btn btn-primary" onClick={() => { if (result.ready) { setRunning(true); setMessage("Wiring-aware LED blink preview started."); } }} disabled={!result.ready || running}>Run blink preview</button>
+            <button type="button" className="btn btn-primary" onClick={() => { if (result.ready && !running) { setRunning(true); onValidatedRun?.(); setMessage("Wiring-aware LED blink preview started."); } }} disabled={!result.ready || running}>Run blink preview</button>
             <button type="button" className="btn" onClick={() => { setRunning(false); setMessage("Blink preview stopped."); }}>Stop preview</button>
           </div>
           <p className="bb-output"><span className={running && lit ? "bb-output-led on" : "bb-output-led"} /> {running ? lit ? "LED ON · D8 HIGH" : "LED OFF · D8 LOW" : "LED OFF · simulation stopped"}</p>
@@ -416,9 +426,9 @@ export function BreadboardWorkshop({ active = true }: { active?: boolean }) {
           <div className="bb-save-actions">
             <button className="btn" type="button" onClick={saveNow} disabled={!hydrated}>Save breadboard</button>
             <button className="btn" type="button" onClick={exportBackup}>Download breadboard backup</button>
-            <label className="btn">Import breadboard backup<input type="file" accept="application/json,.json" onChange={async event => { const file = event.target.files?.[0]; if (file) await importBackup(file); event.target.value = ""; }} /></label>
+            {!learningMode ? <label className="btn">Import breadboard backup<input type="file" accept="application/json,.json" onChange={async event => { const file = event.target.files?.[0]; if (file) await importBackup(file); event.target.value = ""; }} /></label> : null}
           </div>
-          <p className="small muted">Work reopens after restarting in the same browser unless its data is cleared. Cloud sync comes later.</p>
+          <p className="small muted">{learningMode ? "This lesson circuit saves separately from Free Build. It checks simulated wiring only, not a physical build." : "Work reopens after restarting in the same browser unless its data is cleared. Cloud sync comes later."}</p>
         </div>
       </aside>
     </div>
