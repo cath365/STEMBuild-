@@ -129,3 +129,19 @@ tbody tr:hover { background:var(--logo-canvas); }
   border-color:var(--logo-highlight);
   background:var(--logo-orange-wash);
 }
+
+/* Graceful verified-photo fallback for Wikimedia rate limits or image outages.
+   Keep the real component name/credit without substituting fake imagery. */
+.component-visual-photo-unavailable {
+  min-height: 125px; width:100%; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:8px; text-align:center;
+  padding:12px; background:var(--logo-sky-wash); color:var(--logo-ink);
+  border:1px dashed var(--logo-sky); border-radius:8px;
+}
+.component-visual-photo-unavailable strong { font-size:12px; line-height:1.4; color:var(--logo-ink); }
+.component-visual-photo-unavailable small { max-width:290px; font-size:11px; line-height:1.5; color:var(--logo-ink); }
+.component-visual-compact .component-visual-photo-unavailable { min-height:112px; gap:5px; padding:8px; }
+.build-part .component-visual-photo-unavailable { min-height:50px; padding:4px; }
+.build-part .component-visual-photo-unavailable .component-visual-placeholder { font-size:20px; }
+.build-part .component-visual-photo-unavailable strong { font-size:10px; }
+.build-part .component-visual-photo-unavailable small { display:none; }
