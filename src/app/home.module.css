@@ -160,3 +160,37 @@
   .spotlightSteps { gap: 8px; }
   .spotlightSteps > span { padding: 12px; }
 }
+
+/* Topic areas mirror the logo's actual five-colour mark — no independent
+   purple, pink, red or yellow accents across the public landing page. */
+.home { --primary:var(--brand-blue); --accent:var(--brand-teal); color:var(--brand-navy); background:#ffffff; }
+.home :is(a,button,input,summary):focus-visible { outline-color:var(--brand-blue); }
+.header { position:relative; border-color:#c2d9ed; }
+.header::after { content:""; position:absolute; bottom:0; height:3px; width:100%; left:0; pointer-events:none; background:linear-gradient(90deg,#0e3462 0 24%,#0172e5 24% 50%,#62c1d4 50% 70%,#06be99 70% 85%,#f6b14a 85% 100%); }
+.hero { background:radial-gradient(ellipse at 85% 18%, rgba(98,193,212,.18),transparent 46%),var(--brand-navy); border-color:var(--brand-blue-deep); }
+.hero .kicker { color:var(--brand-orange); }
+.heroCopy h1 .heroAccent { color:var(--brand-orange); background:linear-gradient(180deg,#ffdcab,var(--brand-orange)); -webkit-background-clip:text; background-clip:text; }
+.hero .primaryButton { background:var(--brand-orange); border-color:var(--brand-orange); color:var(--brand-navy); }
+.hero .primaryButton:hover { background:#ffdcab; border-color:#ffdcab; }
+.hero .photoLabel { color:var(--brand-orange); }
+.primaryButton { background:var(--brand-blue); border-color:var(--brand-blue); }
+.primaryButton:not(.hero .primaryButton):hover { background:var(--brand-blue-deep); border-color:var(--brand-blue-deep); }
+.kicker,.sectionHeading h2 span,.sectionHeading>a,.spotlightLink,.spotlightSteps strong { color:var(--brand-blue-deep); }
+.filters .activeFilter { background:var(--brand-blue); border-color:var(--brand-blue); color:#ffffff; }
+.electronics { background:#fff0d5; border-top:3px solid var(--brand-orange); }
+.programming { background:#e1f0ff; border-top:3px solid var(--brand-blue); }
+.sensors { background:#ddf8f1; border-top:3px solid var(--brand-teal); }
+.robotics { background:#c2e1f8; border-top:3px solid var(--brand-sky); }
+.topicTag { color:var(--brand-navy); border-color:#c2d9ed; }
+.topicCard { border-color:#c2d9ed; box-shadow:0 5px 18px rgba(14,52,98,.045); }
+.topicBody>a { color:var(--brand-blue-deep); }
+.teacherFeatures>div:nth-child(4n+1) { border-color:var(--brand-orange); }
+.teacherFeatures>div:nth-child(4n+2) { border-color:var(--brand-blue); }
+.teacherFeatures>div:nth-child(4n+3) { border-color:var(--brand-teal); }
+.teacherFeatures>div:nth-child(4n+4) { border-color:var(--brand-sky); }
+.labSpotlight { background:#f3f9ff; border-color:#c2d9ed; }
+.spotlightSteps > span:nth-child(4n+1) { background:#e1f0ff; border-color:var(--brand-sky); }
+.spotlightSteps > span:nth-child(4n+2) { background:#ddf8f1; border-color:var(--brand-teal); }
+.spotlightSteps > span:nth-child(4n+3) { background:#fff0d5; border-color:var(--brand-orange); }
+.spotlightSteps > span:nth-child(4n+4) { background:#f3f9ff; border-color:var(--brand-blue); }
+.footer { background:#f3f9ff; border-top-color:var(--brand-sky); }
