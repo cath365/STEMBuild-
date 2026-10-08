@@ -10,7 +10,7 @@ test("circuit code and selected project survive full reload", async ({ page }) =
  await page.reload();
  await expect(page.getByRole("button", { name: "Push-Button Light", exact: true })).toHaveClass(/btn-primary/);
  await expect(page.getByLabel("Arduino sketch editor")).toHaveValue(/\/\/ my own test notes/);
- await expect(page.locator(".lab3d-panel")).toContainText("1/5 parts");
+ await expect(page.locator("#lab-code")).toContainText("1/5 parts");
 });
 
 test("robot assembly, wires, obstacles and threshold survive browser reload",async ({page})=>{
