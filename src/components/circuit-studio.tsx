@@ -55,6 +55,7 @@ export function CircuitStudio({active=true}:{active?:boolean}){
 
  return <section className="circuit-studio" aria-label="Circuit project studio">
   <header className="cs-heading"><div><p className="eyebrow">STEMBUILD / ELECTRONICS LAB</p><h2>Circuit Builder</h2><p>Select a project. Place its components, connect terminals and test the result.</p></div><span className="cs-save" role="status">{saveMessage}</span></header>
+  <label className="cs-project-select">Circuit project<select aria-label="Circuit project" value={choice} onChange={e=>choose(e.target.value)}><option value="breadboard">Breadboard workshop</option>{circuitProjects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select><span>Drag bodies to move · drag terminals to wire</span></label>
   <div className="cs-projects" aria-label="Circuit projects">
    <button aria-pressed={choice==='breadboard'} onClick={()=>choose('breadboard')}><Image src="/images/cad/breadboard.webp" alt="" width={120} height={90} unoptimized/><strong>Breadboard workshop</strong><span>Hole-level wiring · LED blink</span><small>Interactive</small></button>
    {circuitProjects.map(p=><button key={p.id} aria-pressed={choice===p.id} onClick={()=>choose(p.id)}><Image src={`/images/cad/${p.output==='alarm'?'buzzer':p.output==='power'?'battery':p.output==='button'?'button':'led'}.webp`} alt="" width={120} height={90} unoptimized/><strong>{p.name}</strong><span>{p.summary}</span><small>Beginner · Logic preview</small></button>)}

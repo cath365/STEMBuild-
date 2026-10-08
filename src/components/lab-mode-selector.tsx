@@ -46,6 +46,7 @@ function modeFromHash(hash: string): LabMode | null {
 
 export function LabModeSelector() {
   const [mode, setMode] = useState<LabMode>("circuit");
+  const [focused, setFocused] = useState(false);
   const tabs = useRef<Partial<Record<LabMode, HTMLButtonElement | null>>>({});
 
   useEffect(() => {
@@ -60,9 +61,17 @@ export function LabModeSelector() {
 
   function chooseMode(next: LabMode) {
     setMode(next);
+    setFocused(true);
     const anchor = modes.find((item) => item.id === next)?.anchor ?? "workbench";
     window.history.replaceState(null, "", `#${anchor}`);
   }
+
+  useEffect(() => {
+    if (!focused) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = previous; };
+  }, [focused]);
 
   function handleTabKeyDown(event: KeyboardEvent<HTMLButtonElement>, index: number) {
     if (!["ArrowRight", "ArrowLeft", "Home", "End"].includes(event.key)) return;
@@ -78,7 +87,17 @@ export function LabModeSelector() {
   }
 
   return (
-    <div className="lab-modes">
+    <div className={focused ? "lab-modes lab-focus" : "lab-modes"} role={focused ? "dialog" : undefined} aria-modal={focused || undefined} aria-label={focused ? "STEMBuild full workspace" : undefined} onKeyDown={event => {
+      if (!focused) return;
+      if (event.key === "Escape") { event.preventDefault(); setFocused(false); tabs.current[mode]?.focus(); }
+      if (event.key === "Tab") {
+        const controls = Array.from(event.currentTarget.querySelectorAll<HTMLElement>('button,select,input,textarea,a[href],[tabindex="0"]')).filter(node => node.getClientRects().length && !node.hasAttribute('disabled') && node.tabIndex >= 0);
+        const first = controls[0], last = controls.at(-1);
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+      }
+    }}>
+      <div className="lab-focus-bar"><strong>STEMBuild Workbench</strong><button className="btn" onClick={() => setFocused(!focused)}>{focused ? "Back to lab page" : "Open full workspace"}</button></div>
       <div className="lab-modes-heading">
         <p className="eyebrow">CHOOSE YOUR WORKSPACE</p>
         <h2>One lab. Three ways to build.</h2>

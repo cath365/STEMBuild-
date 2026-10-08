@@ -24,11 +24,13 @@ function downloadText(content: string, name: string, mime: string) {
 }
 
 function pointInSvg(event: ReactPointerEvent<SVGSVGElement>) {
-  const rect = event.currentTarget.getBoundingClientRect();
-  return {
-    x: (event.clientX - rect.left) / rect.width * 820,
-    y: (event.clientY - rect.top) / rect.height * 496,
-  };
+  return svgPosition(event.currentTarget, event);
+}
+function svgPosition(svg: SVGSVGElement, event: {clientX: number; clientY: number}) {
+  const matrix = svg.getScreenCTM();
+  if (!matrix) return {x: 0, y: 0};
+  const p = new DOMPoint(event.clientX, event.clientY).matrixTransform(matrix.inverse());
+  return {x: p.x, y: p.y};
 }
 
 function PartVisual({ part, name, lit, dragging, onStart }: {
@@ -203,8 +205,7 @@ export function BreadboardWorkshop({
     const svg = event.currentTarget.ownerSVGElement;
     if (!svg) return;
     svg.setPointerCapture(event.pointerId);
-    const rect = svg.getBoundingClientRect();
-    const pointer = { x: (event.clientX - rect.left) / rect.width * 820, y: (event.clientY - rect.top) / rect.height * 496 };
+    const pointer = svgPosition(svg, event);
     const next = { part, startX: pointer.x, startY: pointer.y, ...pointer };
     dragRef.current = next;
     setDrag(next);
