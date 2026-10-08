@@ -113,6 +113,9 @@ export function Breadboard3DPreview({ document: doc, ledOn, onClose }: Props) {
   const stateRef = useRef<SceneState | null>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [error, setError] = useState("");
+  const latest = useRef({doc, ledOn});
+  // Keep the imperative scene in sync without recreating Three.js on every wire edit.
+  useEffect(() => { latest.current = {doc, ledOn}; }, [doc,ledOn]);
 
   useEffect(() => {
     const state = stateRef.current;
@@ -253,9 +256,6 @@ export function Breadboard3DPreview({ document: doc, ledOn, onClose }: Props) {
       stateRef.current=null;
     };
   }, []);
-
-  const latest=useRef({doc,ledOn});
-  useEffect(()=>{ latest.current={doc,ledOn}; },[doc,ledOn]);
 
   return <div className="bb-3d-shell">
     <div className="bb-3d-toolbar"><div><strong>Live 3D assembly mirror</strong><p>Rotate, pan and zoom. Place components and change wires in the hole-level editor above.</p></div>
