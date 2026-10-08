@@ -25,7 +25,7 @@ export default function ThreeDLabPage() {
               <a className="btn btn-primary" href="#workbench">Open Free Build <span aria-hidden="true">→</span></a>
               <Link className="btn" href="/3d-lab/guided">Try guided lessons</Link>
             </div>
-            <p className="lab-ux-hero-footnote">Free to explore · Projects save in this browser</p>
+            <p className="lab-ux-hero-footnote">Free to explore · Projects save in this browser · <Link href="/learn/arduino-led-blink" style={{color:"#ffffff",textDecoration:"underline",textUnderlineOffset:3}}>New? Learn the LED step by step →</Link></p>
           </div>
           <div className="lab-ux-hero-visual free circuit-hero" aria-label="Arduino Uno LED blink circuit wiring preview">
             <div className="circuit-hero-head">
