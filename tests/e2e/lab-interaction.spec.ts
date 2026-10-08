@@ -1,7 +1,7 @@
 import {test,expect} from "@playwright/test";
 
 test("a circuit learner can disconnect one mistaken wire without resetting code",async({page})=>{
- await page.goto("/3d-lab");
+ await page.goto("/3d-lab/guided");
  await page.getByRole("button",{name:"Auto assemble demo",exact:true}).click();
  while(await page.getByRole("button",{name:"Connect",exact:true}).count()){
    await page.getByRole("button",{name:"Connect",exact:true}).first().click();
