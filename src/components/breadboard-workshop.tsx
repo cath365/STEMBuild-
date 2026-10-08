@@ -78,6 +78,7 @@ export function BreadboardWorkshop({ active = true }: { active?: boolean }) {
   const [hydrated, setHydrated] = useState(false);
   const [storageReady, setStorageReady] = useState(true);
   const [tool, setTool] = useState<Tool>("wire");
+  const [boardView, setBoardView] = useState<"detail" | "fit">("detail");
   const [first, setFirst] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
   const [lit, setLit] = useState(false);
@@ -86,6 +87,12 @@ export function BreadboardWorkshop({ active = true }: { active?: boolean }) {
   const [message, setMessage] = useState("Choose LED or resistor, tap two empty holes, then connect jumper wires.");
   const dragRef = useRef<Drag | null>(null);
   const result = useMemo(() => evaluateBreadboard(doc), [doc]);
+  const hasParts = Boolean(doc.led && doc.resistor);
+  const nextAction = !hasParts ? { title: "Place your two components", detail: "Select LED or 330 Ω resistor, then choose two empty breadboard holes.", target: "bb-toolbar" }
+    : !result.ready ? { title: "Finish your circuit", detail: "Connect D8, the resistor, LED and GND using free holes in the correct conductive strips.", target: "bb-board-scroll" }
+    : !running ? { title: "Ready for a test run", detail: "Your supported wiring and starter sketch are ready. Run the blink preview.", target: "bb-run-section" }
+    : { title: "The virtual circuit is running", detail: "Watch the LED blink. Stop the preview before adjusting your wiring.", target: "bb-run-section" };
+  const completedStages = Number(hasParts) + Number(result.ready) + Number(running && result.ready);
 
   useEffect(() => {
     let cancelled = false;
@@ -258,6 +265,17 @@ export function BreadboardWorkshop({ active = true }: { active?: boolean }) {
       </div>
       <span className="bb-stage-badge">BREADBOARD LAB · BETA</span>
     </div>
+    <div className="bb-progress-overview" aria-label="Breadboard build progress">
+      <div className="bb-progress-title"><div><span className="bb-overline">BUILD PROGRESS</span><strong>{completedStages}/3 milestones</strong></div><span className="bb-project-pill">{storageReady ? "● Saved on this device" : "● Backup recommended"}</span></div>
+      <div className="bb-progress-steps">
+        <span className={hasParts ? "complete" : "current"}><b>01</b> Place parts {hasParts ? "✓" : ""}</span>
+        <span className={result.ready ? "complete" : hasParts ? "current" : ""}><b>02</b> Check wiring {result.ready ? "✓" : ""}</span>
+        <span className={running && result.ready ? "complete" : result.ready ? "current" : ""}><b>03</b> Run preview {running && result.ready ? "✓" : ""}</span>
+      </div>
+      <div className="bb-next-step"><div><span className="bb-overline">YOUR NEXT STEP</span><strong>{nextAction.title}</strong><p>{nextAction.detail}</p></div>
+        <button type="button" className="btn" onClick={() => document.querySelector(`.${nextAction.target}`)?.scrollIntoView({behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block:"center"})}>Go to step →</button>
+      </div>
+    </div>
     <div className="bb-layout">
       <div className="bb-main">
         <div className="bb-toolbar" role="group" aria-label="Breadboard building tools">
@@ -266,8 +284,15 @@ export function BreadboardWorkshop({ active = true }: { active?: boolean }) {
           <button type="button" className={tool === "wire" ? "active" : ""} aria-pressed={tool === "wire"} onClick={() => choose("wire")}>〰 Connect jumper wire</button>
         </div>
         <div className="bb-status" role="status"><strong>{instructions}</strong> · {message}</div>
-        <div className="bb-board-scroll" tabIndex={0} aria-label="Scroll to explore all breadboard holes">
-          <svg viewBox="0 0 820 496" className="bb-board" role="group" aria-label="Breadboard with Arduino Uno and individually selectable holes"
+        <div className="bb-board-controls">
+          <div><strong>Wiring canvas</strong><span>Detail view for accurate pin selection · fit view for an overview</span></div>
+          <div className="bb-view-toggle" role="group" aria-label="Breadboard zoom">
+            <button type="button" aria-pressed={boardView === "detail"} className={boardView === "detail" ? "active" : ""} onClick={()=>setBoardView("detail")}>Detail</button>
+            <button type="button" aria-pressed={boardView === "fit"} className={boardView === "fit" ? "active" : ""} onClick={()=>setBoardView("fit")}>Fit board</button>
+          </div>
+        </div>
+        <div className={boardView === "fit" ? "bb-board-scroll fit" : "bb-board-scroll"} tabIndex={0} aria-label="Scroll to explore all breadboard holes">
+          <svg viewBox="0 0 820 496" className={boardView === "fit" ? "bb-board fit" : "bb-board"} role="group" aria-label="Breadboard with Arduino Uno and individually selectable holes"
             onPointerMove={event => {
               if (!dragRef.current) return;
               const next = { ...dragRef.current, ...pointInSvg(event) };
@@ -375,7 +400,7 @@ export function BreadboardWorkshop({ active = true }: { active?: boolean }) {
           </div>
           <p className="small muted">Only the reviewed Arduino Uno D8 blink example and numeric delay changes run in this fast topology preview. Other code is downloadable but not executed here.</p>
         </div>
-        <div className="bb-card">
+        <div className="bb-card bb-run-section">
           <h3>4 · Check and run</h3>
           <p role="status" className={result.ready ? "bb-feedback ready" : "bb-feedback"}>{result.message}</p>
           <div className="bb-run-row">
