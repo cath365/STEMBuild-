@@ -110,3 +110,22 @@ tbody tr:hover { background:var(--logo-canvas); }
 .robot-lab .card,.robot-cad .card { border-color:#c2d9ed; }
 .robot-code,.code,.lab3d-code-editor,.bb-card textarea { border-color:var(--logo-action-hover); }
 @media(prefers-reduced-motion: reduce) { .public-header::after { transition:none; } }
+
+/* Small technical and caution labels must meet readable contrast against
+   pale teal/orange backgrounds; hue alone never communicates safety. */
+:where(.wiring-caution,.pinout-caution,.lab3d-firmware-note,.lab3d-parity-grid .prototype strong) {
+  color:var(--logo-ink);
+}
+:where(.sample-correct,.component-own.selected,.build-progress button.done,
+ .lab3d-success strong,.lab3d-success span,.lab3d-firmware-result strong,
+ .lab3d-firmware-result span,.lab3d-safe-status span) {
+  color:var(--logo-ink);
+}
+:where(.lab3d-success,.lab3d-firmware-result,.lab3d-safe-status span) {
+  border-color:var(--logo-success);
+  background:var(--logo-teal-wash);
+}
+:where(.wiring-caution,.pinout-caution,.lab3d-firmware-note) {
+  border-color:var(--logo-highlight);
+  background:var(--logo-orange-wash);
+}
