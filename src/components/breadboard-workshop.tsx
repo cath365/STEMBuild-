@@ -89,17 +89,24 @@ export function BreadboardWorkshop({ active = true }: { active?: boolean }) {
   const result = useMemo(() => evaluateBreadboard(doc), [doc]);
 
   useEffect(() => {
-    try {
-      const saved = window.localStorage.getItem(BOARD_STORAGE_KEY);
-      if (saved) {
-        setDoc(parseBreadboard(JSON.parse(saved)));
-        setMessage("Saved breadboard circuit and code restored from this browser.");
+    let cancelled = false;
+    // Match the existing lab's post-mount hydration pattern; never overwrite
+    // an older saved project during the first browser-compatible render.
+    queueMicrotask(() => {
+      if (cancelled) return;
+      try {
+        const saved = window.localStorage.getItem(BOARD_STORAGE_KEY);
+        if (saved) {
+          setDoc(parseBreadboard(JSON.parse(saved)));
+          setMessage("Saved breadboard circuit and code restored from this browser.");
+        }
+      } catch {
+        setStorageReady(false);
+        setMessage("Saved breadboard work could not be restored. Autosave is paused to protect the previous data. Download a backup.");
       }
-    } catch {
-      setStorageReady(false);
-      setMessage("Saved breadboard work could not be restored. Autosave is paused to protect the previous data. Download a backup.");
-    }
-    setHydrated(true);
+      setHydrated(true);
+    });
+    return () => { cancelled = true; };
   }, []);
 
   useEffect(() => {
@@ -114,7 +121,7 @@ export function BreadboardWorkshop({ active = true }: { active?: boolean }) {
     let timeout: ReturnType<typeof setTimeout>;
     function tick() {
       setLit(on);
-      timeout = setTimeout(() => { on = !on; tick(); }, on ? result.sketch.highDelayMs : result.sketch.lowDelayMs);
+      timeout = setTimeout(() => { on = !on; tick(); }, Math.max(50, on ? result.sketch.highDelayMs : result.sketch.lowDelayMs));
     }
     tick();
     return () => clearTimeout(timeout);
