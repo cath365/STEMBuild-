@@ -260,7 +260,8 @@ export function Breadboard3DPreview({ document: doc, ledOn, onClose }: Props) {
   return <div className="bb-3d-shell">
     <div className="bb-3d-toolbar"><div><strong>Live 3D assembly mirror</strong><p>Rotate, pan and zoom. Place components and change wires in the hole-level editor above.</p></div>
       <button type="button" className="btn" onClick={onClose}>Close 3D assembly</button></div>
-    <div className="bb-3d-stage" ref={mount} aria-label="Interactive 3D breadboard scene">
+    <div className="bb-3d-stage" aria-label="Interactive 3D breadboard scene">
+      <div className="bb-3d-renderer" ref={mount} />
       {status==="loading" ? <span className="bb-3d-overlay">Loading optional 3D engine…</span>:null}
       {status==="error" ? <div className="bb-3d-overlay">3D could not load: {error}. Your circuit remains saved in the top-down editor.</div>:null}
     </div>
