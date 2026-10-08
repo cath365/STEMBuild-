@@ -23,7 +23,7 @@ export default function ArduinoLedLearningPage() {
           </nav>
           <div className="eyebrow">STEMBUILD · START WITH UNDERSTANDING</div>
           <h1>Learn it. Build it.<br/><span>Remember it.</span></h1>
-          <p className="lead">An interactive Arduino Uno LED lesson that teaches you to understand components, assemble a circuit, solve problems and explain what you've learned—before moving on to your next robot.</p>
+          <p className="lead">An interactive Arduino Uno LED lesson that teaches you to understand components, assemble a circuit, solve problems and explain what you have learned—before moving on to your next robot.</p>
           <div className="led-hero-chips" aria-label="Lesson features">
             <span>Beginner friendly</span><span>Real circuit simulator</span>
             <span>Eight learning stages</span><span>Take-home guide</span>
