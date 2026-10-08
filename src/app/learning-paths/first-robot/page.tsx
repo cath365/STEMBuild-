@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 };
 
 const stages = [
-  { title:"My First LED Circuit", href:"/build/first-led", visual:"led", why:"Learn polarity, current limiting, breadboard wiring and your first digital output.", unlock:"You can make a safe output work." },
+  { title:"My First LED Circuit", href:"/learn/arduino-led-blink", visual:"led", why:"Learn polarity, current limiting, breadboard wiring and your first digital output.", unlock:"You can make a safe output work." },
   { title:"Push-Button Light", href:"/build/button-light", visual:"push-button", why:"Add a real input and learn that code can respond to the physical world.", unlock:"You can read an input and make a decision." },
   { title:"Automatic Light Detector", href:"/build/light-detector", visual:"ldr", why:"Move from simple HIGH/LOW signals to changing analog sensor values.", unlock:"You can measure and calibrate a sensor." },
   { title:"Smart Environment Monitor", href:"/build/smart-environment-monitor", visual:"dht11-dht22", why:"Read digital sensor data, validate it and turn measurements into useful status information.", unlock:"You can collect and interpret real data." },
@@ -31,7 +31,7 @@ export default function FirstRobotLearningPathPage() {
           <h1>From your first LED<br/><span>to a working robot.</span></h1>
           <p className="lead">Nine practical builds. Each one teaches a skill needed by the next, so beginners do not have to jump from a simple circuit straight into a complicated robot.</p>
           <div className="inline" style={{marginTop:18}}>
-            <Link className="btn btn-primary" href="/3d-lab">Try the LED in 3D</Link>
+            <Link className="btn btn-primary" href="/learn/arduino-led-blink">Start the interactive LED lesson</Link>
             <Link className="btn" href="/build/first-led">Open the normal LED build</Link>
             <Link className="btn" href="/components">Check my components</Link>
           </div>
