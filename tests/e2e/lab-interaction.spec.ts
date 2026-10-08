@@ -44,6 +44,7 @@ test("robot obstacles can be selected and keyboard-moved without overlaps",async
 test("CAD nudge is reversible and persists across reload",async({page})=>{
  await page.goto("/3d-lab#robot-cad");
  const cad=page.locator("#robot-cad");
+ await cad.getByRole("button",{name:"Add Arduino Uno",exact:true}).click();
  const field=cad.getByLabel("X offset (cm)",{exact:true});
  await cad.getByRole("button",{name:"Nudge X plus 0.5 cm"}).click();
  await expect(field).toHaveValue("0.5");

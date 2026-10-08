@@ -1,0 +1,131 @@
+/*
+ * STEMBuild identity — source of truth: /public/brand/stembuild-icon-192x192.png
+ * and /public/brand/stembuild-wordmark.png. Brand hues: navy, blue, sky,
+ * teal and orange. White and light tints provide readable surfaces.
+ *
+ * Hardware photographs, actual LED indicators and electrical wire polarity
+ * retain truthful physical colours; only interface decoration is rebranded.
+ */
+:root {
+  --logo-ink: #0e3462;
+  --logo-action: #0172e5;
+  --logo-action-hover: #0454aa;
+  --logo-sky: #62c1d4;
+  --logo-success: #06be99;
+  --logo-highlight: #f6b14a;
+  --logo-canvas: #f3f9ff;
+  --logo-sky-wash: #e1f0ff;
+  --logo-teal-wash: #ddf8f1;
+  --logo-orange-wash: #fff0d5;
+}
+html,body { background: var(--logo-canvas); color: var(--logo-ink); }
+::selection { background: var(--logo-sky); color: var(--logo-ink); }
+a:focus-visible, button:focus-visible, summary:focus-visible, input:focus-visible,
+select:focus-visible, textarea:focus-visible { outline-color: var(--logo-action); }
+input[type="range"], input[type="checkbox"], input[type="radio"] { accent-color: var(--logo-action); }
+:where(.public-header,.sidebar,.login-card,.card,.table-wrap,.topic-card,.board-card) { background: #ffffff; }
+.public-header { position:relative; border-bottom: 1px solid #c2d9ed; }
+.public-header::after { content:""; position:absolute; bottom:0; left:0; width:100%; height:3px;
+  background:linear-gradient(90deg,var(--logo-ink) 0 24%,var(--logo-action) 24% 50%,var(--logo-sky) 50% 69%,var(--logo-success) 69% 85%,var(--logo-highlight) 85% 100%); pointer-events:none; }
+.public-header nav a:hover,.public-footer nav a:hover { color:var(--logo-action-hover); }
+.sidebar { border-color:#c2d9ed; }
+.nav a[aria-current="page"] { background:var(--logo-sky-wash); color:var(--logo-ink); box-shadow:inset 3px 0 var(--logo-action); }
+.nav a:hover { background:var(--logo-sky-wash); color:var(--logo-action-hover); }
+.card, .table-wrap { border-color:#c2d9ed; }
+.card:hover { border-color:#a6c0d8; }
+.page-title .eyebrow,.section-title .eyebrow,.auth-intro .eyebrow { color:var(--logo-action-hover); }
+.btn-primary { color:#ffffff; background:var(--logo-action); border-color:var(--logo-action); }
+.btn-primary:hover { color:#ffffff; background:var(--logo-action-hover); border-color:var(--logo-action-hover); }
+.btn:not(.btn-primary):hover { color:var(--logo-ink); border-color:var(--logo-action); }
+.btn-danger { color:var(--logo-ink); background:var(--logo-orange-wash); border-color:var(--logo-highlight); }
+.badge-green { background:var(--logo-teal-wash); border-color:var(--logo-success); color:var(--logo-ink); }
+.badge-yellow { background:var(--logo-orange-wash); border-color:var(--logo-highlight); color:var(--logo-ink); }
+.error { color:var(--logo-ink); background:var(--logo-orange-wash); border-color:var(--logo-highlight); border-left:4px solid var(--logo-highlight); }
+.notice { color:var(--logo-ink); background:var(--logo-orange-wash); border-color:var(--logo-highlight); }
+:where(.badge,.badge-green,.badge-yellow) { font-weight:750; }
+:where(.card,.field,.form,.table-wrap) a:not(.btn):focus-visible { outline-offset:3px; }
+input:focus, select:focus, textarea:focus { border-color:var(--logo-action); }
+:where(.input,.select,.textarea):focus { box-shadow:0 0 0 3px rgba(1,114,229,.16); }
+th { background:var(--logo-sky-wash); color:var(--logo-ink); }
+tbody tr:hover { background:var(--logo-canvas); }
+.progress { background:var(--logo-sky-wash); }
+.progress > span { background:var(--logo-success); }
+.auth-page,.login-shell { background:linear-gradient(170deg,var(--logo-sky-wash),var(--logo-canvas) 55%,#ffffff); }
+.auth-layout .login-card { box-shadow:0 18px 48px rgba(14,52,98,.10); }
+.connectivity.online .connectivity-dot { background:var(--logo-success); }
+.connectivity.offline { color:var(--logo-ink); border-color:var(--logo-highlight); background:var(--logo-orange-wash); }
+.connectivity.offline .connectivity-dot { background:var(--logo-highlight); }
+.problem-icon,.journey-number { background:var(--logo-sky-wash); color:var(--logo-ink); }
+.journey-number { background:var(--logo-action); color:#ffffff; }
+.public-footer { border-top:3px solid var(--logo-sky); background:#ffffff; }
+
+/* Homepage and lab both use logo navy/blue as the foundation, teal for progress,
+   orange for guidance and the softer sky for secondary surfaces. */
+.lab3d-hero.lab-ux-hero { background:linear-gradient(130deg,var(--logo-ink),var(--logo-action-hover)); }
+.lab3d-hero.lab-ux-hero.guided { background:linear-gradient(130deg,var(--logo-ink),#31537c); }
+.lab3d-hero.lab-ux-hero .eyebrow { color:var(--logo-sky); }
+.lab3d-hero.lab-ux-hero.guided .eyebrow { color:var(--logo-highlight); }
+.lab3d-hero.lab-ux-hero h1 span { color:var(--logo-sky); }
+.lab3d-hero.lab-ux-hero.guided h1 span { color:var(--logo-highlight); }
+.lab3d-hero.lab-ux-hero .lab-ux-hero-actions .btn-primary { background:var(--logo-success); border-color:var(--logo-success); color:var(--logo-ink); }
+.lab3d-hero.lab-ux-hero.guided .lab-ux-hero-actions .btn-primary { background:var(--logo-highlight); border-color:var(--logo-highlight); color:var(--logo-ink); }
+.lab-ux-hero-visual { border-color:var(--logo-sky); }
+.lab-ux-hero-visual.guided { border-color:var(--logo-highlight); }
+.lab-ux-uno { background:var(--logo-action-hover); border-color:var(--logo-sky); }
+.lab-ux-trace, .lab-ux-trace i { background:var(--logo-success); }
+.lab-ux-diagram-guided b { color:var(--logo-highlight); }
+.lab-modes-heading .lab-saved-notice { color:var(--logo-ink); background:var(--logo-teal-wash); border-color:var(--logo-success); }
+.lab-mode-tab:hover { border-color:var(--logo-action); }
+.lab-mode-tab.selected { border-color:var(--logo-action); box-shadow:inset 0 0 0 1px var(--logo-action); background:var(--logo-sky-wash); }
+.lab-mode-tab.selected::after,.lab-mode-tag { color:var(--logo-action-hover); }
+.bb-workshop-choices { border-left:4px solid var(--logo-sky); background:var(--logo-canvas); }
+.guided-lab-route-intro { border-left:4px solid var(--logo-highlight); background:var(--logo-orange-wash); }
+.bb-shell { border-color:#c2d9ed; background:var(--logo-canvas); }
+.bb-progress-overview { border-color:#c2d9ed; }
+.bb-progress-steps > span.current { background:var(--logo-sky-wash); color:var(--logo-ink); border-color:var(--logo-sky); }
+.bb-progress-steps > span.complete { background:var(--logo-teal-wash); color:var(--logo-ink); border-color:var(--logo-success); }
+.bb-project-pill { background:var(--logo-teal-wash); color:var(--logo-ink); }
+.bb-next-step,.lab3d-next-action { background:var(--logo-ink); }
+.bb-next-step .bb-overline,.lab3d-next-action .bb-overline { color:var(--logo-sky); }
+.bb-toolbar button.active,.bb-toolbar button:hover { background:var(--logo-action); border-color:var(--logo-action); color:#ffffff; }
+.bb-view-toggle button.active { background:#ffffff; color:var(--logo-action-hover); }
+.bb-view-toggle button:focus-visible { outline-color:var(--logo-action); }
+.bb-status { background:var(--logo-sky-wash); color:var(--logo-ink); border-color:var(--logo-sky); }
+.bb-feedback { background:var(--logo-orange-wash); color:var(--logo-ink); border-color:var(--logo-highlight); }
+.bb-feedback.ready { background:var(--logo-teal-wash); color:var(--logo-ink); border-color:var(--logo-success); }
+.bb-stage-badge { color:var(--logo-ink); background:var(--logo-sky-wash); border-color:var(--logo-sky); }
+.bb-card h3 { color:var(--logo-ink); }
+.lab3d-statusbar { border-color:#c2d9ed; background:var(--logo-canvas); }
+.lab3d-statusbar .lab3d-progress { background:var(--logo-sky-wash); }
+.lab3d-statusbar .lab3d-progress > span { background:var(--logo-success); }
+.lab3d-mobile-steps button.current { background:var(--logo-sky-wash); border-color:var(--logo-action); color:var(--logo-ink); }
+.lab3d-mobile-steps button.done { background:var(--logo-teal-wash); border-color:var(--logo-success); color:var(--logo-ink); }
+.lab3d-project-buttons button[aria-pressed="true"] { background:var(--logo-action); border-color:var(--logo-action); color:#ffffff; }
+.lab3d-wire-row.done { background:var(--logo-teal-wash); border-color:var(--logo-success); }
+.lab3d-check.ok { background:var(--logo-teal-wash); border-color:var(--logo-success); }
+.lab3d-engine-choice button.active { border-color:var(--logo-action); background:var(--logo-sky-wash); box-shadow:0 0 0 1px var(--logo-action); }
+.lab-project-save { background:var(--logo-sky-wash); border-color:var(--logo-sky); }
+.lab3d-parity-details summary:focus-visible { outline-color:var(--logo-action); }
+.robot-tray [aria-pressed="true"],.robot-pins [aria-pressed="true"],.robot-cad [aria-pressed="true"] { outline-color:var(--logo-action); }
+.robot-lab .card,.robot-cad .card { border-color:#c2d9ed; }
+.robot-code,.code,.lab3d-code-editor,.bb-card textarea { border-color:var(--logo-action-hover); }
+@media(prefers-reduced-motion: reduce) { .public-header::after { transition:none; } }
+
+/* Small technical and caution labels must meet readable contrast against
+   pale teal/orange backgrounds; hue alone never communicates safety. */
+:where(.wiring-caution,.pinout-caution,.lab3d-firmware-note,.lab3d-parity-grid .prototype strong) {
+  color:var(--logo-ink);
+}
+:where(.sample-correct,.component-own.selected,.build-progress button.done,
+ .lab3d-success strong,.lab3d-success span,.lab3d-firmware-result strong,
+ .lab3d-firmware-result span,.lab3d-safe-status span) {
+  color:var(--logo-ink);
+}
+:where(.lab3d-success,.lab3d-firmware-result,.lab3d-safe-status span) {
+  border-color:var(--logo-success);
+  background:var(--logo-teal-wash);
+}
+:where(.wiring-caution,.pinout-caution,.lab3d-firmware-note) {
+  border-color:var(--logo-highlight);
+  background:var(--logo-orange-wash);
+}
