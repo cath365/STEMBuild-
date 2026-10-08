@@ -36,7 +36,7 @@ export function RobotArena({active=true}:{active?:boolean}){
    return p&&Math.hypot(p.x-m.x,p.y-m.y)<1&&p.rotation===0;
   }).map(m=>m.name);
   setParts(mounted);setWiringReady(validateRobotCircuit(saved.builder.wires).ok);
-  setBlocks(saved.blocks);setThreshold(saved.threshold);setRobot(initialRobot);setRunning(false);setShow3D(false);
+  setBlocks(saved.blocks);setSelectedBlock(null);setThreshold(saved.threshold);setRobot(initialRobot);setRunning(false);setShow3D(false);
   setMessage('Saved robot assembly, wires and obstacles restored.');
  }
  useEffect(()=>{
