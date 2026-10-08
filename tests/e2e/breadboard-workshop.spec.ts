@@ -44,7 +44,7 @@ test("free build placement uses real named holes and jumper occupancy",async({pa
  await expect(workshop.getByRole("button",{name:"Run blink preview"})).toBeDisabled();
  await workshop.getByRole("button",{name:/Connect jumper wire/}).click();
  await workshop.getByRole("button",{name:"Arduino D8"}).click();
- await workshop.getByRole("button",{name:"Hole A7"}).click();
+ await workshop.getByRole("button",{name:"Hole B6"}).click();
  await expect(workshop.getByRole("button",{name:"Run blink preview"})).toBeEnabled();
 });
 
