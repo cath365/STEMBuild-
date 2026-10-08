@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import { PublicHeader } from "@/components/public-header";
 import { PublicFooter } from "@/components/public-footer";
 import { LabModeSelector } from "@/components/lab-mode-selector";
@@ -26,14 +27,29 @@ export default function ThreeDLabPage() {
             </div>
             <p className="lab-ux-hero-footnote">Free to explore · Projects save in this browser</p>
           </div>
-          <div className="lab-ux-hero-visual free" aria-label="Illustration of connected electronic circuit modules">
-            <span className="lab-ux-diagram-top">CIRCUIT WORKBENCH / ONLINE</span>
-            <div className="lab-ux-circuit-diagram" aria-hidden="true">
-              <div className="lab-ux-uno"><span>ARDUINO</span><strong>UNO</strong><small>Digital pin D8</small></div>
-              <span className="lab-ux-trace"><i/><i/><i/></span>
-              <div className="lab-ux-led"><span>LED</span><i/><small>Output</small></div>
+          <div className="lab-ux-hero-visual free circuit-hero" aria-label="Arduino Uno LED blink circuit wiring preview">
+            <div className="circuit-hero-head">
+              <span className="lab-ux-diagram-top">CIRCUIT WORKBENCH / STARTER BUILD</span>
+              <span className="circuit-hero-check">PIN-MAPPED EXAMPLE</span>
             </div>
-            <span className="lab-ux-diagram-bottom">COMPONENTS · WIRING · CODE · SIMULATION</span>
+            <figure className="circuit-hero-figure">
+              <Image
+                className="circuit-hero-picture"
+                src="/illustrations/arduino-uno-led-breadboard.svg"
+                width={920}
+                height={510}
+                priority
+                alt="Realistic Fritzing-style Arduino Uno LED blink wiring: D8 to a 330 ohm resistor across the breadboard centre gap, to the LED anode, and the LED cathode to Arduino GND."
+              />
+              <figcaption>
+                <strong>Arduino Uno · LED Blink</strong>
+                <span>D8 → 330 Ω → LED (+) → GND</span>
+              </figcaption>
+            </figure>
+            <div className="circuit-hero-bottom">
+              <span className="lab-ux-diagram-bottom">REAL COMPONENTS · WIRING · CODE · TEST</span>
+              <a href="#workbench" className="circuit-hero-link">Build this circuit <span aria-hidden="true">↗</span></a>
+            </div>
           </div>
         </div>
       </section>
