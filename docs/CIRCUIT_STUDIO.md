@@ -1,0 +1,9 @@
+# Circuit Studio
+
+The Circuit Builder retains the existing hole-level breadboard workshop and adds four distinct direct-terminal kits: LED blink, push-button light, traffic lights and a button alarm. Each starts empty. Learners add components, reposition them, connect named pins, check the circuit and run a supported logic preview. Optional examples, undo, per-project device saves, validated JSON import/export and downloadable Arduino sketches support classroom work.
+
+Component images use the original compact CAD model renders already included with STEMBuild. They represent recognisable hardware, not manufacturer-certified models or photographs. Labelled terminals in this direct-terminal layout are connection controls, not exact physical pin positions. The breadboard workshop remains available for physical hole and bus practice.
+
+Validation compares complete electrical nets against each supported circuit and rejects open paths, incorrect polarity, bypassed resistors, output-to-ground shorts and extra connections. Code previews accept only the supplied sketch structure, with numeric delay edits from 50 to 60000 ms. No arbitrary firmware, analogue voltage/current calculation, heat calculation or real audio is implemented here. The button alarm is a visual preview for a low-current piezo; unknown or high-current sounders need a suitable driver.
+
+Projects use a separate versioned `stembuild-circuit-studio-v1` device save. Existing breadboard, guided lessons, robot and CAD saves are unaffected. Malformed saves are retained and automatic overwriting is disabled. Backups are validated for project identity, known parts and pins, finite bounded positions and file size. Edits and mode changes stop previews. Keyboard pin selection and position buttons complement pointer dragging. Phone canvas scrolling stays contained within the workbench.

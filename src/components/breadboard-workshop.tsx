@@ -324,11 +324,10 @@ export function BreadboardWorkshop({
               return <text key={row} x="182" y={y + 4} className="bb-row-label">{row}</text>;
             })}
             {Array.from({length:20},(_,index) => <text key={index} x={200+index*25} y="441" textAnchor="middle" className="bb-row-label">{index+1}</text>)}
-            <rect x="29" y="154" width="115" height="192" rx="10" fill="#1d6b89" stroke="#124960" strokeWidth="4" />
-            <rect x="46" y="174" width="79" height="47" rx="5" fill="#2c85a4" />
-            <text x="84" y="191" textAnchor="middle" fill="#fff" fontWeight="800" fontSize="12">ARDUINO</text>
-            <text x="84" y="207" textAnchor="middle" fill="#fff" fontWeight="800" fontSize="12">UNO</text>
-            <rect x="43" y="310" width="50" height="20" rx="3" fill="#a1b2bd" />
+            <rect x="24" y="151" width="124" height="195" rx="6" fill="var(--surface)" stroke="var(--border)" strokeWidth="2" />
+            <image href="/images/cad/uno.webp" x="27" y="158" width="117" height="136" />
+            <text x="84" y="310" textAnchor="middle" fill="var(--text)" fontWeight="700" fontSize="12">Arduino Uno</text>
+            <text x="84" y="329" textAnchor="middle" fill="var(--muted)" fontSize="9">Representative model</text>
             {doc.wires.map(wire => {
               const from = holePositions.get(wire.from)!;
               const to = holePositions.get(wire.to)!;

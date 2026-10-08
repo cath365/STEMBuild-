@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { RobotArena } from "@/components/robot-arena";
 import { RobotCADWorkspace } from "@/components/robot-cad-workspace";
-import { BreadboardWorkshop } from "@/components/breadboard-workshop";
+import { CircuitStudio } from "@/components/circuit-studio";
 import Link from "next/link";
 
 type LabMode = "circuit" | "robot" | "cad";
@@ -116,7 +116,7 @@ export function LabModeSelector() {
           </div>
           <Link className="btn" href="/3d-lab/guided">Open guided circuit lessons →</Link>
         </div>
-        <BreadboardWorkshop active={mode === "circuit"} />
+        <CircuitStudio active={mode === "circuit"} />
       </div>
       <div id="lab-panel-robot" role="tabpanel" aria-labelledby="lab-tab-robot" tabIndex={0} className="lab-mode-panel" hidden={mode !== "robot"}>
         <RobotArena active={mode === "robot"} />
