@@ -54,7 +54,7 @@ export default function ThreeDLabPage() {
         </div>
       </section>
 
-      <section id="workbench" className="container lab3d-section">
+      <section id="workbench" className="container lab3d-section lab-workspace-wide">
         <LabModeSelector />
       </section>
 

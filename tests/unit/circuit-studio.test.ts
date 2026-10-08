@@ -17,3 +17,9 @@ test('LED preview rejects shorts, reversed LED and bypassed resistor; numeric de
  assert.equal(checkStudio({...d,code:d.code.replaceAll('delay(1000)','delay(500)')},p).ok,true);
  assert.equal(checkStudio({...d,code:d.code.replaceAll('delay(1000)','delay(1)')},p).ok,false);
 });
+test('battery circuit blocks direct power shorts and preserves validated cable colours',()=>{
+ const p=circuitProjects.find(p=>p.id==='battery')!,d=exampleStudio(p);
+ assert.equal(checkStudio({...d,wires:[...d.wires,{a:'battery:+',b:'battery:−'}]},p).ok,false);
+ const coloured={...d,wires:d.wires.map(w=>({...w,colour:'navy' as const}))};assert.deepEqual(parseStudio(coloured,p),coloured);assert.equal(checkStudio(coloured,p).ok,true);
+ assert.equal(parseStudio({...d,wires:d.wires.map(w=>({...w,colour:'invalid'}))},p),null);
+});
