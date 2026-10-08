@@ -4,7 +4,7 @@ import {createRobotModels} from '@/lib/robot-models';
 import {useEffect,useRef,useState} from 'react';
 import { robotMounts, validateRobotCircuit } from '@/lib/robot-circuit';
 import { ROBOT_PROJECT_KEY, parseSavedRobotProject, type RobotBuilderSnapshot, type SavedRobotProject } from '@/lib/robot-save';
-import {collides,initialRobot,robotParts,robotSketch,stepRobot,type Obstacle} from '@/lib/robot-arena';
+import {collides,initialRobot,repositionObstacle,robotParts,robotSketch,stepRobot,type Obstacle} from '@/lib/robot-arena';
 
 export function RobotArena({active=true}:{active?:boolean}){
  const [parts,setParts]=useState<string[]>([]),[wiringReady,setWiringReady]=useState(false);
@@ -13,6 +13,8 @@ export function RobotArena({active=true}:{active?:boolean}){
  const [robot,setRobot]=useState(initialRobot),[view,setView]=useState('Top view · low-data mode');
  const [show3D,setShow3D]=useState(false),[blockX,setBlockX]=useState(40),[blockZ,setBlockZ]=useState(-30);
  const [message,setMessage]=useState('Assemble the robot, review its wiring, then start the arena.');
+ const [selectedBlock,setSelectedBlock]=useState<number|null>(null);
+ const draggingBlock=useRef<number|null>(null);
  const [builder,setBuilder]=useState<RobotBuilderSnapshot>({placements:{},wires:[]});
  const [hydrated,setHydrated]=useState(false),[storageAllowed,setStorageAllowed]=useState(true),[builderRevision,setBuilderRevision]=useState(0);
  const [saveStatus,setSaveStatus]=useState('Checking saved robot project…');
@@ -34,7 +36,7 @@ export function RobotArena({active=true}:{active?:boolean}){
    return p&&Math.hypot(p.x-m.x,p.y-m.y)<1&&p.rotation===0;
   }).map(m=>m.name);
   setParts(mounted);setWiringReady(validateRobotCircuit(saved.builder.wires).ok);
-  setBlocks(saved.blocks);setThreshold(saved.threshold);setRobot(initialRobot);setRunning(false);setShow3D(false);
+  setBlocks(saved.blocks);setSelectedBlock(null);setThreshold(saved.threshold);setRobot(initialRobot);setRunning(false);setShow3D(false);
   setMessage('Saved robot assembly, wires and obstacles restored.');
  }
  useEffect(()=>{
@@ -110,6 +112,14 @@ export function RobotArena({active=true}:{active?:boolean}){
   }catch{if(!dead)setView('Top view · 3D unavailable on this device');}}
   void boot();return ()=>{dead=true;inspect.current=null;cancelAnimationFrame(raf);observer?.disconnect();controls?.dispose();scene?.traverse((o:any)=>{o.geometry?.dispose();o.material?.map?.dispose();o.material?.dispose();});renderer?.dispose();renderer?.domElement?.remove();};
  },[show3D]);
+ function moveBlock(id:number,x:number,z:number){
+  if(running)return;
+  setBlocks(current=>repositionObstacle(current,id,x,z,robot));
+ }
+ function arenaPoint(event:React.PointerEvent<SVGSVGElement>){
+  const rect=event.currentTarget.getBoundingClientRect();
+  return {x:(event.clientX-rect.left)/rect.width*200-100,z:(event.clientY-rect.top)/rect.height*200-100};
+ }
  function addBlock(x:number,z:number){if(running)return;if(!Number.isFinite(x)||!Number.isFinite(z)){setMessage('Enter valid block coordinates.');return;}if(blocks.length>=20){setMessage('Maximum 20 obstacles. Remove one to add another.');return;}x=Math.max(-78,Math.min(78,x));z=Math.max(-78,Math.min(78,z));if(blocks.some(b=>Math.abs(b.x-x)<23&&Math.abs(b.z-z)<23)){setMessage('Choose a clear position for the new block.');return;}if(collides(robot.x,robot.z,[{id:0,x,z,size:22}])){setMessage('Keep blocks clear of the robot.');return;}setBlocks(b=>[...b,{id:Date.now(),x,z,size:22}]);}
  function download(){const url=URL.createObjectURL(new Blob([robotSketch(threshold)],{type:'text/plain'}));const a=document.createElement('a');a.href=url;a.download='stembuild-obstacle-robot.ino';a.click();URL.revokeObjectURL(url);}
  return <section className="robot-lab" id="robot-arena">
@@ -124,12 +134,30 @@ export function RobotArena({active=true}:{active?:boolean}){
   </div>
   <div className="robot-lab-grid"><aside className="card">{hydrated?<RobotBuilder key={builderRevision} initial={builder} disabled={running} onChange={(assembled,wired,snapshot)=>{setParts(assembled);setWiringReady(wired);setBuilder(snapshot);}}/>:<p className="muted">Restoring your robot assembly…</p>}</aside>
   <div><button className="btn" onClick={()=>{setShow3D(s=>!s);setView(show3D?"Top view · low-data mode":"Loading 3D…");}}>{show3D?"Close robot 3D":"Launch robot 3D"}</button>{show3D?<button className="btn" onClick={()=>inspect.current?.()}>Inspect robot parts</button>:null}{show3D?<div className="robot-view" ref={mount} aria-label="3D robot arena"/>:null}<p className="small muted">{view} · orbit and zoom in 3D. Place obstacles using the top view below.</p>
-  <svg className="robot-map" viewBox="-100 -100 200 200" role="img" aria-label="Robot top view: click to place an obstacle" onClick={e=>{const r=e.currentTarget.getBoundingClientRect();addBlock((e.clientX-r.left)/r.width*200-100,(e.clientY-r.top)/r.height*200-100);}}>
-   <rect x="-99" y="-99" width="198" height="198" fill="#edf2f7" stroke="#64748b"/>{blocks.map(b=><rect key={b.id} x={b.x-b.size/2} y={b.z-b.size/2} width={b.size} height={b.size} fill="#da7650"/>)}
+  <p className="small muted">Tap empty space to add an obstacle. Drag blocks to move them, or focus a block and use arrow keys. Obstacles cannot overlap each other or the robot.</p>
+  <svg className="robot-map" viewBox="-100 -100 200 200" role="group" aria-label="Robot top view: add, select and drag obstacles"
+   onPointerMove={e=>{if(draggingBlock.current===null)return;const p=arenaPoint(e);moveBlock(draggingBlock.current,p.x,p.z);}}
+   onPointerUp={e=>{if(draggingBlock.current!==null){draggingBlock.current=null;setMessage('Obstacle position updated.');if(e.currentTarget.hasPointerCapture(e.pointerId))e.currentTarget.releasePointerCapture(e.pointerId);}}}
+   onPointerCancel={()=>{draggingBlock.current=null;}}
+   onClick={e=>{const target=e.target as SVGElement;if(target.getAttribute('data-arena-background')!=='true')return;const r=e.currentTarget.getBoundingClientRect();addBlock((e.clientX-r.left)/r.width*200-100,(e.clientY-r.top)/r.height*200-100);}}>
+   <rect data-arena-background="true" x="-99" y="-99" width="198" height="198" fill="#edf2f7" stroke="#64748b"/>
+   {blocks.map((block,index)=><rect key={block.id} x={block.x-block.size/2} y={block.z-block.size/2} width={block.size} height={block.size} fill="#da7650"
+    stroke={selectedBlock===block.id?"#124da2":"#a84e30"} strokeWidth={selectedBlock===block.id?4:1}
+    role="button" tabIndex={running?-1:0} aria-label={`Select obstacle ${index+1}`} aria-pressed={selectedBlock===block.id}
+    style={{touchAction:"none",cursor:running?"default":"grab"}}
+    onClick={e=>{e.stopPropagation();setSelectedBlock(block.id);}}
+    onPointerDown={e=>{if(running)return;e.stopPropagation();setSelectedBlock(block.id);draggingBlock.current=block.id;e.currentTarget.ownerSVGElement?.setPointerCapture(e.pointerId);}}
+    onKeyDown={e=>{
+     if(running)return;
+     if(e.key==="Enter"||e.key===" "){e.preventDefault();setSelectedBlock(block.id);return;}
+     const delta=e.key==="ArrowLeft"?[-5,0]:e.key==="ArrowRight"?[5,0]:e.key==="ArrowUp"?[0,-5]:e.key==="ArrowDown"?[0,5]:null;
+     if(delta){e.preventDefault();setSelectedBlock(block.id);moveBlock(block.id,block.x+delta[0],block.z+delta[1]);setMessage('Obstacle moved using keyboard.');}
+    }}
+   />)}
    <g transform={`translate(${robot.x} ${robot.z}) rotate(${-robot.heading*180/Math.PI})`}><rect x="-8" y="-12" width="16" height="24" rx="3" fill="#167b91"/><path d={`M0 12V${Math.min(robot.distance+10,75)}`} stroke="#177c55" strokeWidth="2" strokeDasharray="3 2"/></g>
   </svg>
   <div className="inline"><label>Block X (cm)<input type="number" min="-78" max="78" value={blockX} disabled={running} onChange={e=>setBlockX(Number(e.target.value))}/></label><label>Block Z (cm)<input type="number" min="-78" max="78" value={blockZ} disabled={running} onChange={e=>setBlockZ(Number(e.target.value))}/></label></div>
-  <div className="inline"><button className="btn" disabled={running} onClick={()=>addBlock(blockX,blockZ)}>Add block</button><button className="btn" disabled={running||!blocks.length} onClick={()=>setBlocks(b=>b.slice(0,-1))}>Remove last block</button><button className="btn" disabled={running} onClick={()=>setBlocks([])}>Clear blocks</button></div>
+  <div className="inline"><button className="btn" disabled={running} onClick={()=>addBlock(blockX,blockZ)}>Add block</button><button className="btn" disabled={running||selectedBlock===null} onClick={()=>{setBlocks(current=>current.filter(block=>block.id!==selectedBlock));setSelectedBlock(null);setMessage('Selected obstacle removed.');}}>Remove selected block</button><button className="btn" disabled={running||!blocks.length} onClick={()=>{setBlocks(b=>b.slice(0,-1));setSelectedBlock(null);}}>Remove last block</button><button className="btn" disabled={running} onClick={()=>{setBlocks([]);setSelectedBlock(null);}}>Clear blocks</button></div>
   <p role="status">{message}</p><p><strong>{robot.action}</strong> · sensor {robot.distance.toFixed(0)} cm · {blocks.length}/20 obstacles</p>
   <label>Avoidance distance: {threshold} cm<input type="range" min="15" max="50" value={threshold} disabled={running} onChange={e=>setThreshold(Number(e.target.value))}/></label>
   <div className="inline"><button className="btn btn-primary" disabled={!ready||running} onClick={()=>{setRunning(true);setMessage('Robot running. Stop to edit the arena.');}}>Start robot</button><button className="btn" onClick={()=>setRunning(false)}>Stop robot</button><button className="btn" onClick={()=>{setRunning(false);setRobot(initialRobot);setBlocks(b=>b.filter(block=>!collides(initialRobot.x,initialRobot.z,[block])));setMessage('Robot reset. Any block covering its starting position was removed.');}}>Reset robot</button></div>

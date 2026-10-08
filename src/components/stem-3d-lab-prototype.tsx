@@ -209,6 +209,15 @@ function LabProjectSession({projectSlug,onProjectChange,active}: {projectSlug:La
     setMessage("Last wire removed.");
   }
 
+  function disconnectWire(id: string) {
+    const wire = project.connections.find((connection) => connection.id === id);
+    if (!wire || !connected.includes(id)) return;
+    stopSimulation();
+    setConnected((current) => current.filter((connectionId) => connectionId !== id));
+    setPendingTerminal(null);
+    setMessage(`Disconnected ${wire.from} → ${wire.to}. Reconnect both terminals before running.`);
+  }
+
   function readinessProblem() {
     return readiness.missingParts[0] ? `Missing part: ${readiness.missingParts[0]}` :
       readiness.missingConnections[0] ? `Missing wire: ${readiness.missingConnections[0]}` :
@@ -490,7 +499,7 @@ function LabProjectSession({projectSlug,onProjectChange,active}: {projectSlug:La
               return <div key={wire.id} className={done ? "lab3d-wire-row done" : "lab3d-wire-row"}>
                 <span className="lab3d-wire-number">{index+1}</span>
                 <div><strong>{wire.from} → {wire.to}</strong><small>{wire.purpose}</small></div>
-                <button type="button" className="lab3d-mini-btn" onClick={()=>connect(wire.id)} disabled={done}>{done ? "Connected ✓" : "Connect"}</button>
+                <button type="button" className="lab3d-mini-btn" onClick={()=>done ? disconnectWire(wire.id) : connect(wire.id)}>{done ? "Disconnect" : "Connect"}</button>
               </div>;
             })}
           </div>

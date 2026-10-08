@@ -29,6 +29,15 @@ export function rayDistance(x:number,z:number,heading:number,blocks:Obstacle[]) 
 export function collides(x:number,z:number,blocks:Obstacle[]){
   return Math.abs(x)>90||Math.abs(z)>90||blocks.some(b=>Math.abs(x-b.x)<b.size/2+10&&Math.abs(z-b.z)<b.size/2+10);
 }
+/** Reposition an arena obstacle without hiding a physical collision or allowing overlap. */
+export function repositionObstacle(blocks:Obstacle[],id:number,x:number,z:number,robot:RobotState):Obstacle[]{
+ if(!Number.isFinite(x)||!Number.isFinite(z)||!blocks.some(block=>block.id===id))return blocks;
+ const nextX=Math.max(-78,Math.min(78,x)),nextZ=Math.max(-78,Math.min(78,z));
+ if(collides(robot.x,robot.z,[{id,x:nextX,z:nextZ,size:22}]))return blocks;
+ if(blocks.some(block=>block.id!==id&&Math.abs(block.x-nextX)<23&&Math.abs(block.z-nextZ)<23))return blocks;
+ return blocks.map(block=>block.id===id?{...block,x:nextX,z:nextZ}:block);
+}
+
 export function stepRobot(s:RobotState,blocks:Obstacle[],dt:number,threshold:number):RobotState{
   dt=Math.min(Math.max(dt,0),.05);
   const distance=rayDistance(s.x+Math.sin(s.heading)*10,s.z+Math.cos(s.heading)*10,s.heading,blocks);
