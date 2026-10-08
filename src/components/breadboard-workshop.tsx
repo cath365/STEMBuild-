@@ -374,9 +374,9 @@ export function BreadboardWorkshop({ active = true }: { active?: boolean }) {
           <h3>Keep your work</h3>
           <p>{storageReady ? "Autosaved in this browser" : "Autosave unavailable — export a backup"}</p>
           <div className="bb-save-actions">
-            <button className="btn" type="button" onClick={saveNow} disabled={!hydrated}>Save project</button>
-            <button className="btn" type="button" onClick={exportBackup}>Download project backup</button>
-            <label className="btn">Import project backup<input type="file" accept="application/json,.json" onChange={async event => { const file = event.target.files?.[0]; if (file) await importBackup(file); event.target.value = ""; }} /></label>
+            <button className="btn" type="button" onClick={saveNow} disabled={!hydrated}>Save breadboard</button>
+            <button className="btn" type="button" onClick={exportBackup}>Download breadboard backup</button>
+            <label className="btn">Import breadboard backup<input type="file" accept="application/json,.json" onChange={async event => { const file = event.target.files?.[0]; if (file) await importBackup(file); event.target.value = ""; }} /></label>
           </div>
           <p className="small muted">Work reopens after restarting in the same browser unless its data is cleared. Cloud sync comes later.</p>
         </div>
