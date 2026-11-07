@@ -2,21 +2,34 @@
 
 import { useEffect, useState } from "react";
 
+type State = "online" | "offline" | "restored";
+
+// Stays out of the way while online; only offline and the moment of reconnection are shown.
 export function ConnectivityStatus() {
-  const [online, setOnline] = useState(true);
+  const [state, setState] = useState<State>("online");
 
   useEffect(() => {
-    const update = () => setOnline(navigator.onLine);
-    update();
-    window.addEventListener("online", update);
-    window.addEventListener("offline", update);
+    let timer: number | undefined;
+    const goOffline = () => { window.clearTimeout(timer); setState("offline"); };
+    const goOnline = () => {
+      window.clearTimeout(timer);
+      setState((current) => current === "offline" ? "restored" : "online");
+      timer = window.setTimeout(() => setState("online"), 4000);
+    };
+    if (!navigator.onLine) goOffline();
+    window.addEventListener("online", goOnline);
+    window.addEventListener("offline", goOffline);
     return () => {
-      window.removeEventListener("online", update);
-      window.removeEventListener("offline", update);
+      window.clearTimeout(timer);
+      window.removeEventListener("online", goOnline);
+      window.removeEventListener("offline", goOffline);
     };
   }, []);
 
-  return <div className={`connectivity ${online ? "online" : "offline"}`} role="status" aria-live="polite">
-    <span className="connectivity-dot" />{online ? "Online" : "Offline · saved work stays on this device"}
+  // The live region stays mounted so screen readers announce changes when the pill appears.
+  return <div role="status" aria-live="polite">
+    {state === "online" ? null : <div className={`connectivity ${state === "offline" ? "offline" : "online"}`}>
+      <span className="connectivity-dot" />{state === "offline" ? "Offline · saved work stays on this device" : "Back online"}
+    </div>}
   </div>;
 }

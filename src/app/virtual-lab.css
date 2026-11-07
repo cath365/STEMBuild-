@@ -1,0 +1,158 @@
+/* Virtual Electronics Lab: hub, calculators, circuit bench, oscilloscope, logic lab, virtual Arduino. */
+
+.tool-breadcrumb { display:flex; gap:8px; font-size:13px; color:var(--muted); margin-bottom:14px; }
+.tool-breadcrumb a { color:var(--logo-action-hover); text-decoration:underline; text-underline-offset:3px; }
+.tool-tabs { display:flex; gap:6px; overflow-x:auto; padding:14px 0 4px; scrollbar-width:thin; }
+.tool-tabs a { flex-shrink:0; padding:9px 14px; border:1px solid var(--border); border-radius:999px; background:#ffffff; font-size:13px; font-weight:700; color:var(--muted); }
+.tool-tabs a:hover { border-color:var(--logo-action); color:var(--logo-ink); }
+.tool-tabs a[aria-current="page"] { background:var(--logo-ink); border-color:var(--logo-ink); color:#ffffff; }
+.tool-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; }
+.tool-card { display:flex; flex-direction:column; gap:10px; align-items:flex-start; transition:border-color .15s ease, box-shadow .15s ease; }
+.tool-card:hover { border-color:var(--logo-action); box-shadow:0 6px 22px rgba(14,52,98,.08); }
+.tool-card h2 { font-size:22px; }
+.tool-card p { margin:0; }
+.tool-card .muted { flex:1; }
+.tool-replaces { padding:10px 12px; border-radius:8px; background:var(--logo-canvas); width:100%; line-height:1.5; }
+
+/* Calculators */
+.calc-layout { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; align-items:start; }
+.calc-card { display:grid; gap:14px; scroll-margin-top:20px; min-width:0; }
+.calc-head { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+.calc-head h2 { font-size:21px; }
+.calc-head h3 { font-size:17px; }
+.calc-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; }
+.calc-grid.bands { grid-template-columns:repeat(auto-fit,minmax(110px,1fr)); }
+.calc-field span { color:var(--muted); font-weight:700; font-size:13px; }
+.calc-field small { font-size:12px; }
+.calc-invalid { color:#a35200; font-weight:700; }
+.calc-field input[aria-invalid="true"] { border-color:var(--logo-highlight); box-shadow:0 0 0 3px var(--logo-orange-wash); }
+.calc-field input[type="range"] { width:100%; min-height:28px; }
+.calc-results { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:10px; }
+.calc-result { display:grid; gap:4px; padding:12px; border:1px solid var(--border); border-radius:8px; background:var(--logo-canvas); }
+.calc-result span { font-size:12px; color:var(--muted); font-weight:700; }
+.calc-result strong { font-size:18px; font-variant-numeric:tabular-nums; }
+.calc-result.strong { border-color:var(--logo-action); background:var(--logo-sky-wash); }
+.calc-result.strong strong { font-size:22px; }
+.calc-explain summary { cursor:pointer; font-weight:700; font-size:13px; color:var(--logo-action-hover); }
+.calc-explain p { font-size:14px; color:var(--muted); margin:8px 0 0; }
+.calc-reverse { display:flex; align-items:center; gap:14px; flex-wrap:wrap; font-size:13px; font-weight:700; color:var(--muted); text-transform:capitalize; }
+.resistor-graphic { width:100%; max-width:300px; height:auto; display:block; }
+
+/* Circuit bench + multimeter */
+.bench { display:grid; gap:14px; }
+.bench-toolbar-row { display:flex; flex-wrap:wrap; gap:12px; align-items:end; }
+.bench-toolbar-row .btn { width:auto; }
+.bench-preset { min-width:240px; flex:1; max-width:360px; }
+.bench-preset span { color:var(--muted); font-weight:700; font-size:13px; }
+.bench-palette { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+.bench-palette .chip { text-transform:capitalize; }
+.bench-hint { margin:10px 0 0; font-weight:700; color:var(--logo-action-hover); }
+.bench-layout { display:grid; grid-template-columns:minmax(0,1fr) 320px; gap:16px; align-items:start; }
+.bench-board { padding:10px; overflow:hidden; }
+.bench-board svg { display:block; width:100%; height:auto; user-select:none; touch-action:manipulation; }
+.bench-wire { stroke:#31537c; stroke-width:4; stroke-linecap:round; }
+.bench-hit { stroke:transparent; stroke-width:26; stroke-linecap:round; cursor:pointer; }
+.bench-flow { stroke:var(--logo-highlight); stroke-width:4; stroke-linecap:round; stroke-dasharray:4 14; animation:bench-flow 1s linear infinite; pointer-events:none; }
+@keyframes bench-flow { to { stroke-dashoffset:-36; } }
+.bench-element { cursor:pointer; outline:none; }
+.bench-element.selected .bench-wire,.bench-element:focus-visible .bench-wire { stroke:var(--logo-action); stroke-width:6; }
+.bench-value,.bench-sym-text { font-size:13px; font-weight:800; fill:var(--logo-ink); paint-order:stroke; stroke:#ffffff; stroke-width:4px; }
+.bench-node { cursor:pointer; outline:none; }
+.bench-node-hit { fill:transparent; }
+.bench-node:hover .bench-node-hit,.bench-node:focus-visible .bench-node-hit { fill:rgba(1,114,229,.12); }
+.bench-node-dot { fill:#a6c0d8; }
+.bench-node.used .bench-node-dot { fill:#31537c; }
+.bench-node.pending .bench-node-hit { fill:rgba(246,177,74,.35); }
+.bench-probe-label { font-size:12px; font-weight:800; paint-order:stroke; stroke:#ffffff; stroke-width:4px; }
+.bench-side { display:grid; gap:14px; }
+.bench-props h3 { font-size:17px; text-transform:capitalize; }
+.bench-props .field span { color:var(--muted); font-weight:700; font-size:13px; }
+.bench-props .btn { width:auto; }
+.meter { padding:18px; border-radius:22px; background:linear-gradient(180deg,#f6b14a,#e39a2c); box-shadow:inset 0 0 0 6px #0e3462, 0 10px 26px rgba(14,52,98,.18); color:#0e3462; }
+.meter-brand { font-size:11px; font-weight:900; letter-spacing:.14em; text-align:center; margin-bottom:10px; }
+.meter-lcd { display:flex; align-items:baseline; justify-content:flex-end; gap:8px; min-height:72px; padding:12px 16px; border-radius:10px; background:#c9d8b6; box-shadow:inset 0 2px 6px rgba(0,0,0,.25); font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; color:#1d2a12; }
+.meter-reading { font-size:38px; font-weight:800; letter-spacing:.02em; font-variant-numeric:tabular-nums; }
+.meter-unit { font-size:15px; font-weight:800; }
+.meter-dial { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-top:12px; }
+.meter-dial button { min-height:44px; border:2px solid #0e3462; border-radius:10px; background:#ffffff; color:#0e3462; font-weight:900; font-size:15px; }
+.meter-dial button.active { background:#0e3462; color:#ffffff; }
+.meter-note { margin:12px 0 0; font-size:13px; line-height:1.55; font-weight:600; }
+.meter-clear { color:#0e3462; }
+
+/* Oscilloscope */
+.scope-layout { display:grid; grid-template-columns:minmax(0,1.4fr) minmax(300px,1fr); gap:16px; align-items:start; }
+.scope-screen-card { min-width:0; }
+.scope-screen-head { display:flex; flex-wrap:wrap; gap:8px 18px; font-size:12px; font-weight:800; color:var(--muted); margin-bottom:8px; font-variant-numeric:tabular-nums; }
+.scope-screen-head span { display:inline-flex; align-items:center; gap:6px; }
+.scope-screen { position:relative; border:6px solid #0e3462; border-radius:10px; overflow:hidden; touch-action:pan-y; }
+.scope-screen svg { display:block; width:100%; height:auto; }
+.scope-grid { stroke:#e3eaf2; stroke-width:1; }
+.scope-axis { stroke:#b7c7d8; stroke-width:1; }
+.scope-controls { display:grid; gap:14px; min-width:0; }
+.scope-controls h3 { font-size:17px; }
+.scope-controls p { margin:8px 0 0; }
+.scope-channel { border:1px solid var(--border); border-radius:8px; padding:8px 12px 12px; margin:0; display:grid; gap:8px; min-width:0; }
+.scope-channel legend { font-weight:800; font-size:13px; padding:0 6px; }
+
+/* Logic lab */
+.logic-explorer { display:grid; grid-template-columns:auto minmax(0,1fr) auto; gap:18px; align-items:center; margin:16px 0; }
+.logic-inputs { display:grid; gap:10px; }
+.logic-toggle { display:flex; align-items:center; justify-content:space-between; gap:12px; min-width:120px; min-height:48px; padding:6px 8px 6px 14px; border:2px solid var(--border); border-radius:999px; background:#ffffff; font-weight:800; color:var(--logo-ink); }
+.logic-toggle-value { display:grid; place-items:center; width:34px; height:34px; border-radius:50%; background:#e3eaf2; font-family:ui-monospace,monospace; }
+.logic-toggle.on { border-color:#06856b; }
+.logic-toggle.on .logic-toggle-value { background:#06856b; color:#ffffff; }
+.logic-gate-svg { width:100%; max-width:320px; height:auto; justify-self:center; }
+.logic-pin { font-size:13px; font-weight:800; fill:var(--muted); }
+.logic-lamp { display:flex; align-items:center; gap:10px; min-height:48px; padding:6px 14px; border:2px solid var(--border); border-radius:12px; background:#ffffff; font-weight:800; }
+.logic-lamp strong { margin-left:auto; font-family:ui-monospace,monospace; font-size:18px; }
+.logic-lamp-bulb { width:22px; height:22px; border-radius:50%; background:#e3eaf2; border:2px solid #a6c0d8; }
+.logic-lamp.on { border-color:var(--logo-highlight); }
+.logic-lamp.on .logic-lamp-bulb { background:#ffd60a; border-color:#c76f00; box-shadow:0 0 14px #ffd60a; }
+.logic-circuit-box { display:grid; gap:6px; justify-items:center; text-align:center; padding:16px; border:2px dashed var(--border); border-radius:12px; }
+.logic-circuit-box code { font-size:14px; color:var(--logo-ink); }
+.logic-table { min-width:320px; }
+.logic-table td,.logic-table th { text-align:center; font-family:ui-monospace,monospace; }
+.logic-table tr.current td { background:var(--logo-sky-wash); font-weight:800; box-shadow:inset 0 0 0 1px var(--logo-action); }
+
+/* Virtual Arduino */
+.varduino-grid { display:grid; grid-template-columns:minmax(0,1.2fr) minmax(0,1fr); gap:16px; align-items:start; }
+.varduino-editor { display:grid; gap:12px; min-width:0; }
+.varduino-editor .btn { width:auto; }
+.varduino-code { width:100%; min-height:420px; resize:vertical; padding:14px; border:1px solid var(--border); border-radius:8px; background:#0e3462; color:#e1f0ff; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:13px; line-height:1.6; tab-size:2; }
+.varduino-code:focus { outline:3px solid var(--logo-action); outline-offset:2px; }
+.varduino-status { font-size:13px; font-weight:700; color:var(--muted); padding:10px 12px; border-radius:8px; background:var(--logo-canvas); }
+.varduino-status.running { color:var(--logo-ink); background:var(--logo-teal-wash); }
+.varduino-status.error { color:var(--logo-ink); background:var(--logo-orange-wash); white-space:pre-wrap; }
+.varduino-board { min-width:0; background:linear-gradient(180deg,#0e5aa6,#0b4a8c); color:#ffffff; border-color:#0b4a8c; }
+.varduino-board .small.muted { color:#cfe3f7; }
+.varduino-board-head { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:12px; }
+.varduino-board .hw-status { margin-left:0; }
+.varduino-pins { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:8px; }
+.varduino-pin { display:grid; justify-items:center; gap:4px; padding:8px 4px; border-radius:8px; background:rgba(255,255,255,.08); font-family:ui-monospace,monospace; }
+.varduino-led { width:18px; height:18px; border-radius:50%; border:2px solid rgba(255,255,255,.6); transition:opacity .08s linear; }
+.varduino-pin-name { font-size:12px; font-weight:800; }
+.varduino-pin-value { font-size:11px; color:#cfe3f7; }
+.varduino-inputs { display:flex; gap:10px; flex-wrap:wrap; }
+.varduino-button { display:inline-flex; align-items:center; gap:10px; min-height:48px; padding:6px 16px 6px 8px; border:2px solid #ffffff; border-radius:10px; background:#0e3462; color:#ffffff; font-weight:800; user-select:none; touch-action:none; }
+.varduino-button-cap { width:30px; height:30px; border-radius:50%; background:#2b2b2b; box-shadow:0 3px 0 #000000, inset 0 0 0 4px #555555; }
+.varduino-button.pressed .varduino-button-cap { transform:translateY(2px); box-shadow:0 1px 0 #000000, inset 0 0 0 4px #777777; }
+.varduino-analog { display:grid; gap:10px; margin-top:14px; padding:12px; border-radius:10px; background:rgba(255,255,255,.1); }
+.varduino-analog .calc-field span { color:#ffffff; }
+
+@media (max-width: 1000px) {
+  .tool-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .bench-layout,.scope-layout,.varduino-grid { grid-template-columns:1fr; }
+}
+@media (max-width: 760px) {
+  .calc-layout { grid-template-columns:1fr; }
+  .logic-explorer { grid-template-columns:1fr; justify-items:stretch; }
+  .varduino-pins { grid-template-columns:repeat(4,minmax(0,1fr)); }
+}
+@media (max-width: 560px) { .tool-grid { grid-template-columns:1fr; } .meter-reading { font-size:32px; } }
+@media (prefers-reduced-motion: reduce) { .bench-flow { animation:none; } .tool-card,.varduino-led { transition:none; } }
+.hw-summary-table td,.hw-summary-table th { white-space:nowrap; }
+/* Phones: keep circuit points large enough to tap (~25 px targets); the board scrolls sideways. */
+@media (max-width: 620px) {
+  .bench-board { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  .bench-board svg { min-width:600px; }
+}

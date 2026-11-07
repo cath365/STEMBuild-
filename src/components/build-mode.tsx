@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useRef } from "react";
 import type { BuildProject, LearningLevel, StemComponent } from "@/lib/build-catalog";
+import { useOwnedComponents } from "@/lib/my-components";
+import { useStoredValue } from "@/lib/use-stored-value";
 import { ComponentVisualCard } from "@/components/component-visual-card";
 import { VerifiedBuildGuidePanel } from "@/components/verified-build-guide-panel";
 import { guideBoards, guideFor } from "@/lib/verified-build-guides";
@@ -14,31 +16,38 @@ type Props = {
 
 const levels: LearningLevel[] = ["Beginner", "Intermediate", "Advanced"];
 
+type SavedBuild = { board?: string; level?: LearningLevel; step?: number; checkedParts?: string[] };
+
+function parseSaved(raw: string | null): SavedBuild {
+  try {
+    const parsed = JSON.parse(raw ?? "{}");
+    return parsed && typeof parsed === "object" ? parsed as SavedBuild : {};
+  } catch {
+    return {};
+  }
+}
+
 export function BuildMode({ project, components }: Props) {
-  const [board, setBoard] = useState(project.boards[0] ?? "");
-  const [level, setLevel] = useState<LearningLevel>(project.level);
-  const [step, setStep] = useState(0);
-  const [checkedParts, setCheckedParts] = useState<string[]>([]);
+  const stepRef = useRef<HTMLElement>(null);
+  // The device-local checklist is the source of truth, so progress survives reloads and other tabs.
+  const [raw, setRaw] = useStoredValue(`stembuild-build-checklist-${project.slug}`);
+  const [owned] = useOwnedComponents();
+  const saved = useMemo(() => parseSaved(raw), [raw]);
 
-  const storageKey = `stembuild-build-checklist-${project.slug}`;
+  const board = saved.board && project.boards.includes(saved.board) ? saved.board : project.boards[0] ?? "";
+  const level = saved.level && levels.includes(saved.level) ? saved.level : project.level;
+  const step = typeof saved.step === "number" ? Math.max(0, Math.min(7, saved.step)) : 0;
+  // Before the learner ticks anything here, start from the parts already ticked in My Components.
+  const checkedParts = Array.isArray(saved.checkedParts)
+    ? saved.checkedParts
+    : [...project.required, ...(project.optional ?? [])].filter((slug) => owned.includes(slug));
 
-  useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(storageKey);
-      if (!raw) return;
-      const parsed = JSON.parse(raw) as { board?: string; level?: LearningLevel; step?: number; checkedParts?: string[] };
-      if (parsed.board && project.boards.includes(parsed.board)) setBoard(parsed.board);
-      if (parsed.level && levels.includes(parsed.level)) setLevel(parsed.level);
-      if (typeof parsed.step === "number") setStep(Math.max(0, Math.min(7, parsed.step)));
-      if (Array.isArray(parsed.checkedParts)) setCheckedParts(parsed.checkedParts);
-    } catch {}
-  }, [project.boards, storageKey]);
-
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(storageKey, JSON.stringify({ board, level, step, checkedParts }));
-    } catch {}
-  }, [board, level, step, checkedParts, storageKey]);
+  function update(patch: SavedBuild) {
+    setRaw(JSON.stringify({ board, level, step, checkedParts, ...patch }));
+  }
+  const setBoard = (value: string) => update({ board: value });
+  const setLevel = (value: LearningLevel) => update({ level: value });
+  const setStep = (value: number) => update({ step: value });
 
   const required = useMemo(() => project.required.map((slug) => components.find((item) => item.slug === slug)).filter((item): item is StemComponent => Boolean(item)), [project.required, components]);
   const optional = useMemo(() => (project.optional ?? []).map((slug) => components.find((item) => item.slug === slug)).filter((item): item is StemComponent => Boolean(item)), [project.optional, components]);
@@ -46,8 +55,18 @@ export function BuildMode({ project, components }: Props) {
   const exactGuide = guideFor(project.slug, board);
   const exactGuideBoards = guideBoards(project.slug);
 
+  function goToStep(index: number) {
+    setStep(index);
+    // Bring the step heading back into view when the learner has scrolled past it (common on phones).
+    const card = stepRef.current;
+    if (card && card.getBoundingClientRect().top < 0) {
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      card.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+    }
+  }
+
   function togglePart(slug: string) {
-    setCheckedParts((current) => current.includes(slug) ? current.filter((item) => item !== slug) : [...current, slug]);
+    update({ checkedParts: checkedParts.includes(slug) ? checkedParts.filter((item) => item !== slug) : [...checkedParts, slug] });
   }
 
   const boardNote = board === "ESP32" ? "ESP32 GPIO is 3.3 V. Do not feed 5 V signals directly into GPIO."
@@ -81,7 +100,7 @@ export function BuildMode({ project, components }: Props) {
     },
     {
       title: "Code and run the first test",
-      body: <><div className="eyebrow">FIRST TEST</div><h3 style={{marginTop:8}}>{project.firstTest}</h3><p>Watch the real result before adding more features. If the result is different from what you expected, record what happened instead of pretending the step passed.</p><div className="inline">{project.skills.map((skill) => <span className="badge" key={skill}>{skill}</span>)}</div></>,
+      body: <><div className="eyebrow">FIRST TEST</div><h3 style={{marginTop:8}}>{project.firstTest}</h3><p>Watch the real result before adding more features. If the result is different from what you expected, record what happened instead of pretending the step passed.</p><div className="inline">{project.skills.map((skill) => <span className="badge" key={skill}>{skill}</span>)}</div><div className="card card-muted" style={{marginTop:18}}><strong>Board connected by USB?</strong><p className="small muted">Open the Live Hardware Monitor to see your board’s serial output and graph its readings in real time while you test.</p><Link className="text-link" href="/hardware-monitor" target="_blank">Open the Live Hardware Monitor →</Link></div></>,
     },
     {
       title: "Troubleshoot",
@@ -106,15 +125,15 @@ export function BuildMode({ project, components }: Props) {
       </div>
     </section>
 
-    <div className="build-progress" aria-label="Build steps">{steps.map((item, index) => <button key={item.title} type="button" aria-current={step === index ? "step" : undefined} className={step === index ? "active" : step > index ? "done" : ""} onClick={() => setStep(index)}><span>{step > index ? "✓" : index + 1}</span><small>{item.title}</small></button>)}</div>
+    <div className="build-progress" aria-label="Build steps">{steps.map((item, index) => <button key={item.title} type="button" aria-current={step === index ? "step" : undefined} className={step === index ? "active" : step > index ? "done" : ""} onClick={() => goToStep(index)}><span>{step > index ? "✓" : index + 1}</span><small>{item.title}</small></button>)}</div>
 
-    <section className="card build-step">
+    <section className="card build-step" ref={stepRef}>
       <div className="eyebrow">STEP {step + 1} OF {steps.length}</div>
       <h2>{steps[step].title}</h2>
       <div className="build-step-body">{steps[step].body}</div>
       <div className="build-step-nav">
-        <button className="btn" type="button" disabled={step === 0} onClick={() => setStep((value) => Math.max(0, value - 1))}>← Previous</button>
-        {step < steps.length - 1 ? <button className="btn btn-primary" type="button" onClick={() => setStep((value) => Math.min(steps.length - 1, value + 1))}>Next step →</button> : <Link className="btn btn-primary" href="/projects">Choose another project</Link>}
+        <button className="btn" type="button" disabled={step === 0} onClick={() => goToStep(Math.max(0, step - 1))}>← Previous</button>
+        {step < steps.length - 1 ? <button className="btn btn-primary" type="button" onClick={() => goToStep(Math.min(steps.length - 1, step + 1))}>Next step →</button> : <Link className="btn btn-primary" href="/projects">Choose another project</Link>}
       </div>
     </section>
   </div>;

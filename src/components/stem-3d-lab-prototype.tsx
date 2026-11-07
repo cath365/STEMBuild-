@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { compileUnoFirmware, startUnoFirmwareSimulation, type AVRSimulation } from "@/lib/avr-browser-engine";
 import { Stem3DWebGLWorkbench } from "@/components/stem-3d-webgl-workbench";
+import { useStoredValue } from "@/lib/use-stored-value";
 import {
   connectionForTerminals,
   lab3dProject,
@@ -26,16 +27,11 @@ function storageKey(project: Lab3DProject) {
 type EngineMode = "fast" | "firmware";
 
 export function Stem3DLabPrototype({ active = true }: { active?: boolean }) {
-  const [projectSlug, setProjectSlug] = useState<Lab3DProject["slug"]>("led-blink");
-  useEffect(() => {
-    try {
-      const previous = localStorage.getItem("stembuild-3d-lab-last-project-v1");
-      if (previous === "led-blink" || previous === "button-light") setProjectSlug(previous);
-    } catch { /* A blocked storage provider leaves the default sample usable. */ }
-  }, []);
+  // The last-opened project lives in browser storage (a blocked provider falls back to memory).
+  const [previous, setPrevious] = useStoredValue("stembuild-3d-lab-last-project-v1");
+  const projectSlug: Lab3DProject["slug"] = previous === "button-light" ? "button-light" : "led-blink";
   function chooseProject(slug: Lab3DProject["slug"]) {
-    setProjectSlug(slug);
-    try { localStorage.setItem("stembuild-3d-lab-last-project-v1",slug); } catch {}
+    setPrevious(slug);
   }
   // A separate session per project prevents cross-project saves and stale runs.
   return <LabProjectSession key={projectSlug} projectSlug={projectSlug} onProjectChange={chooseProject} active={active} />;
@@ -76,15 +72,23 @@ function LabProjectSession({projectSlug,onProjectChange,active}: {projectSlug:La
 
   // A hidden workspace must not keep WebGL or AVR execution running in the background.
   // Part placement, wiring and edited code remain mounted and unchanged.
+  // Visible state resets during render when `active` turns off (React's "adjust state on prop change").
+  const [wasActive, setWasActive] = useState(active);
+  if (wasActive !== active) {
+    setWasActive(active);
+    if (!active) {
+      setRunning(false);
+      setLedOn(false);
+      setFirmwareStatus("idle");
+      setWebglEnabled(false);
+    }
+  }
+  // Stopping the emulator is a side effect, so it stays in an effect.
   useEffect(() => {
     if (active) return;
     runVersion.current += 1;
     avrRef.current?.stop();
     avrRef.current = null;
-    setRunning(false);
-    setLedOn(false);
-    setFirmwareStatus("idle");
-    setWebglEnabled(false);
   }, [active]);
 
   useEffect(() => {
@@ -414,7 +418,7 @@ function LabProjectSession({projectSlug,onProjectChange,active}: {projectSlug:La
       <section className="lab3d-safe-launch">
         <div>
           <div className="eyebrow">3D VIEW · OPTIONAL</div>
-          <h2>Build first. Explore it in 3D when you're ready.</h2>
+          <h2>Build first. Explore it in 3D when you’re ready.</h2>
           <p className="muted">The lesson starts in a lightweight view to save mobile data. Place parts, wire the circuit and edit Arduino code below, or open the full 3D view for rotation and clickable pins.</p>
           <div className="inline" style={{marginTop:12}}>
             <button type="button" className="btn btn-primary" onClick={()=>setWebglEnabled(true)}>Launch 3D Workbench</button>

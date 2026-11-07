@@ -8,6 +8,7 @@ import { db } from "@/lib/db";
 import { requireRole } from "@/lib/session";
 import { clampDurationMs, latestOpenStart, recordLearningEvent, resolveAssignedLessonContext, type LearningEventInput } from "@/lib/learning-events";
 import { recomputeLessonProgress } from "@/lib/progress";
+import { parseCaptureJson } from "@/lib/serial-capture";
 
 const EVIDENCE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "application/pdf"]);
 
@@ -257,6 +258,7 @@ export async function submitPractical(formData: FormData) {
   const issue = String(formData.get("issue") ?? "").trim();
   const actionTried = String(formData.get("actionTried") ?? "").trim();
   const result = String(formData.get("result") ?? "").trim();
+  const serialCapture = parseCaptureJson(formData.get("serialCapture"));
   const file = await assertEvidence(formData.get("evidence"));
 
   const task = await db.practicalTask.findUnique({
@@ -316,6 +318,7 @@ export async function submitPractical(formData: FormData) {
           status: "SUBMITTED",
           studentNotes: studentNotes || null,
           codeSnippet: codeSnippet || null,
+          serialCapture: serialCapture ?? undefined,
           submissionNo: attemptNo,
           submittedAt,
           evidence: { create: { type: evidenceType(file), storagePath: blob.pathname, originalName: file.name, mimeType: file.type, sizeBytes: file.size } },
@@ -339,7 +342,7 @@ export async function submitPractical(formData: FormData) {
       };
       const kitMetadata: Record<string, string | number | boolean | null> = kit ? { kitId: kit.id, kitCode: kit.code } : {};
       const events: LearningEventInput[] = [
-        { ...common, type: "PRACTICAL_TASK_ATTEMPTED", outcome: "SUBMITTED", durationMs, metadata: kitMetadata },
+        { ...common, type: "PRACTICAL_TASK_ATTEMPTED", outcome: "SUBMITTED", durationMs, metadata: serialCapture ? { ...kitMetadata, serialCapture: true, serialSamples: serialCapture.samples.length, serialSeries: serialCapture.series.length } : kitMetadata },
         { ...common, type: "EVIDENCE_UPLOADED", outcome: "RECORDED", metadata: { mimeType: file.type, sizeBytes: file.size, ...kitMetadata } },
         { ...common, type: "HARDWARE_PLATFORM_SELECTED", outcome: "SELECTED", metadata: { phase: "submission", ...kitMetadata } },
       ];

@@ -85,6 +85,125 @@ export async function compileUnoFirmware(source: string): Promise<FirmwareCompil
   }
 }
 
+// ATmega328P data-space addresses: TCCRnA holds the COMnx1 enable bits, OCRnx the compare value.
+const PWM_OUTPUTS = [
+  { pin: 6, tccr: 0x44, bit: 0x80, ocr: 0x47 },  // OC0A
+  { pin: 5, tccr: 0x44, bit: 0x20, ocr: 0x48 },  // OC0B
+  { pin: 9, tccr: 0x80, bit: 0x80, ocr: 0x88 },  // OC1A (low byte)
+  { pin: 10, tccr: 0x80, bit: 0x20, ocr: 0x8a }, // OC1B (low byte)
+  { pin: 11, tccr: 0xb0, bit: 0x80, ocr: 0xb3 }, // OC2A
+  { pin: 3, tccr: 0xb0, bit: 0x20, ocr: 0xb4 },  // OC2B
+];
+
+export type UnoBoardState = {
+  /** Digital pins D0–D13: fraction of time HIGH during the last frame (0 = LOW, 1 = HIGH, between = PWM). */
+  duty: number[];
+  cycles: number;
+};
+
+export type UnoBoardSimulation = {
+  /** Drive an input pin (D2–D13) HIGH or LOW, e.g. a push button. */
+  setDigitalInput(pin: number, high: boolean): void;
+  /** Set the voltage (0–5 V) seen by analogRead(A0–A5). */
+  setAnalogVoltage(channel: number, volts: number): void;
+  stop(): void;
+};
+
+/**
+ * Runs compiled Uno firmware with every digital pin observable, serial output and analog inputs.
+ * Pin mapping (ATmega328P): D0–D7 = PD0–PD7, D8–D13 = PB0–PB5, A0–A5 = ADC0–ADC5.
+ */
+export async function startUnoBoard(
+  hex: string,
+  options: { onFrame: (state: UnoBoardState) => void; onSerial: (text: string) => void; analogVolts: number[]; inputs: Record<number, boolean> },
+): Promise<UnoBoardSimulation> {
+  const avr = await remoteImport(AVR8_URL);
+  const program = new Uint16Array(0x4000);
+  loadIntelHex(hex, new Uint8Array(program.buffer));
+
+  const cpu = new avr.CPU(program);
+  new avr.AVRTimer(cpu, avr.timer0Config);
+  new avr.AVRTimer(cpu, avr.timer1Config);
+  new avr.AVRTimer(cpu, avr.timer2Config);
+  const portB = new avr.AVRIOPort(cpu, avr.portBConfig);
+  new avr.AVRIOPort(cpu, avr.portCConfig);
+  const portD = new avr.AVRIOPort(cpu, avr.portDConfig);
+  const usart = new avr.AVRUSART(cpu, avr.usart0Config, 16_000_000);
+  const adc = new avr.AVRADC(cpu, avr.adcConfig);
+  adc.avcc = 5;
+  options.analogVolts.forEach((volts, channel) => { adc.channelValues[channel] = volts; });
+
+  let pending = "";
+  usart.onByteTransmit = (byte: number) => { pending += String.fromCharCode(byte); };
+
+  // Track how long each pin spends HIGH so PWM (analogWrite) shows as brightness.
+  const level = new Array<boolean>(14).fill(false);
+  const highCycles = new Array<number>(14).fill(0);
+  const since = new Array<number>(14).fill(0);
+  let frameStart = 0;
+  const watch = (port: { addListener(listener: (value: number) => void): void }, firstPin: number, count: number) => {
+    port.addListener((value: number) => {
+      for (let bit = 0; bit < count; bit++) {
+        const pin = firstPin + bit;
+        const high = Boolean(value & (1 << bit));
+        if (high === level[pin]) continue;
+        if (level[pin]) highCycles[pin] += cpu.cycles - since[pin];
+        level[pin] = high;
+        since[pin] = cpu.cycles;
+      }
+    });
+  };
+  watch(portD, 0, 8);
+  watch(portB, 8, 6);
+
+  const setInput = (pin: number, high: boolean) => {
+    if (pin >= 0 && pin <= 7) portD.setPin(pin, high);
+    else if (pin >= 8 && pin <= 13) portB.setPin(pin - 8, high);
+  };
+  // Unconnected inputs float; default them HIGH so INPUT_PULLUP buttons read "released".
+  for (let pin = 2; pin <= 13; pin++) setInput(pin, options.inputs[pin] ?? true);
+
+  let stopped = false;
+  let frame = 0;
+  let lastTime = performance.now();
+  const runChunk = (now: number) => {
+    if (stopped) return;
+    const elapsed = Math.min(Math.max(now - lastTime, 0), 50);
+    lastTime = now;
+    const stopAt = cpu.cycles + elapsed * 16_000;
+    const deadline = performance.now() + 8;
+    let instructions = 0;
+    while (!stopped && cpu.cycles < stopAt) {
+      avr.avrInstruction(cpu);
+      cpu.tick();
+      if (++instructions % 1024 === 0 && performance.now() >= deadline) break;
+    }
+    const total = Math.max(1, cpu.cycles - frameStart);
+    const duty = level.map((high, pin) => {
+      const value = (highCycles[pin] + (high ? cpu.cycles - Math.max(since[pin], frameStart) : 0)) / total;
+      highCycles[pin] = 0;
+      since[pin] = cpu.cycles;
+      return Math.min(1, Math.max(0, value));
+    });
+    // Hardware PWM (analogWrite) is exact from the timer registers: while a pin's compare-output
+    // mode is enabled, its duty is OCR / 255 (the Arduino core runs all three timers in 8-bit mode).
+    for (const { pin, tccr, bit, ocr } of PWM_OUTPUTS) {
+      if (cpu.data[tccr] & bit) duty[pin] = cpu.data[ocr] / 255;
+    }
+    frameStart = cpu.cycles;
+    if (pending) { options.onSerial(pending); pending = ""; }
+    options.onFrame({ duty, cycles: cpu.cycles });
+    if (!stopped) frame = requestAnimationFrame(runChunk);
+  };
+  frame = requestAnimationFrame(runChunk);
+
+  return {
+    setDigitalInput: setInput,
+    setAnalogVoltage(channel: number, volts: number) { adc.channelValues[channel] = Math.min(5, Math.max(0, volts)); },
+    stop() { stopped = true; cancelAnimationFrame(frame); },
+  };
+}
+
 export type AVRSimulation = {
   setButtonPressed(pressed: boolean): void;
   stop(): void;

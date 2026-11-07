@@ -20,8 +20,10 @@ export function RobotArena({active=true}:{active?:boolean}){
  const [saveStatus,setSaveStatus]=useState('Checking saved robot project…');
  const inspect=useRef<(()=>void)|null>(null);
  const mount=useRef<HTMLDivElement>(null),latest=useRef({robot,blocks,parts});
- // Preserve mounted assembly, but stop movement and free 3D resources while hidden.
- useEffect(()=>{if(!active){setRunning(false);setShow3D(false);}},[active]);
+ // Preserve mounted assembly, but stop movement and free 3D resources while hidden
+ // (adjusted during render when `active` changes, rather than in an effect).
+ const [wasActive,setWasActive]=useState(active);
+ if(wasActive!==active){setWasActive(active);if(!active){setRunning(false);setShow3D(false);}}
  useEffect(()=>{latest.current={robot,blocks,parts};},[robot,blocks,parts]);
  const ready=parts.length===robotParts.length&&wiringReady;
 
@@ -40,23 +42,33 @@ export function RobotArena({active=true}:{active?:boolean}){
   setMessage('Saved robot assembly, wires and obstacles restored.');
  }
  useEffect(()=>{
-  try{
-   const raw=localStorage.getItem(ROBOT_PROJECT_KEY);
-   if(raw){restore(parseSavedRobotProject(JSON.parse(raw)));setSaveStatus('Your robot project was restored from this browser.');}
-   else setSaveStatus('Autosave is on for your robot project.');
-  }catch{
-   // Do not overwrite a corrupt save before the user has a chance to download a backup.
-   setStorageAllowed(false);
-   setSaveStatus('Existing robot save could not be opened. Autosave is paused to protect it; you can import a backup.');
-  }
-  setHydrated(true);
+  let cancelled=false;
+  // Restore once after the server-compatible first render (same pattern as the 3D Lab).
+  Promise.resolve().then(()=>{
+   if(cancelled)return;
+   try{
+    const raw=localStorage.getItem(ROBOT_PROJECT_KEY);
+    if(raw){restore(parseSavedRobotProject(JSON.parse(raw)));setSaveStatus('Your robot project was restored from this browser.');}
+    else setSaveStatus('Autosave is on for your robot project.');
+   }catch{
+    // Do not overwrite a corrupt save before the user has a chance to download a backup.
+    setStorageAllowed(false);
+    setSaveStatus('Existing robot save could not be opened. Autosave is paused to protect it; you can import a backup.');
+   }
+   setHydrated(true);
+  });
+  return ()=>{cancelled=true;};
  // Restore only once when this workspace mounts.
- // eslint-disable-next-line react-hooks/exhaustive-deps
  },[]);
  useEffect(()=>{
   if(!hydrated||!storageAllowed)return;
-  try{localStorage.setItem(ROBOT_PROJECT_KEY,JSON.stringify(snapshot()));setSaveStatus('Saved automatically on this device.');}
-  catch{setStorageAllowed(false);setSaveStatus('Browser storage is unavailable. Download a project backup.');}
+  // Writing to storage is the effect; the status message follows it asynchronously.
+  let ok=true;
+  try{localStorage.setItem(ROBOT_PROJECT_KEY,JSON.stringify(snapshot()));}catch{ok=false;}
+  queueMicrotask(()=>{
+   if(ok)setSaveStatus('Saved automatically on this device.');
+   else{setStorageAllowed(false);setSaveStatus('Browser storage is unavailable. Download a project backup.');}
+  });
  // Saving follows every change to the project, not its running animation.
  // eslint-disable-next-line react-hooks/exhaustive-deps
  },[builder,blocks,threshold,hydrated,storageAllowed]);

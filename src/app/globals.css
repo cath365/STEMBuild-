@@ -124,7 +124,7 @@ hr { border:0; border-top:1px solid var(--border); margin:18px 0; }
 .connectivity.online .connectivity-dot { background:var(--primary); }
 .connectivity.offline { color:#cf8b2c; border-color:#ffdcab; }
 .offline-actions { display:grid; gap:10px; }
-@media (max-width: 620px) { .connectivity { left:12px; right:12px; bottom:10px; justify-content:center; } body { padding-bottom:48px; } }
+@media (max-width: 620px) { .connectivity { left:12px; right:12px; bottom:10px; justify-content:center; } body:has(.connectivity.offline) { padding-bottom:56px; } }
 
 .journey-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.journey-step{display:grid;grid-template-columns:38px 1fr;gap:10px;align-items:start;padding:13px;border:1px solid var(--border);border-radius:14px;background:var(--surface-2,rgba(255, 255, 255, .02))}.journey-number{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;background:var(--primary);color:#ffffff;font-weight:900}.showcase-journey{overflow:hidden}.showcase-journey:before{content:"";display:block;height:4px;margin:-18px -18px 18px;background:var(--primary)}@media(max-width:760px){.journey-grid{grid-template-columns:1fr}}
 

@@ -534,6 +534,8 @@ model PracticalSubmission {
   status               SubmissionStatus         @default(DRAFT)
   studentNotes         String?
   codeSnippet          String?
+  /// Readings recorded from the learner's board over USB serial (see src/lib/serial-capture.ts).
+  serialCapture        Json?
   submissionNo         Int                      @default(1)
   submittedAt          DateTime?
   createdAt            DateTime                 @default(now())

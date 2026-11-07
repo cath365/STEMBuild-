@@ -8,6 +8,8 @@ import "./logo-theme.css";
 import "./circuit-studio.css";
 import "./workspace-focus.css";
 import "./cad-workspace.css";
+import "./ux-refresh.css";
+import "./virtual-lab.css";
 import { PwaRegister } from "@/components/pwa-register";
 import { ConnectivityStatus } from "@/components/connectivity-status";
 

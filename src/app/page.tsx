@@ -47,9 +47,9 @@ export default function Home() {
             <input id="topic-search" placeholder="Search learning topics" value={query} onChange={(event) => setQuery(event.target.value)} type="search" />
             <button type="submit" className={styles.srOnly}>Search topics</button>
           </form>
-          <nav className={styles.desktopNav} aria-label="Main navigation"><Link href="/3d-lab">3D Lab</Link><Link href="/learning-paths/first-robot">First robot path</Link><Link href="/projects">Projects</Link><Link href="/components">Components</Link><a href="#teachers">Teachers</a></nav>
+          <nav className={styles.desktopNav} aria-label="Main navigation"><Link href="/3d-lab">3D Lab</Link><Link href="/tools">Virtual lab</Link><Link href="/learning-paths/first-robot">First robot path</Link><Link href="/projects">Projects</Link><Link href="/components">Components</Link><a href="#teachers">Teachers</a></nav>
           <Link className={styles.signIn} href="/login">Sign in</Link>
-          <details className={styles.mobileMenu}><summary>Menu</summary><nav aria-label="Mobile navigation"><Link href="/3d-lab">3D Lab</Link><Link href="/learning-paths/first-robot">First robot path</Link><Link href="/projects">Projects</Link><Link href="/components">Components</Link><a href="#topics">Learning areas</a><a href="#teachers">For teachers</a></nav></details>
+          <details className={styles.mobileMenu}><summary>Menu</summary><nav aria-label="Mobile navigation"><Link href="/3d-lab">3D Lab</Link><Link href="/tools">Virtual lab</Link><Link href="/learning-paths/first-robot">First robot path</Link><Link href="/projects">Projects</Link><Link href="/components">Components</Link><a href="#topics">Learning areas</a><a href="#teachers">For teachers</a></nav></details>
         </div>
       </header>
 
@@ -62,7 +62,7 @@ export default function Home() {
                 <p className={styles.kicker}>LEARN BY BUILDING REAL THINGS</p>
                 <h1 id="hero-title"><span className={styles.heroLine}>What do you</span>{" "}<span className={styles.heroLine}>want to</span>{" "}<span className={`${styles.heroLine} ${styles.heroAccent}`}>build today?</span></h1>
                 <p>Choose a project. STEMBuild helps you understand the parts, connect them safely, write the code, test what happens and fix problems one step at a time.</p>
-                <div className="inline"><Link className={styles.primaryButton} href="/3d-lab">Launch 3D Lab <span aria-hidden="true">→</span></Link><Link className="btn" href="/learning-paths/first-robot">First Robot Path</Link><Link className="btn" href="/projects">Explore Projects</Link></div>
+                <div className="inline"><Link className={styles.primaryButton} href="/3d-lab">Launch 3D Lab <span aria-hidden="true">→</span></Link><Link className="btn" href="/tools">No components? Virtual lab</Link><Link className="btn" href="/learning-paths/first-robot">First Robot Path</Link><Link className="btn" href="/projects">Explore Projects</Link></div>
                 <div className={styles.heroNote}>Beginner friendly <span aria-hidden="true">·</span> Real hardware <span aria-hidden="true">·</span> Honest evidence <span aria-hidden="true">·</span> Teacher support</div>
               </div>
               <figure className={styles.heroFigure}>
