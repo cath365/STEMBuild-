@@ -11,6 +11,7 @@ import "./cad-workspace.css";
 import "./ux-refresh.css";
 import "./virtual-lab.css";
 import "./design-system.css";
+import "./studio.css";
 import { PwaRegister } from "@/components/pwa-register";
 import { ConnectivityStatus } from "@/components/connectivity-status";
 

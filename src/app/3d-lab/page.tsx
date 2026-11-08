@@ -14,18 +14,23 @@ export default function ThreeDLabPage() {
   return <div>
     <PublicHeader />
     <main>
-      <section className="lab3d-hero lab-ux-hero free">
-        <div className="container lab-ux-hero-layout">
-          <div className="lab-ux-hero-copy">
-            <div className="lab-ux-breadcrumb"><Link href="/">Home</Link><span aria-hidden="true">/</span><span>3D Lab</span></div>
-            <div className="eyebrow">STEMBuild · Interactive maker space</div>
-            <h1>Build something.<br/><span>Make it work.</span></h1>
-            <p className="lead">Place parts on a breadboard, connect real pin locations, test circuits and design robots. Start small and keep building.</p>
-            <div className="lab-ux-hero-actions">
-              <a className="btn btn-primary" href="#workbench">Open Free Build <span aria-hidden="true">→</span></a>
-              <Link className="btn" href="/3d-lab/guided">Try guided lessons</Link>
+      <section className="lab-hero" aria-labelledby="lab-title">
+        <div className="container lab-hero-grid">
+          <div className="lab-hero-copy">
+            <nav className="page-header-crumbs" aria-label="Breadcrumb"><Link href="/">Home</Link><span aria-hidden="true">/</span><span aria-current="page">3D Lab</span></nav>
+            <h1 id="lab-title">3D Lab</h1>
+            <p className="page-header-description">Three workspaces in one place: wire real parts on a breadboard hole by hole, assemble and drive an obstacle-avoiding robot, and design assemblies in a CAD editor. Your work saves in this browser.</p>
+            <div className="page-header-actions">
+              <a className="btn btn-primary" href="#workbench">Open the workbench</a>
+              <Link className="btn" href="/3d-lab/guided">Guided lessons</Link>
             </div>
-            <p className="lab-ux-hero-footnote">Free to explore · Projects save in this browser · <Link href="/learn/arduino-led-blink" style={{color:"#ffffff",textDecoration:"underline",textUnderlineOffset:3}}>New? Learn the LED step by step →</Link></p>
+            <ul className="lab-hero-modes" aria-label="Workspaces">
+              <li><strong>Circuit builder</strong><span>Breadboard wiring with a blink preview</span></li>
+              <li><strong>Robot builder</strong><span>Assemble, wire and test in an arena</span></li>
+              <li><strong>CAD workspace</strong><span>Position 3D parts and test circuits</span></li>
+            </ul>
+            <p className="lab-hero-note"><Link className="text-link" href="/learn/arduino-led-blink">New? Learn the LED step by step →</Link></p>
+            <p className="lab-hero-note" style={{ marginTop: 8 }}>Want to build with any part and run your own code? <Link className="text-link" href="/studio">Open Maker Studio →</Link></p>
           </div>
           <div className="lab-ux-hero-visual free circuit-hero" aria-label="Arduino Uno LED blink circuit wiring preview">
             <div className="circuit-hero-head">

@@ -8,6 +8,7 @@ import { Brand } from "@/components/brand";
 // Five destinations; secondary pages (robot path, sample lesson, about) live in the footer.
 const links = [
   { label: "Projects", href: "/projects", also: ["/build", "/learning-paths", "/showcase", "/learn"] },
+  { label: "Maker Studio", href: "/studio" },
   { label: "Virtual lab", href: "/tools", also: ["/hardware-monitor"] },
   { label: "3D Lab", href: "/3d-lab" },
   { label: "Components", href: "/components" },

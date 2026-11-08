@@ -236,3 +236,29 @@ tbody tr:hover { background: #fafbfc; }
 .auth-photo { border-radius: var(--ds-radius-lg); }
 .auth-layout .login-card { box-shadow: none; }
 .auth-intro h1 { font-size: clamp(34px, 4vw, 52px); line-height: 1.1; }
+
+/* ---------- 3D Lab header ---------- */
+.lab-hero { background: #ffffff; border-bottom: 1px solid var(--ds-line); padding: 40px 0 44px; }
+.lab-hero-grid { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); gap: 48px; align-items: center; }
+.lab-hero h1 { font-size: clamp(30px, 3.4vw, 42px); }
+.lab-hero-modes { list-style: none; margin: 28px 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--ds-line); }
+.lab-hero-modes li { display: grid; gap: 2px; padding: 14px 14px 0 0; }
+.lab-hero-modes li + li { padding-left: 14px; border-left: 1px solid var(--ds-line); }
+.lab-hero-modes strong { font-size: 15px; font-weight: 600; }
+.lab-hero-modes span { font-size: 13.5px; color: var(--ds-text-2); line-height: 1.45; }
+.lab-hero-note { margin: 22px 0 0; font-size: 15px; color: var(--ds-text-2); }
+.lab-hero .lab-ux-hero-visual.circuit-hero { display: flex; flex-direction: column; gap: 10px; min-height: 0; padding: 14px; border: 1px solid var(--ds-line); border-radius: var(--ds-radius-lg); background: var(--ds-subtle); box-shadow: none; }
+.lab-hero .circuit-hero-head .lab-ux-diagram-top, .lab-hero .circuit-hero-bottom .lab-ux-diagram-bottom { color: var(--ds-muted); font-family: var(--ds-mono); font-size: 11px; letter-spacing: .02em; }
+.lab-hero .circuit-hero-check { color: #0a5c48; background: #e9f7f2; border-color: #c4eadc; border-radius: 4px; font-family: var(--ds-mono); font-weight: 500; letter-spacing: 0; }
+.lab-hero .circuit-hero-figure { border-color: var(--ds-line); box-shadow: none; border-radius: var(--ds-radius); }
+.lab-hero .circuit-hero-figure figcaption { border-top-color: var(--ds-line); }
+.lab-hero .circuit-hero-figure figcaption span { font-family: var(--ds-mono); font-weight: 500; color: var(--ds-accent-strong); }
+.lab-hero .circuit-hero-link { color: var(--ds-text); background: #ffffff; border: 1px solid var(--ds-line-strong); border-radius: var(--ds-radius); font-size: 13px; font-weight: 600; }
+.lab-hero .circuit-hero-link:hover { background: #ffffff; border-color: var(--ds-text); color: var(--ds-text); }
+@media (max-width: 900px) {
+  .lab-hero-grid { grid-template-columns: 1fr; gap: 28px; }
+}
+@media (max-width: 560px) {
+  .lab-hero-modes { grid-template-columns: 1fr; }
+  .lab-hero-modes li + li { padding-left: 0; border-left: 0; border-top: 1px solid var(--ds-line); padding-bottom: 12px; }
+}

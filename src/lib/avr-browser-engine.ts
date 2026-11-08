@@ -204,6 +204,150 @@ export async function startUnoBoard(
   };
 }
 
+export type StudioPinMode = "output" | "input" | "pullup";
+export type StudioSnapshot = { duty: number[]; mode: StudioPinMode[]; freq: number[]; pulseUs: number[]; cycles: number };
+export type StudioUltrasonic = { trigPin: number; echoPin: number; distanceCm: number };
+
+export type UnoStudioSimulation = {
+  setDigital(pin: number, high: boolean): void;
+  setAnalog(channel: number, volts: number): void;
+  setUltrasonic(links: StudioUltrasonic[]): void;
+  /** Run `callback` after `micros` of emulated time (used for switch-bounce tests). */
+  scheduleMicros(micros: number, callback: () => void): void;
+  cycles(): number;
+  stop(): void;
+};
+
+/**
+ * Full-board emulation for Maker Studio: every pin's mode and duty, tone frequency and pulse width,
+ * analog inputs, serial output and an HC-SR04 echo generated in emulated microseconds.
+ */
+export async function startUnoStudio(
+  hex: string,
+  options: { onFrame: (snapshot: StudioSnapshot) => void; onSerial: (text: string) => void },
+): Promise<UnoStudioSimulation> {
+  const avr = await remoteImport(AVR8_URL);
+  const program = new Uint16Array(0x4000);
+  loadIntelHex(hex, new Uint8Array(program.buffer));
+  const cpu = new avr.CPU(program);
+  new avr.AVRTimer(cpu, avr.timer0Config);
+  new avr.AVRTimer(cpu, avr.timer1Config);
+  new avr.AVRTimer(cpu, avr.timer2Config);
+  const portB = new avr.AVRIOPort(cpu, avr.portBConfig);
+  new avr.AVRIOPort(cpu, avr.portCConfig);
+  const portD = new avr.AVRIOPort(cpu, avr.portDConfig);
+  const usart = new avr.AVRUSART(cpu, avr.usart0Config, 16_000_000);
+  const adc = new avr.AVRADC(cpu, avr.adcConfig);
+  adc.avcc = 5;
+  let pending = "";
+  usart.onByteTransmit = (byte: number) => { pending += String.fromCharCode(byte); };
+
+  const level = new Array<boolean>(14).fill(false);
+  const highCycles = new Array<number>(14).fill(0);
+  const since = new Array<number>(14).fill(0);
+  const rises = new Array<number>(14).fill(0);
+  const firstRise = new Array<number>(14).fill(-1);
+  const lastRise = new Array<number>(14).fill(-1);
+  const pulseUs = new Array<number>(14).fill(0);
+  let frameStart = 0;
+  let ultrasonic: StudioUltrasonic[] = [];
+  const trigRise = new Array<number>(14).fill(-1);
+
+  const setInput = (pin: number, high: boolean) => {
+    if (pin >= 0 && pin <= 7) portD.setPin(pin, high);
+    else if (pin >= 8 && pin <= 13) portB.setPin(pin - 8, high);
+  };
+
+  const onEdge = (pin: number, high: boolean) => {
+    const now = cpu.cycles;
+    if (high) {
+      rises[pin]++;
+      if (firstRise[pin] < 0) firstRise[pin] = now;
+      lastRise[pin] = now;
+      trigRise[pin] = now;
+    } else if (lastRise[pin] >= 0) {
+      pulseUs[pin] = (now - lastRise[pin]) / 16;
+      // HC-SR04: a TRIG pulse of at least ~8 µs starts a measurement.
+      for (const link of ultrasonic) {
+        if (link.trigPin !== pin || trigRise[pin] < 0 || now - trigRise[pin] < 8 * 16) continue;
+        const echoUs = link.distanceCm > 400 ? 38_000 : link.distanceCm * 58;
+        cpu.addClockEvent(() => {
+          setInput(link.echoPin, true);
+          cpu.addClockEvent(() => setInput(link.echoPin, false), Math.round(echoUs * 16));
+        }, 460 * 16);
+      }
+    }
+  };
+
+  const watch = (port: { addListener(listener: (value: number) => void): void }, firstPin: number, count: number) => {
+    port.addListener((value: number) => {
+      for (let bit = 0; bit < count; bit++) {
+        const pin = firstPin + bit;
+        const high = Boolean(value & (1 << bit));
+        if (high === level[pin]) continue;
+        if (level[pin]) highCycles[pin] += cpu.cycles - since[pin];
+        level[pin] = high;
+        since[pin] = cpu.cycles;
+        onEdge(pin, high);
+      }
+    });
+  };
+  watch(portD, 0, 8);
+  watch(portB, 8, 6);
+  for (let pin = 0; pin <= 13; pin++) setInput(pin, false);
+
+  const modeOf = (pin: number): StudioPinMode => {
+    const state = pin < 8 ? portD.pinState(pin) : portB.pinState(pin - 8);
+    return state === avr.PinState.Input ? "input" : state === avr.PinState.InputPullUp ? "pullup" : "output";
+  };
+
+  let stopped = false;
+  let frame = 0;
+  let lastTime = performance.now();
+  const runChunk = (now: number) => {
+    if (stopped) return;
+    const elapsed = Math.min(Math.max(now - lastTime, 0), 50);
+    lastTime = now;
+    const stopAt = cpu.cycles + elapsed * 16_000;
+    const deadline = performance.now() + 10;
+    let instructions = 0;
+    while (!stopped && cpu.cycles < stopAt) {
+      avr.avrInstruction(cpu);
+      cpu.tick();
+      if (++instructions % 1024 === 0 && performance.now() >= deadline) break;
+    }
+    const total = Math.max(1, cpu.cycles - frameStart);
+    const duty = level.map((high, pin) => {
+      const value = (highCycles[pin] + (high ? cpu.cycles - Math.max(since[pin], frameStart) : 0)) / total;
+      highCycles[pin] = 0;
+      since[pin] = cpu.cycles;
+      return Math.min(1, Math.max(0, value));
+    });
+    for (const { pin, tccr, bit, ocr } of PWM_OUTPUTS) {
+      if (cpu.data[tccr] & bit) duty[pin] = cpu.data[ocr] / 255;
+    }
+    // Tone frequency from rising edges inside this frame (needs at least two edges).
+    const freq = rises.map((count, pin) => count >= 2 && lastRise[pin] > firstRise[pin] ? ((count - 1) * 16_000_000) / (lastRise[pin] - firstRise[pin]) : 0);
+    rises.fill(0); firstRise.fill(-1);
+    // A pulse width older than 50 ms of emulated time no longer represents a live servo signal.
+    const pulses = pulseUs.map((us, pin) => lastRise[pin] >= 0 && cpu.cycles - lastRise[pin] < 50 * 16_000 ? us : 0);
+    frameStart = cpu.cycles;
+    if (pending) { options.onSerial(pending); pending = ""; }
+    options.onFrame({ duty, mode: Array.from({ length: 14 }, (_, pin) => modeOf(pin)), freq, pulseUs: pulses, cycles: cpu.cycles });
+    if (!stopped) frame = requestAnimationFrame(runChunk);
+  };
+  frame = requestAnimationFrame(runChunk);
+
+  return {
+    setDigital: (pin, high) => { if (modeOf(pin) !== "output") setInput(pin, high); },
+    setAnalog: (channel, volts) => { adc.channelValues[channel] = Math.min(5, Math.max(0, volts)); },
+    setUltrasonic: (links) => { ultrasonic = links; },
+    scheduleMicros: (micros, callback) => { cpu.addClockEvent(callback, Math.max(1, Math.round(micros * 16))); },
+    cycles: () => cpu.cycles,
+    stop: () => { stopped = true; cancelAnimationFrame(frame); },
+  };
+}
+
 export type AVRSimulation = {
   setButtonPressed(pressed: boolean): void;
   stop(): void;
