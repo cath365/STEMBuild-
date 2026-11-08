@@ -76,8 +76,8 @@ export default async function AiLabCoachPage({ searchParams }: { searchParams: P
         <div className="section-title"><div><div className="inline"><span className="badge">{sourceLabel(current.sourceMode)}</span><span className="badge">{current.model}</span><span className={current.status === "COMPLETED" ? "badge badge-green" : "badge badge-yellow"}>{current.status.toLowerCase()}</span></div><h2 style={{marginTop:12}}>{current.lesson.title}</h2><div className="small muted">Plan created {formatDate(current.createdAt)}{current.hardwarePlatform ? ` · ${current.hardwarePlatform.name}` : ""}</div></div><Link className="btn" href={`/dashboard/student/lessons/${current.lessonId}`}>Open lesson</Link></div>
         {current.sourceMode !== "ai-gateway" ? <div className="notice"><strong>AI generation was unavailable or blocked by a safeguard.</strong> STEMBuild returned a conservative rules-based coaching plan instead. The UI does not present fallback content as AI-generated.</div> : null}
         <div className="grid grid-2" style={{marginTop:14}}>
-          <div className="card"><div className="eyebrow">OBSERVE</div><h3 style={{marginTop:8}}>What the stored evidence shows</h3><p className="muted">{current.observeSummary}</p></div>
-          <div className="card"><div className="eyebrow">REASON</div><h3 style={{marginTop:8}}>Likely learning gap</h3><p className="muted">{current.reasonSummary}</p><div className="small muted">This is a learning recommendation, not an assessment result.</div></div>
+          <div className="card"><div className="eyebrow">Observe</div><h3 style={{marginTop:8}}>What the stored evidence shows</h3><p className="muted">{current.observeSummary}</p></div>
+          <div className="card"><div className="eyebrow">Reason</div><h3 style={{marginTop:8}}>Likely learning gap</h3><p className="muted">{current.reasonSummary}</p><div className="small muted">This is a learning recommendation, not an assessment result.</div></div>
         </div>
       </section>
 
@@ -94,7 +94,7 @@ export default async function AiLabCoachPage({ searchParams }: { searchParams: P
             {step.safetyNote ? <div className="notice"><strong>Safety:</strong> {step.safetyNote}</div> : null}
 
             {!superseded ? <div style={{marginTop:16}}>
-              <div className="eyebrow">GUIDE</div>
+              <div className="eyebrow">Guide</div>
               {!step.hintRevealedAt ? <form action={revealAiLabCoachHint.bind(null, step.id)} style={{marginTop:8}}><button className="btn">Request a teaching hint</button></form> : <div className="card card-muted" style={{marginTop:8}}><div className="inline"><span className="badge">{step.sourceMode === "ai-gateway" ? "AI teaching hint" : "Approved teaching hint"}</span></div><p style={{marginBottom:0}}>{step.hint}</p></div>}
             </div> : null}
 

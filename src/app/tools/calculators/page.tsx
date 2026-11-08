@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 };
 
 export default function Page() {
-  return <ToolShell slug="calculators" eyebrow="LEVEL 1 · ENGINEERING CALCULATORS" title="Do the maths" accent="before you build." intro="The calculations engineers do every day, with the formula explained. Type values the way engineers write them: 4k7, 100n, 20m.">
+  return <ToolShell slug="calculators" description="The calculations engineers do every day, each with its formula explained. Type values the way engineers write them: 4k7, 100n, 20m.">
       <EngineeringCalculators />
   </ToolShell>;
 }

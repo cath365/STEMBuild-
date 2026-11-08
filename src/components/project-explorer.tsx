@@ -77,7 +77,7 @@ export function ProjectExplorer() {
       const projects = filtered.filter((project) => project.level === level);
       if (!projects.length) return null;
       return <section id={level} key={level} className="project-level-section">
-        <div className="section-title"><div><div className="eyebrow">{level.toUpperCase()}</div><h2>{levelHeadings[level]}</h2></div><span className="badge">{projects.length} {projects.length === 1 ? "project" : "projects"}</span></div>
+        <div className="section-title"><div><div className="eyebrow">{level}</div><h2>{levelHeadings[level]}</h2></div><span className="badge">{projects.length} {projects.length === 1 ? "project" : "projects"}</span></div>
         <div className="project-library-grid">{projects.map((project) => {
           const status = owned.length ? readiness.get(project.slug) : undefined;
           return <article className="card project-library-card" key={project.slug}>

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { PublicHeader } from "@/components/public-header";
 import { PublicFooter } from "@/components/public-footer";
 import { BuildMode } from "@/components/build-mode";
+import { PageHeader } from "@/components/page-header";
 import { buildProjects, componentCatalog, projectBySlug } from "@/lib/build-catalog";
 
 export function generateStaticParams() {
@@ -24,14 +25,12 @@ export default async function BuildProjectPage({ params }: { params: Promise<{ s
   return <div>
     <PublicHeader />
     <main>
-      <section className="sample-hero">
-        <div className="container">
-          <div className="inline"><span className="badge">{project.level}</span><span className="badge">{project.area}</span><span className="badge">~{project.minutes} min</span></div>
-          <h1 style={{marginTop:16}}>Build a<br/><span>{project.title}.</span></h1>
-          <p className="lead">{project.summary}</p>
-          <p className="small muted">Build Mode is a learning guide. It never marks practical work as passed just because you clicked through the steps.</p>
-        </div>
-      </section>
+      <PageHeader
+        crumbs={[{ label: "Home", href: "/" }, { label: "Projects", href: "/projects" }, { label: project.title }]}
+        meta={<><span className="badge">{project.level}</span><span className="badge">{project.area}</span><span className="badge">~{project.minutes} min</span></>}
+        title={project.title}
+        description={project.summary}
+      />
       <section className="container section">
         <BuildMode project={project} components={componentCatalog}/>
       </section>

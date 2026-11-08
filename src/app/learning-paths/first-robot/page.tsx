@@ -27,7 +27,7 @@ export default function FirstRobotLearningPathPage() {
     <main>
       <section className="learning-path-hero">
         <div className="container">
-          <div className="eyebrow">STEMBUILD GUIDED PATH</div>
+          <div className="eyebrow">STEMBuild guided path</div>
           <h1>From your first LED<br/><span>to a working robot.</span></h1>
           <p className="lead">Nine practical builds. Each one teaches a skill needed by the next, so beginners do not have to jump from a simple circuit straight into a complicated robot.</p>
           <div className="inline" style={{marginTop:18}}>
@@ -40,7 +40,7 @@ export default function FirstRobotLearningPathPage() {
 
       <section className="container section">
         <div className="card">
-          <div className="eyebrow">HOW TO USE THIS PATH</div>
+          <div className="eyebrow">How to use this path</div>
           <div className="grid grid-3" style={{marginTop:16}}>
             <div><h3>Build, do not rush</h3><p className="small muted">Finish the real test for one stage before adding the next subsystem.</p></div>
             <div><h3>Troubleshooting counts</h3><p className="small muted">A project that fails and is carefully diagnosed can teach more than blindly copying a circuit.</p></div>
@@ -49,7 +49,7 @@ export default function FirstRobotLearningPathPage() {
         </div>
 
         <div className="section-title" style={{marginTop:34}}>
-          <div><div className="eyebrow">9 STAGES</div><h2>Build one capability at a time.</h2></div>
+          <div><div className="eyebrow">9 stages</div><h2>Build one capability at a time.</h2></div>
         </div>
 
         <div className="learning-path-grid">

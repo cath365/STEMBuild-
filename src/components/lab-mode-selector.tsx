@@ -99,7 +99,7 @@ export function LabModeSelector() {
     }}>
       <div className="lab-focus-bar"><strong>STEMBuild Workbench</strong><button className="btn" onClick={() => setFocused(!focused)}>{focused ? "Back to lab page" : "Open full workspace"}</button></div>
       <div className="lab-modes-heading">
-        <p className="eyebrow">CHOOSE YOUR WORKSPACE</p>
+        <p className="eyebrow">Choose your workspace</p>
         <h2>One lab. Three ways to build.</h2>
         <p>Choose a workspace below. You can switch at any time without losing the assembly or code already entered on this page.</p>
         <p className="lab-saved-notice">Projects now save automatically in this browser and restore after a restart. For another computer or protection from cleared browser data, download a project backup from the workspace. This is not account-based cloud storage yet.</p>
@@ -130,7 +130,7 @@ export function LabModeSelector() {
       <div id="lab-panel-circuit" role="tabpanel" aria-labelledby="lab-tab-circuit" tabIndex={0} className="lab-mode-panel" hidden={mode !== "circuit"}>
         <div className="bb-workshop-choices">
           <div>
-            <p className="eyebrow">CIRCUIT BUILDER · FREE WORKSPACE</p>
+            <p className="eyebrow">Circuit builder · Free workspace</p>
             <p>Build freely on the breadboard below. <Link href="/learn/arduino-led-blink">New to electronics? Start the complete Learn → Build → Remember LED journey.</Link> For step-by-step Arduino lessons and full AVR firmware simulation, use the guided circuit page.</p>
           </div>
           <Link className="btn" href="/3d-lab/guided">Open guided circuit lessons →</Link>

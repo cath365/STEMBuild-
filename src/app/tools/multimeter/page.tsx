@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 };
 
 export default function Page() {
-  return <ToolShell slug="multimeter" eyebrow="LEVEL 1 · CIRCUIT BENCH & MULTIMETER" title="Build a circuit." accent="Measure everything." intro="Place batteries, resistors, LEDs, switches and wires, then measure voltage, current, resistance and continuity with a digital multimeter. The circuit is solved with real circuit laws, so LEDs burn out without a resistor and short circuits are dangerous.">
+  return <ToolShell slug="multimeter" description="Place batteries, resistors, LEDs and switches, then measure them like a technician. The circuit is solved with real circuit laws, so an LED without a resistor burns out.">
       <CircuitBench />
   </ToolShell>;
 }

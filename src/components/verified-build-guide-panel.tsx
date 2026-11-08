@@ -11,7 +11,7 @@ export function VerifiedBuildGuidePanel({ guide }: { guide: VerifiedBuildGuide }
     <div className="verified-guide-board">
       <ComponentVisualCard slug={guide.boardSlug} compact />
       <div>
-        <div className="eyebrow">BOARD-SPECIFIC WIRING</div>
+        <div className="eyebrow">Board-specific wiring</div>
         <h3>{guide.title}</h3>
         <p className="small muted">Follow the labels on your actual board/module. If the physical part does not match this guide, stop and verify the revision before power.</p>
       </div>
@@ -30,7 +30,7 @@ export function VerifiedBuildGuidePanel({ guide }: { guide: VerifiedBuildGuide }
     </div>
 
     <div className="card card-muted">
-      <div className="eyebrow">BEFORE POWER</div>
+      <div className="eyebrow">Before power</div>
       <ul className="list">{guide.prePowerChecks.map((item) => <li key={item}>{item}</li>)}</ul>
     </div>
 
@@ -41,8 +41,8 @@ export function VerifiedBuildGuidePanel({ guide }: { guide: VerifiedBuildGuide }
     </div>
 
     <div className="verified-guide-outcomes">
-      <div className="card card-muted"><div className="eyebrow">WHAT YOU SHOULD SEE</div><ul className="list">{guide.expected.map((item)=><li key={item}>{item}</li>)}</ul></div>
-      <div className="card card-muted"><div className="eyebrow">COMMON MISTAKES</div><ul className="list">{guide.commonMistakes.map((item)=><li key={item}>{item}</li>)}</ul></div>
+      <div className="card card-muted"><div className="eyebrow">What you should see</div><ul className="list">{guide.expected.map((item)=><li key={item}>{item}</li>)}</ul></div>
+      <div className="card card-muted"><div className="eyebrow">Common mistakes</div><ul className="list">{guide.commonMistakes.map((item)=><li key={item}>{item}</li>)}</ul></div>
     </div>
 
     <div className="small muted"><strong>Technical notes:</strong> {guide.sourceNotes.join(" ")}</div>

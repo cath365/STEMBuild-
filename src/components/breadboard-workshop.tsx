@@ -270,7 +270,7 @@ export function BreadboardWorkshop({
   const instructions = tool === "wire" ? "Connect a jumper" : tool === "led" ? "Insert LED" : "Insert resistor";
   return <section className="bb-shell" aria-label="Free-build interactive breadboard">
     <div className="bb-heading">
-      <div><p className="eyebrow">FREE BUILD · HOLE-LEVEL CIRCUIT WORKSHOP</p>
+      <div><p className="eyebrow">Free build · Hole-level circuit workshop</p>
         <h2>Build on a real breadboard layout.</h2>
         <p className="muted">Snap an LED and 330 Ω resistor into holes, connect actual Arduino terminals and test a wiring-aware blink circuit. Drag parts to move them. A 3D assembly preview is available on demand.</p>
       </div>

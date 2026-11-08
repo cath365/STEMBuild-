@@ -154,7 +154,7 @@ export function LedLearningJourney() {
   return <section className="led-journey" aria-label="Arduino Uno LED complete learning journey">
     <div className="led-learning-top">
       <div>
-        <div className="eyebrow">A COMPLETE LEARNING JOURNEY · ARDUINO UNO</div>
+        <div className="eyebrow">A complete learning journey · Arduino Uno</div>
         <h2>From your first LED to an explanation you can give without the website.</h2>
         <p className="muted">Learn the components, predict behaviour, build in the existing circuit simulator, troubleshoot and then rebuild on a separate empty board. Your local learning record is not a teacher-verified practical assessment.</p>
       </div>
@@ -260,10 +260,10 @@ export function LedLearningJourney() {
         {stage === 7 ? <div className="led-stage-body">
           <div className="led-callout"><strong>Take your learning home</strong><p>The guide below is a complete offline HTML document with the circuit diagram, component explanations, safety guidance, reviewed starter sketch, troubleshooting questions and a rebuild challenge. Open it in a browser even without internet; you can also print it or save it as a PDF.</p></div>
           <div className="led-finish-grid">
-            <article><div className="eyebrow">OFFLINE REVISION</div><h4>Keep a learning card</h4><p>Review the concepts and Arduino sketch without staying online.</p>
+            <article><div className="eyebrow">Offline revision</div><h4>Keep a learning card</h4><p>Review the concepts and Arduino sketch without staying online.</p>
               <button type="button" className="btn btn-primary" onClick={downloadOfflineHtml}>Download take-home guide (.html)</button>
             </article>
-            <article><div className="eyebrow">REAL-WORLD TRANSFER</div><h4>Try physical components</h4><p>Use a real Uno, resistor, LED and breadboard with power disconnected during wiring. Ask a teacher to assess your wiring and explanation.</p>
+            <article><div className="eyebrow">Real-world transfer</div><h4>Try physical components</h4><p>Use a real Uno, resistor, LED and breadboard with power disconnected during wiring. Ask a teacher to assess your wiring and explanation.</p>
               <Link className="btn" href="/build/first-led">Open reviewed hardware instructions</Link>
             </article>
           </div>

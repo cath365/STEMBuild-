@@ -1,167 +1,138 @@
-"use client";
-
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
-import { Brand } from "@/components/brand";
+import { PublicHeader } from "@/components/public-header";
 import { PublicFooter } from "@/components/public-footer";
 import { BoardGallery } from "@/components/board-gallery";
+import { ArrowRightIcon, BoxIcon, CalculatorIcon, ChartIcon, ChipIcon, ClipboardIcon, LogicIcon, MultimeterIcon, OfflineIcon, ScopeIcon, SparkIcon, UsbIcon } from "@/components/icons";
 import { buildProjects } from "@/lib/build-catalog";
 import styles from "./home.module.css";
 
-const topics = [
-  { category: "Electronics", title: "Electronics foundations", description: "Get comfortable with components, breadboards and your first working circuit.", lessons: ["Voltage, current and resistance", "Breadboards and jumper wires", "LEDs, resistors and safe wiring"], tag: "Start here", className: "electronics" },
-  { category: "Programming", title: "Microcontroller programming", description: "Turn a few lines of code into something you can see, hear and control.", lessons: ["Digital inputs and outputs", "Buttons, buzzers and GPIO", "Reading code and finding errors"], tag: "Learn by doing", className: "programming" },
-  { category: "IoT & sensors", title: "Smart Environment Monitor", description: "Read temperature and humidity, record measurements and understand your sensors.", lessons: ["Arduino Uno and ESP32 variants", "Sensor wiring and readings", "Evidence and teacher assessment"], tag: "Showcase project", className: "sensors" },
-  { category: "Robotics", title: "Build a simple robot", description: "Bring motors, sensors and code together in a practical robotics project.", lessons: ["Motors and motor drivers", "Obstacle sensing", "Testing and troubleshooting"], tag: "Put it together", className: "robotics" },
-];
-const categories = ["All topics", ...topics.map((topic) => topic.category)];
+const featuredSlugs = ["first-led", "button-light", "traffic-light", "light-detector", "smart-environment-monitor", "plant-monitor", "obstacle-robot", "weather-station"];
+const featured = featuredSlugs.map((slug) => buildProjects.find((project) => project.slug === slug)).filter((project): project is NonNullable<typeof project> => Boolean(project));
+const boardCount = new Set(buildProjects.flatMap((project) => project.boards)).size;
 
-const featuredSlugs = [
-  "first-led",
-  "button-light",
-  "smart-environment-monitor",
-  "plant-monitor",
-  "smart-dustbin",
-  "bluetooth-car",
-  "obstacle-robot",
-  "weather-station",
+const startPaths = [
+  { icon: BoxIcon, title: "Follow a guided project", body: "Pick something you want to make. Each project walks through parts, safe wiring, code and testing, one step at a time.", href: "/projects", cta: "Browse projects" },
+  { icon: MultimeterIcon, title: "Practise without hardware", body: "Build circuits, measure them with a multimeter and run Arduino code on a simulated board, all in the browser.", href: "/tools", cta: "Open the virtual lab" },
+  { icon: ChipIcon, title: "Start from the parts you have", body: "Tick the components in your kit and see which projects you can build today, and what you’re missing for the rest.", href: "/components", cta: "Check my components" },
 ];
-const featuredProjects = featuredSlugs.map((slug) => buildProjects.find((project) => project.slug === slug)).filter((project): project is NonNullable<typeof project> => Boolean(project));
+
+const labTools = [
+  { icon: CalculatorIcon, name: "Engineering calculators", detail: "Ohm’s law, colour codes, LED resistors", href: "/tools/calculators" },
+  { icon: MultimeterIcon, name: "Circuit bench & multimeter", detail: "Volts, amps, ohms and continuity", href: "/tools/multimeter" },
+  { icon: LogicIcon, name: "Logic gate lab", detail: "Truth tables to binary adders", href: "/tools/logic" },
+  { icon: ChipIcon, name: "Virtual Arduino Uno", detail: "Real C++ on an emulated ATmega328P", href: "/tools/virtual-arduino" },
+  { icon: ScopeIcon, name: "Oscilloscope", detail: "PWM, filters and rectifiers", href: "/tools/oscilloscope" },
+  { icon: UsbIcon, name: "Live hardware monitor", detail: "Graph a real board over USB", href: "/hardware-monitor" },
+];
+
+const topics = [
+  { className: "electronics", area: "Electronics", title: "Electronics foundations", body: "Voltage, current and resistance, breadboards, and wiring an LED that won’t burn out.", lessons: ["Voltage, current and resistance", "Breadboards and jumper wires", "LEDs, resistors and safe wiring"], href: "/login", label: "Sign in to learn about Electronics foundations", cta: "Sign in to learn" },
+  { className: "programming", area: "Programming", title: "Microcontroller programming", body: "Turn a few lines of code into something you can see, hear and control.", lessons: ["Digital inputs and outputs", "Buttons, buzzers and GPIO", "Reading code and finding errors"], href: "/login", label: "Sign in to learn about Microcontroller programming", cta: "Sign in to learn" },
+  { className: "sensors", area: "IoT & sensors", title: "Smart Environment Monitor", body: "Read temperature and humidity, record real measurements and check them against each other.", lessons: ["Arduino Uno and ESP32 versions", "Sensor wiring and readings", "Evidence and teacher assessment"], href: "/showcase/smart-environment-monitor", label: "Try the Smart Environment Monitor sample lesson", cta: "Try the sample lesson" },
+  { className: "robotics", area: "Robotics", title: "Build a simple robot", body: "Bring motors, sensors and code together in a robot that avoids obstacles.", lessons: ["Motors and motor drivers", "Obstacle sensing", "Testing and troubleshooting"], href: "/learning-paths/first-robot", label: "Follow the First Robot Path", cta: "Follow the robot path" },
+];
+
+const teacherFeatures = [
+  { icon: ClipboardIcon, title: "Practical assessment", body: "Score the real build against a rubric, with photos, code and readings in one place." },
+  { icon: ChartIcon, title: "Learning analytics", body: "See attempts, quiz results and where each learner gets stuck." },
+  { icon: SparkIcon, title: "AI Lab Coach", body: "Guides learners with questions. It never marks practical work as passed." },
+  { icon: OfflineIcon, title: "Offline lessons", body: "Saved lessons stay available when the connection drops." },
+];
 
 export default function Home() {
-  const [query, setQuery] = useState("");
-  const [category, setCategory] = useState("All topics");
-  const filtered = topics.filter((topic) => (category === "All topics" || topic.category === category) && `${topic.title} ${topic.description} ${topic.lessons.join(" ")}`.toLowerCase().includes(query.trim().toLowerCase()));
-
-  return (
-    <div className={styles.home}>
-      <a className={styles.skipLink} href="#main">Skip to content</a>
-      <header className={styles.header}>
-        <div className={styles.headerInner}>
-          <Brand />
-          <a className={styles.explore} href="#build">Explore <span aria-hidden="true">⌄</span></a>
-          <form className={styles.search} role="search" onSubmit={(event) => { event.preventDefault(); document.getElementById("topics")?.scrollIntoView({ behavior: "smooth" }); }}>
-            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" /><path d="m16 16 5 5" /></svg>
-            <label className={styles.srOnly} htmlFor="topic-search">Find a learning topic</label>
-            <input id="topic-search" placeholder="Search learning topics" value={query} onChange={(event) => setQuery(event.target.value)} type="search" />
-            <button type="submit" className={styles.srOnly}>Search topics</button>
-          </form>
-          <nav className={styles.desktopNav} aria-label="Main navigation"><Link href="/3d-lab">3D Lab</Link><Link href="/tools">Virtual lab</Link><Link href="/learning-paths/first-robot">First robot path</Link><Link href="/projects">Projects</Link><Link href="/components">Components</Link><a href="#teachers">Teachers</a></nav>
-          <Link className={styles.signIn} href="/login">Sign in</Link>
-          <details className={styles.mobileMenu}><summary>Menu</summary><nav aria-label="Mobile navigation"><Link href="/3d-lab">3D Lab</Link><Link href="/tools">Virtual lab</Link><Link href="/learning-paths/first-robot">First robot path</Link><Link href="/projects">Projects</Link><Link href="/components">Components</Link><a href="#topics">Learning areas</a><a href="#teachers">For teachers</a></nav></details>
+  return <div className={styles.home}>
+    <a className={styles.skipLink} href="#main">Skip to content</a>
+    <PublicHeader />
+    <main id="main">
+      <section className={styles.hero} aria-labelledby="hero-title">
+        <div className={`container ${styles.heroGrid}`}>
+          <div className={styles.heroCopy}>
+            <p className={styles.heroKicker}>For schools, clubs and self-learners</p>
+            <h1 id="hero-title">Learn electronics and robotics by building real things.</h1>
+            <p className={styles.heroLead}>Guided projects for Arduino, ESP32 and Raspberry Pi Pico, a virtual lab for when the parts haven’t arrived, and practical assessment teachers can rely on.</p>
+            <div className={styles.heroActions}>
+              <Link className={styles.primaryButton} href="/projects">Start a project <ArrowRightIcon className={styles.buttonIcon} /></Link>
+              <Link className={styles.secondaryButton} href="/3d-lab">Launch 3D Lab</Link>
+            </div>
+            <dl className={styles.heroFacts}>
+              <div><dt>Guided projects</dt><dd>{buildProjects.length}</dd></div>
+              <div><dt>Boards supported</dt><dd>{boardCount}</dd></div>
+              <div><dt>Virtual lab tools</dt><dd>{labTools.length}</dd></div>
+            </dl>
+          </div>
+          <figure className={styles.heroFigure}>
+            <div className={styles.photoFrame}><Image src="/electronics-workbench.jpg" alt="Arduino Uno connected to a breadboard with jumper wires, an LED and a potentiometer" fill sizes="(max-width: 900px) 100vw, 560px" preload /></div>
+            <figcaption>Arduino Uno, breadboard and potentiometer: the kit for the first five projects.</figcaption>
+          </figure>
         </div>
-      </header>
+      </section>
 
-      <main id="main">
-        <section className={styles.hero} aria-labelledby="hero-title">
-          <div className={styles.container}>
-            <div className={styles.breadcrumb}>Home <span aria-hidden="true">/</span> Robotics &amp; IoT</div>
-            <div className={styles.heroGrid}>
-              <div className={styles.heroCopy}>
-                <p className={styles.kicker}>LEARN BY BUILDING REAL THINGS</p>
-                <h1 id="hero-title"><span className={styles.heroLine}>What do you</span>{" "}<span className={styles.heroLine}>want to</span>{" "}<span className={`${styles.heroLine} ${styles.heroAccent}`}>build today?</span></h1>
-                <p>Choose a project. STEMBuild helps you understand the parts, connect them safely, write the code, test what happens and fix problems one step at a time.</p>
-                <div className="inline"><Link className={styles.primaryButton} href="/3d-lab">Launch 3D Lab <span aria-hidden="true">→</span></Link><Link className="btn" href="/tools">No components? Virtual lab</Link><Link className="btn" href="/learning-paths/first-robot">First Robot Path</Link><Link className="btn" href="/projects">Explore Projects</Link></div>
-                <div className={styles.heroNote}>Beginner friendly <span aria-hidden="true">·</span> Real hardware <span aria-hidden="true">·</span> Honest evidence <span aria-hidden="true">·</span> Teacher support</div>
-              </div>
-              <figure className={styles.heroFigure}>
-                <div className={styles.photoFrame}><Image src="/electronics-workbench.jpg" alt="Arduino Uno connected to a breadboard with jumper wires, an LED and a potentiometer" fill sizes="(max-width: 760px) 100vw, 520px" preload /></div>
-                <figcaption><span className={styles.photoLabel}>YOUR WORKBENCH</span><span>Start small. Build something real.</span></figcaption>
-              </figure>
-            </div>
+      <section className={`container ${styles.section}`} aria-labelledby="start-title">
+        <div className="section-heading"><div><h2 id="start-title">Three ways to start</h2><p>Whatever you have in front of you, there’s a sensible first step.</p></div></div>
+        <div className={styles.startGrid}>
+          {startPaths.map(({ icon: Icon, title, body, href, cta }) => <Link key={href} href={href} className={styles.startCard}>
+            <span className="icon-tile"><Icon /></span>
+            <h3>{title}</h3>
+            <p>{body}</p>
+            <span className={styles.cardCta}>{cta} <ArrowRightIcon className={styles.ctaIcon} /></span>
+          </Link>)}
+        </div>
+      </section>
+
+      <section className={`container ${styles.section}`} aria-labelledby="projects-title">
+        <div className="section-heading"><div><h2 id="projects-title">Popular first projects</h2><p>Each one starts small and adds a single new idea at a time.</p></div><Link className="text-link" href="/projects">All {buildProjects.length} projects →</Link></div>
+        <div className={styles.projectGrid}>
+          {featured.map((project) => <Link key={project.slug} href={`/build/${project.slug}`} className={styles.projectCard}>
+            <span className={styles.projectMeta}>{project.level} · {project.area}</span>
+            <h3>{project.title}</h3>
+            <p>{project.summary}</p>
+            <span className={styles.projectFoot}><span>~{project.minutes} min</span><span>{project.boards.length} boards</span></span>
+          </Link>)}
+        </div>
+      </section>
+
+      <section className={styles.labBand} aria-labelledby="lab-title">
+        <div className={`container ${styles.labGrid}`}>
+          <div>
+            <h2 id="lab-title">No components yet? Use the virtual lab.</h2>
+            <p>The instruments an engineering student learns on, working in the browser. Build a circuit and measure it, watch a signal on an oscilloscope, or compile Arduino code and run it on a simulated chip.</p>
+            <Link className="btn btn-primary" href="/tools">Open the virtual lab</Link>
           </div>
-        </section>
+          <ul className={styles.toolList}>
+            {labTools.map(({ icon: Icon, name, detail, href }) => <li key={href}><Link href={href}><span className="icon-tile"><Icon /></span><span><strong>{name}</strong><span>{detail}</span></span><ArrowRightIcon className={styles.rowArrow} /></Link></li>)}
+          </ul>
+        </div>
+      </section>
 
-        <div className={styles.boardStrip}><div className={styles.container}><span>Learn with the board you have</span><div>Arduino Uno <span>Arduino Nano</span> ESP32 <span>Raspberry Pi Pico</span> BBC micro:bit <span>STM32</span></div></div></div>
+      <section id="topics" className={`container ${styles.section}`} aria-labelledby="topics-title">
+        <div className="section-heading"><div><h2 id="topics-title">Learn the ideas behind the build</h2><p>Projects give you a reason to learn. These areas explain why the circuit, code and hardware behave the way they do.</p></div><Link className="text-link" href="/components">Component library →</Link></div>
+        <div className={styles.topicGrid}>
+          {topics.map((topic) => <article key={topic.title} className={`${styles.topicCard} ${styles[topic.className]}`}>
+            <span className={styles.projectMeta}>{topic.area}</span>
+            <h3>{topic.title}</h3>
+            <p>{topic.body}</p>
+            <ul>{topic.lessons.map((lesson) => <li key={lesson}>{lesson}</li>)}</ul>
+            <Link href={topic.href} aria-label={topic.label} className={styles.cardCta}>{topic.cta} <ArrowRightIcon className={styles.ctaIcon} /></Link>
+          </article>)}
+        </div>
+      </section>
 
-        <section className={styles.labSpotlight} aria-labelledby="lab-spotlight-title">
-          <div className={styles.container}>
-            <div className={styles.spotlightCopy}>
-              <p className={styles.kicker}>YOUR VIRTUAL ELECTRONICS WORKSHOP</p>
-              <h2 id="lab-spotlight-title">Build. Wire. Code. Test.</h2>
-              <p>Try Arduino circuits, assemble an obstacle-avoiding robot, or position parts in a CAD-style workspace. Start in low-data mode; launch 3D only when you need it.</p>
-              <Link href="/3d-lab" className={styles.spotlightLink}>Explore all three workspaces <span aria-hidden="true">→</span></Link>
-            </div>
-            <div className={styles.spotlightSteps} aria-label="3D Lab learning steps">
-              <span><strong>01</strong> Assemble</span>
-              <span><strong>02</strong> Wire</span>
-              <span><strong>03</strong> Program</span>
-              <span><strong>04</strong> Test &amp; improve</span>
-            </div>
+      <BoardGallery />
+
+      <section id="teachers" className={styles.teacherBand} aria-labelledby="teacher-title">
+        <div className={`container ${styles.teacherGrid}`}>
+          <div>
+            <h2 id="teacher-title">Independent learners, with teacher oversight</h2>
+            <p>Learners submit evidence of the real build. Teachers review it against clear criteria and see exactly where help is needed: wiring, code, testing or troubleshooting.</p>
+            <Link className="btn" href="/teachers">Teacher setup guide</Link>
           </div>
-        </section>
-
-        <section id="build" className="home-build-section">
-          <div className={styles.container}>
-            <div className="home-build-heading"><div><p className={styles.kicker}>START WITH A PROJECT</p><h2>Pick something you want to make.</h2></div><p>You do not need to understand everything first. STEMBuild introduces the electronics, programming and troubleshooting when you need them.</p></div>
-            <div className="home-choice-grid">
-              {featuredProjects.map((project) => <Link className="home-choice-card" href={`/build/${project.slug}`} key={project.slug}>
-                <div className="inline"><span className="badge">{project.level}</span><span className="badge">{project.area}</span></div>
-                <h3>{project.title}</h3>
-                <p>{project.summary}</p>
-                <span className="text-link">Open Build Mode →</span>
-              </Link>)}
-            </div>
-            <div className="inline" style={{marginTop:20}}><Link className="btn btn-primary" href="/learning-paths/first-robot">Follow the First Robot Path</Link><Link className="btn" href="/projects">See all projects</Link><Link className="btn" href="/components">Find projects from my components</Link></div>
+          <div className={styles.teacherFeatures}>
+            {teacherFeatures.map(({ icon: Icon, title, body }) => <div key={title}><span className="icon-tile"><Icon /></span><h3>{title}</h3><p>{body}</p></div>)}
           </div>
-        </section>
-
-        <section className="home-build-section alt">
-          <div className={styles.container}>
-            <div className="home-build-heading"><div><p className={styles.kicker}>LEARN AT YOUR LEVEL</p><h2>Different learners need different amounts of help.</h2></div><p>The project can stay the same while STEMBuild changes how much guidance it gives you.</p></div>
-            <div className="home-level-grid">
-              <div className="card home-level-card"><span className="badge">Beginner</span><h3>I am new.</h3><p>Small steps, clear safety notes, component explanations and early tests before the project gets complicated.</p><Link className="text-link" href="/projects#Beginner">Start beginner projects →</Link></div>
-              <div className="card home-level-card"><span className="badge">Intermediate</span><h3>I have built before.</h3><p>More responsibility for wiring and code decisions, while STEMBuild still gives checkpoints and troubleshooting guidance.</p><Link className="text-link" href="/projects#Intermediate">Explore intermediate projects →</Link></div>
-              <div className="card home-level-card"><span className="badge">Advanced</span><h3>Give me a challenge.</h3><p>Start from the problem and requirements, plan your own implementation and use evidence to defend your engineering decisions.</p><Link className="text-link" href="/projects#Advanced">Take an advanced challenge →</Link></div>
-            </div>
-          </div>
-        </section>
-
-        <section className="home-build-section">
-          <div className={styles.container}>
-            <div className="home-build-heading"><div><p className={styles.kicker}>A HEALTHY WAY TO LEARN</p><h2>One clear next step at a time.</h2></div><p>STEMBuild should help a learner understand what happened—not reward clicking through screens.</p></div>
-            <div className="home-learning-loop">
-              <div><strong>1 · Choose</strong><span>Pick something you genuinely want to build.</span></div>
-              <div><strong>2 · Learn</strong><span>Understand only the components and ideas you need next.</span></div>
-              <div><strong>3 · Build</strong><span>Connect one safe subsystem at a time.</span></div>
-              <div><strong>4 · Test &amp; fix</strong><span>Observe the real result and troubleshoot one cause at a time.</span></div>
-              <div><strong>5 · Show &amp; improve</strong><span>Record honest evidence, get feedback and make the next version better.</span></div>
-            </div>
-          </div>
-        </section>
-
-        <section className="home-build-section alt">
-          <div className={styles.container}>
-            <div className="home-build-heading"><div><p className={styles.kicker}>USE WHAT YOU ALREADY HAVE</p><h2>Your components can choose the next project.</h2></div><p>Tick the parts in your kit and STEMBuild will show what you can build now, plus the few parts you are still missing.</p></div>
-            <div className="card">
-              <div className="grid grid-3">
-                <div><div className="eyebrow">1</div><h3 style={{marginTop:8}}>Add your parts</h3><p className="muted">Boards, sensors, motors, displays, power and communication modules.</p></div>
-                <div><div className="eyebrow">2</div><h3 style={{marginTop:8}}>See matching projects</h3><p className="muted">STEMBuild checks required parts and compatible boards.</p></div>
-                <div><div className="eyebrow">3</div><h3 style={{marginTop:8}}>Start Build Mode</h3><p className="muted">Move from a box of components to a guided working project.</p></div>
-              </div>
-              <div className="inline" style={{marginTop:18}}><Link className="btn btn-primary" href="/components">Open My Components</Link><Link className="btn" href="/projects">Browse all projects</Link></div>
-            </div>
-          </div>
-        </section>
-
-        <section id="topics" className={`${styles.container} ${styles.topicSection}`} aria-labelledby="topics-title">
-          <div className={styles.sectionHeading}><div><p className={styles.kicker}>LEARN THE IDEAS BEHIND THE BUILD</p><h2 id="topics-title">Understand the <span>foundations.</span></h2></div><Link href="/components">Explore component library <span aria-hidden="true">↗</span></Link></div>
-          <p className={styles.sectionIntro}>Projects give you a reason to learn. These learning areas help you understand why the circuit, code and hardware behave the way they do.</p>
-          <div className={styles.filters} role="group" aria-label="Filter learning areas">{categories.map((item) => <button key={item} type="button" aria-pressed={category === item} className={category === item ? styles.activeFilter : ""} onClick={() => setCategory(item)}>{item}</button>)}</div>
-          <p className={styles.resultCount} role="status">{filtered.length} learning {filtered.length === 1 ? "area" : "areas"}{query ? ` matching “${query}”` : ""}</p>
-          <div className={styles.topicGrid}>{filtered.map((topic) => <article key={topic.title} className={styles.topicCard}>
-            <div className={`${styles.topicBanner} ${styles[topic.className]}`}><span>{topic.category}</span><span className={styles.topicNumber} aria-hidden="true">0{topics.indexOf(topic) + 1}</span><span className={styles.topicTag}>{topic.tag}</span></div>
-            <div className={styles.topicBody}><h3>{topic.title}</h3><p>{topic.description}</p><details className={styles.outline}><summary>View learning outline <span aria-hidden="true">+</span></summary><ul>{topic.lessons.map((lesson) => <li key={lesson}>{lesson}</li>)}</ul></details><Link href={topic.category === "IoT & sensors" ? "/showcase/smart-environment-monitor" : "/login"} aria-label={topic.category === "IoT & sensors" ? "Try the Smart Environment Monitor sample lesson" : `Sign in to learn about ${topic.title}`}>{topic.category === "IoT & sensors" ? "Try the sample lesson" : "Sign in to learn"} <span aria-hidden="true">→</span></Link></div>
-          </article>)}</div>
-          {filtered.length === 0 && <div className={styles.emptyState}><h3>No topics found</h3><p>Try “Arduino”, “sensors” or “circuits”, or clear your search.</p><button type="button" onClick={() => { setQuery(""); setCategory("All topics"); }}>Show all learning areas</button></div>}
-        </section>
-
-        <BoardGallery />
-
-        <section id="teachers" className={`${styles.container} ${styles.teacherSection}`} aria-labelledby="teacher-title"><div><p className={styles.kicker}>FOR TEACHERS &amp; SCHOOLS</p><h2 id="teacher-title">Help learners build independently<br/>without losing oversight.</h2><p>Review project evidence, give feedback and see where a learner needs help with wiring, coding, testing or troubleshooting.</p><Link className={styles.primaryButton} href="/teachers">Teacher setup guide <span aria-hidden="true">→</span></Link></div><div className={styles.teacherFeatures}>{[["Practical assessment", "Review the real build using clear assessment criteria."], ["Learning analytics", "See attempts, quiz results and areas of difficulty."], ["AI Lab Coach", "Guide learners through questions and next steps without automatically passing practical work."], ["Offline lesson access", "Keep previously saved lessons available when the connection drops."]].map(([title, description]) => <div key={title}><h3>{title}</h3><p>{description}</p></div>)}</div></section>
-      </main>
-      <PublicFooter />
-    </div>
-  );
+        </div>
+      </section>
+    </main>
+    <PublicFooter />
+  </div>;
 }

@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PublicHeader } from "@/components/public-header";
 import { PublicFooter } from "@/components/public-footer";
+import { PageHeader } from "@/components/page-header";
+import { ArrowRightIcon } from "@/components/icons";
 import { VIRTUAL_TOOLS } from "@/components/tools/tool-shell";
 
 export const metadata: Metadata = {
@@ -10,52 +12,46 @@ export const metadata: Metadata = {
 };
 
 const ladder = [
-  { level: "Level 1 · Foundations", tools: "Multimeter, breadboard, resistor colour code, Ohm’s law", here: ["calculators", "multimeter"] },
-  { level: "Level 2 · Building & coding", tools: "Arduino programming, digital logic, serial monitor", here: ["virtual-arduino", "logic", "hardware-monitor"] },
-  { level: "Level 3 · Seeing signals", tools: "Oscilloscope, function generator, filters, PWM", here: ["oscilloscope"] },
-  { level: "Level 4 · Designing products", tools: "PCB design (KiCad), SPICE simulation (LTspice), CAD", here: [] },
-  { level: "Level 5 · Advanced systems", tools: "ROS 2, control systems, computer vision, TinyML", here: [] },
+  { level: "1", name: "Foundations", tools: "Multimeter, breadboard, resistor colour code, Ohm’s law", here: ["calculators", "multimeter"] },
+  { level: "2", name: "Building and coding", tools: "Arduino programming, digital logic, serial monitor", here: ["virtual-arduino", "logic", "hardware-monitor"] },
+  { level: "3", name: "Seeing signals", tools: "Oscilloscope, function generator, filters, PWM", here: ["oscilloscope"] },
+  { level: "4", name: "Designing products", tools: "PCB design (KiCad), circuit simulation (LTspice), CAD", here: [], external: "Free desktop apps: KiCad, LTspice, FreeCAD" },
+  { level: "5", name: "Advanced systems", tools: "ROS 2, control systems, computer vision, TinyML", here: [], external: "Free and open source: ROS 2, OpenCV, Edge Impulse" },
 ];
 
 export default function ToolsPage() {
   return <div>
     <PublicHeader />
     <main>
-      <section className="sample-hero">
-        <div className="container">
-          <div className="eyebrow">VIRTUAL ELECTRONICS LAB</div>
-          <h1>No components?<br/><span>Start engineering anyway.</span></h1>
-          <p className="lead">The instruments and parts engineers use, working in your browser: build circuits and measure them, read signals on an oscilloscope, design logic and program a virtual Arduino. Free, and no hardware needed.</p>
-          <p className="small muted">Simulations teach the ideas and the measuring habits. Real components still behave a little differently (tolerances, noise, worn batteries), so build the real thing when you can.</p>
-        </div>
-      </section>
-      <section className="container section stack">
-        <div className="tool-grid">
-          {VIRTUAL_TOOLS.map((tool) => <Link key={tool.slug} href={tool.href} className="card tool-card">
-            <span className="badge">{tool.level}</span>
-            <h2>{tool.name}</h2>
-            <p className="muted">{tool.summary}</p>
-            <p className="small tool-replaces"><strong>Stands in for:</strong> {tool.replaces}</p>
-            <span className="text-link">Open tool →</span>
+      <PageHeader
+        crumbs={[{ label: "Home", href: "/" }, { label: "Virtual lab" }]}
+        title="Virtual electronics lab"
+        description="The instruments an engineering student learns on, working in your browser. Practise measuring, debugging and coding before your parts arrive, then build the real thing."
+      />
+      <section className="container section">
+        <div className="vl-grid">
+          {VIRTUAL_TOOLS.map(({ slug, href, name, level, summary, replaces, icon: Icon }) => <Link key={slug} href={href} className="vl-card">
+            <div className="vl-card-top"><span className="icon-tile"><Icon /></span><span className="badge">{level}</span></div>
+            <h2>{name}</h2>
+            <p>{summary}</p>
+            <span className="tool-replaces">Replaces: {replaces}</span>
+            <span className="vl-open">Open <ArrowRightIcon className="vl-arrow" /></span>
           </Link>)}
         </div>
+      </section>
 
-        <div className="card">
-          <div className="eyebrow">The engineer’s tool ladder</div>
-          <h2 style={{ marginTop: 8 }}>From your first LED to professional engineering</h2>
-          <p className="muted">Engineers pick up tools in roughly this order. Each level builds on the one before it.</p>
-          <div className="table-wrap">
-            <table>
-              <thead><tr><th>Level</th><th>Real-world tools</th><th>Practise here</th></tr></thead>
-              <tbody>{ladder.map((row) => <tr key={row.level}><td><strong>{row.level}</strong></td><td>{row.tools}</td><td>{row.here.length ? <span className="inline">{row.here.map((slug) => { const tool = VIRTUAL_TOOLS.find((t) => t.slug === slug)!; return <Link key={slug} className="text-link" href={tool.href}>{tool.name}</Link>; })}</span> : <span className="muted">Coming next. Free desktop tools: KiCad, LTspice, FreeCAD, ROS 2.</span>}</td></tr>)}</tbody>
-            </table>
-          </div>
-        </div>
-
-        <div className="grid grid-2">
-          <div className="card"><div className="eyebrow">Also in STEMBuild</div><h2 style={{ marginTop: 8, fontSize: 24 }}>3D Lab</h2><p className="muted">Wire a real breadboard layout, assemble a robot and design CAD assemblies.</p><Link className="btn" href="/3d-lab">Open the 3D Lab</Link></div>
-          <div className="card"><div className="eyebrow">Ready for hardware?</div><h2 style={{ marginTop: 8, fontSize: 24 }}>Projects that match your kit</h2><p className="muted">Tick the parts you have and STEMBuild shows what you can build now.</p><Link className="btn" href="/components">My Components</Link></div>
-        </div>
+      <section className="container" aria-labelledby="ladder-title">
+        <div className="section-heading"><div><h2 id="ladder-title">From a first LED to professional engineering</h2><p>Engineers pick up their tools in roughly this order. Each level builds on the one before.</p></div></div>
+        <ol className="vl-ladder">
+          {ladder.map((row) => <li key={row.level}>
+            <span className="vl-ladder-level">{row.level}</span>
+            <div><h3>{row.name}</h3><p>{row.tools}</p></div>
+            <div className="vl-ladder-links">{row.here.length
+              ? row.here.map((slug) => { const tool = VIRTUAL_TOOLS.find((t) => t.slug === slug)!; return <Link key={slug} className="text-link" href={tool.href}>{tool.name}</Link>; })
+              : <span className="muted small">{row.external}</span>}</div>
+          </li>)}
+        </ol>
+        <p className="small muted" style={{ marginTop: 20 }}>Simulations teach the ideas and the measuring habits. Real components behave slightly differently (tolerances, noise, worn batteries), so build the real circuit when you can.</p>
       </section>
     </main>
     <PublicFooter />

@@ -18,7 +18,7 @@ export default function ThreeDLabPage() {
         <div className="container lab-ux-hero-layout">
           <div className="lab-ux-hero-copy">
             <div className="lab-ux-breadcrumb"><Link href="/">Home</Link><span aria-hidden="true">/</span><span>3D Lab</span></div>
-            <div className="eyebrow">STEMBUILD · INTERACTIVE MAKER SPACE</div>
+            <div className="eyebrow">STEMBuild · Interactive maker space</div>
             <h1>Build something.<br/><span>Make it work.</span></h1>
             <p className="lead">Place parts on a breadboard, connect real pin locations, test circuits and design robots. Start small and keep building.</p>
             <div className="lab-ux-hero-actions">
@@ -60,7 +60,7 @@ export default function ThreeDLabPage() {
 
       <section className="container lab3d-next-section">
         <div className="card">
-          <div className="eyebrow">ENGINE BOUNDARIES</div>
+          <div className="eyebrow">Engine boundaries</div>
           <h2 style={{marginTop:8}}>Simulation is a learning tool, not a substitute for physical testing.</h2>
           <p className="muted">The Free Build breadboard checks the supported electrical connections for a starter LED circuit. For compiled ATmega328P machine code and reviewed step-by-step wiring, use the <Link href="/3d-lab/guided">guided circuit lessons</Link>. Real hardware can differ because of power supplies, wiring, tolerances and component revisions.</p>
         </div>

@@ -375,7 +375,7 @@ function LabProjectSession({projectSlug,onProjectChange,active}: {projectSlug:La
   return <div className="lab3d-shell">
     <div className="lab3d-project-switcher">
       <div>
-        <div className="eyebrow">YOUR GUIDED PROJECT</div>
+        <div className="eyebrow">Your guided project</div>
         <h2>{project.title}</h2>
         <p className="small muted">{project.description}</p>
       </div>
@@ -407,7 +407,7 @@ function LabProjectSession({projectSlug,onProjectChange,active}: {projectSlug:La
       <div className="lab3d-webgl-launch-wrap">
         <div className="lab3d-webgl-launch-actions">
           <div>
-            <div className="eyebrow">3D WORKBENCH ACTIVE</div>
+            <div className="eyebrow">3D workbench active</div>
             <strong>WebGL loads only after you ask for it.</strong>
           </div>
           <button type="button" className="btn" onClick={()=>setWebglEnabled(false)}>Close 3D view</button>
@@ -417,7 +417,7 @@ function LabProjectSession({projectSlug,onProjectChange,active}: {projectSlug:La
     ) : (
       <section className="lab3d-safe-launch">
         <div>
-          <div className="eyebrow">3D VIEW · OPTIONAL</div>
+          <div className="eyebrow">3D view · Optional</div>
           <h2>Build first. Explore it in 3D when you’re ready.</h2>
           <p className="muted">The lesson starts in a lightweight view to save mobile data. Place parts, wire the circuit and edit Arduino code below, or open the full 3D view for rotation and clickable pins.</p>
           <div className="inline" style={{marginTop:12}}>
@@ -434,7 +434,7 @@ function LabProjectSession({projectSlug,onProjectChange,active}: {projectSlug:La
         <div className="lab3d-light-preview">
           <div className="lab3d-light-preview-head">
             <div>
-              <div className="eyebrow">LIGHTWEIGHT ASSEMBLY PREVIEW</div>
+              <div className="eyebrow">Lightweight assembly preview</div>
               <strong>{placed.length ? `${placed.length}/${project.parts.length} parts visible` : "Place a part to see it here"}</strong>
             </div>
             {placed.length ? <button type="button" className="lab3d-mini-btn" onClick={()=>setWebglEnabled(true)}>Open these parts in 3D</button> : null}
@@ -476,7 +476,7 @@ function LabProjectSession({projectSlug,onProjectChange,active}: {projectSlug:La
 
     <div className="lab3d-grid lab3d-grid-controls">
       <aside id="lab-assemble" className="lab3d-panel lab3d-parts-panel">
-        <div className="eyebrow">1 · ASSEMBLE</div>
+        <div className="eyebrow">1 · Assemble</div>
         <h2>Parts tray</h2>
         <p className="small muted">Tap Place to add a part to the preview. Launch 3D for rotation and pin selection.</p>
         <div className="lab3d-parts-list">
@@ -509,7 +509,7 @@ function LabProjectSession({projectSlug,onProjectChange,active}: {projectSlug:La
         <div className="lab3d-message" role="status">{message}</div>
         <div id="lab-wire" className="lab3d-wire-panel">
           <div className="lab3d-wire-header">
-            <div><div className="eyebrow">2 · WIRE</div><strong>Reviewed connections</strong></div>
+            <div><div className="eyebrow">2 · Wire</div><strong>Reviewed connections</strong></div>
             <button type="button" className="lab3d-mini-btn" onClick={undoWire} disabled={!connected.length}>Undo last wire</button>
           </div>
           <div className="lab3d-wire-list">
@@ -526,7 +526,7 @@ function LabProjectSession({projectSlug,onProjectChange,active}: {projectSlug:La
       </section>
 
       <aside id="lab-code" className="lab3d-panel lab3d-code-panel">
-        <div className="eyebrow">3 · PROGRAM</div>
+        <div className="eyebrow">3 · Program</div>
         <h2>Arduino sketch</h2>
         <p className="small muted">Edit this Arduino sketch and download it for your physical Uno. Full Firmware Mode can compile custom changes when needed.</p>
         <textarea className="lab3d-code-editor" value={code} onChange={(event)=>{setCode(event.target.value);stopSimulation();}} spellCheck={false} aria-label="Arduino sketch editor"/>
@@ -571,7 +571,7 @@ function LabProjectSession({projectSlug,onProjectChange,active}: {projectSlug:La
         </div>
 
         <div className="lab3d-export">
-          <div className="eyebrow">TAKE IT TO THE REAL WORLD</div>
+          <div className="eyebrow">Take it to the real world</div>
           <p className="small">Copy/download the same Arduino sketch and use the same reviewed wiring on the physical Uno. Simulation success does not replace physical validation.</p>
           <div className="inline"><button type="button" className="btn" onClick={copyCode}>Copy code</button><button type="button" className="btn" onClick={downloadSketch}>Download .ino</button></div>
         </div>

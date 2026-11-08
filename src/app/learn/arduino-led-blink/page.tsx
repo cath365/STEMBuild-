@@ -21,7 +21,7 @@ export default function ArduinoLedLearningPage() {
             <Link href="/learning-paths/first-robot">First Robot Path</Link><span aria-hidden="true">/</span>
             <span aria-current="page">LED learning journey</span>
           </nav>
-          <div className="eyebrow">STEMBUILD · START WITH UNDERSTANDING</div>
+          <div className="eyebrow">STEMBuild · Start with understanding</div>
           <h1>Learn it. Build it.<br/><span>Remember it.</span></h1>
           <p className="lead">An interactive Arduino Uno LED lesson that teaches you to understand components, assemble a circuit, solve problems and explain what you have learned—before moving on to your next robot.</p>
           <div className="led-hero-chips" aria-label="Lesson features">
@@ -36,7 +36,7 @@ export default function ArduinoLedLearningPage() {
       </section>
       <section className="container led-follow-up">
         <div className="card">
-          <div><div className="eyebrow">AFTER YOUR FIRST LED</div><h2>Your next challenge can be a push-button light.</h2>
+          <div><div className="eyebrow">After your first LED</div><h2>Your next challenge can be a push-button light.</h2>
             <p className="muted">Use what you learned about output pins and complete circuits, then add an input button. Learning goes further when you transfer a skill to a different project.</p></div>
           <Link className="btn" href="/build/button-light">Explore push-button circuit →</Link>
         </div>

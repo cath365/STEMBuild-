@@ -17,7 +17,7 @@ export default function GuidedCircuitLessonsPage() {
         <div className="container lab-ux-hero-layout">
           <div className="lab-ux-hero-copy">
             <div className="lab-ux-breadcrumb"><Link href="/3d-lab">3D Lab</Link><span aria-hidden="true">/</span><span>Guided lessons</span></div>
-            <div className="eyebrow">LEARN WITH GUIDANCE · ARDUINO UNO</div>
+            <div className="eyebrow">Learn with guidance · Arduino Uno</div>
             <h1>One circuit.<br/><span>Four clear steps.</span></h1>
             <p className="lead">Start with LED Blink or Push-Button Light. Follow each step to assemble the circuit, connect the wires and test your Arduino sketch.</p>
             <div className="lab-ux-hero-actions">
@@ -41,7 +41,7 @@ export default function GuidedCircuitLessonsPage() {
       <section className="container lab3d-section" id="guided-workbench" aria-label="Guided Arduino circuit lessons">
         <div className="guided-lab-route-intro">
           <div>
-            <p className="eyebrow">STEP-BY-STEP · ARDUINO UNO</p>
+            <p className="eyebrow">Step-by-step · Arduino Uno</p>
             <p className="muted">Your previous LED Blink and Push-Button Light work stays saved in this browser. This lesson workspace is separate from the Free Build breadboard.</p>
           </div>
           <Link href="/3d-lab#workbench" className="btn">Go to Free Build →</Link>

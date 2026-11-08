@@ -100,7 +100,7 @@ export function BuildMode({ project, components }: Props) {
     },
     {
       title: "Code and run the first test",
-      body: <><div className="eyebrow">FIRST TEST</div><h3 style={{marginTop:8}}>{project.firstTest}</h3><p>Watch the real result before adding more features. If the result is different from what you expected, record what happened instead of pretending the step passed.</p><div className="inline">{project.skills.map((skill) => <span className="badge" key={skill}>{skill}</span>)}</div><div className="card card-muted" style={{marginTop:18}}><strong>Board connected by USB?</strong><p className="small muted">Open the Live Hardware Monitor to see your board’s serial output and graph its readings in real time while you test.</p><Link className="text-link" href="/hardware-monitor" target="_blank">Open the Live Hardware Monitor →</Link></div></>,
+      body: <><div className="eyebrow">First test</div><h3 style={{marginTop:8}}>{project.firstTest}</h3><p>Watch the real result before adding more features. If the result is different from what you expected, record what happened instead of pretending the step passed.</p><div className="inline">{project.skills.map((skill) => <span className="badge" key={skill}>{skill}</span>)}</div><div className="card card-muted" style={{marginTop:18}}><strong>Board connected by USB?</strong><p className="small muted">Open the Live Hardware Monitor to see your board’s serial output and graph its readings in real time while you test.</p><Link className="text-link" href="/hardware-monitor" target="_blank">Open the Live Hardware Monitor →</Link></div></>,
     },
     {
       title: "Troubleshoot",
@@ -118,7 +118,7 @@ export function BuildMode({ project, components }: Props) {
 
   return <div className="build-mode">
     <section className="card build-setup">
-      <div><div className="eyebrow">Build setup</div><h2>{project.title}</h2><p className="muted">Choose the board in your hands and how much guidance you want.</p>{project.slug === "first-led" ? <Link className="text-link" href="/3d-lab">Try this project in the 3D Lab →</Link> : null}</div>
+      <div><h2>Set up your build</h2><p className="muted">Choose the board in your hands and how much guidance you want. Your progress is saved on this device.</p>{project.slug === "first-led" ? <Link className="text-link" href="/3d-lab">Try this project in the 3D Lab →</Link> : null}</div>
       <div className="build-setup-controls">
         <label className="field"><span>Your board</span><select className="select" value={board} onChange={(event) => setBoard(event.target.value)}>{project.boards.map((item) => <option key={item}>{item}</option>)}</select></label>
         <label className="field"><span>Your experience</span><select className="select" value={level} onChange={(event) => setLevel(event.target.value as LearningLevel)}>{levels.map((item) => <option key={item}>{item}</option>)}</select></label>
@@ -128,7 +128,7 @@ export function BuildMode({ project, components }: Props) {
     <div className="build-progress" aria-label="Build steps">{steps.map((item, index) => <button key={item.title} type="button" aria-current={step === index ? "step" : undefined} className={step === index ? "active" : step > index ? "done" : ""} onClick={() => goToStep(index)}><span>{step > index ? "✓" : index + 1}</span><small>{item.title}</small></button>)}</div>
 
     <section className="card build-step" ref={stepRef}>
-      <div className="eyebrow">STEP {step + 1} OF {steps.length}</div>
+      <div className="eyebrow">Step {step + 1} of {steps.length}</div>
       <h2>{steps[step].title}</h2>
       <div className="build-step-body">{steps[step].body}</div>
       <div className="build-step-nav">

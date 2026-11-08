@@ -3,6 +3,7 @@ import Link from "next/link";
 import { PublicHeader } from "@/components/public-header";
 import { PublicFooter } from "@/components/public-footer";
 import { HardwareMonitor } from "@/components/hardware-monitor";
+import { PageHeader } from "@/components/page-header";
 
 export const metadata: Metadata = {
   title: "Live Hardware Monitor",
@@ -30,14 +31,11 @@ export default function HardwareMonitorPage() {
   return <div>
     <PublicHeader />
     <main>
-      <section className="sample-hero">
-        <div className="container">
-          <div className="eyebrow">LIVE HARDWARE MONITOR</div>
-          <h1>Plug in your board.<br/><span>See what it really does.</span></h1>
-          <p className="lead">Connect an Arduino, ESP32, Raspberry Pi Pico or micro:bit with a USB cable and watch its serial output and sensor readings live. No Arduino IDE needed.</p>
-          <p className="small muted">Works in Chrome and Edge on computers. Nothing is uploaded from this page: readings stay in your browser unless you attach them to a signed-in practical submission.</p>
-        </div>
-      </section>
+      <PageHeader
+        crumbs={[{ label: "Home", href: "/" }, { label: "Virtual lab", href: "/tools" }, { label: "Live hardware monitor" }]}
+        title="Live hardware monitor"
+        description="Connect an Arduino, ESP32, Raspberry Pi Pico or micro:bit by USB and watch its serial output and sensor readings live. Works in Chrome and Edge; readings stay in your browser."
+      />
       <section className="container section stack">
         <HardwareMonitor />
         <div className="grid grid-2">

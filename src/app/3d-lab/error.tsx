@@ -16,7 +16,7 @@ export default function ThreeDLabError({
 
   return <main className="container" style={{padding:"64px 18px"}}>
     <section className="card" style={{maxWidth:760,margin:"0 auto"}}>
-      <div className="eyebrow">3D LAB RECOVERY</div>
+      <div className="eyebrow">3D Lab recovery</div>
       <h1 style={{marginTop:8}}>The 3D Lab hit a loading problem.</h1>
       <p className="muted">Your browser can retry the route without losing the rest of STEMBuild. The 3D/WebGL engine is optional, so you can also return to the First Robot Path and continue with the normal guided build.</p>
       <div className="inline" style={{marginTop:16}}>

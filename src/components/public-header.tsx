@@ -5,15 +5,13 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Brand } from "@/components/brand";
 
+// Five destinations; secondary pages (robot path, sample lesson, about) live in the footer.
 const links = [
-  { label: "3D Lab", href: "/3d-lab" },
+  { label: "Projects", href: "/projects", also: ["/build", "/learning-paths", "/showcase", "/learn"] },
   { label: "Virtual lab", href: "/tools", also: ["/hardware-monitor"] },
-  { label: "First robot path", href: "/learning-paths/first-robot" },
-  { label: "Projects", href: "/projects", also: ["/build"] },
+  { label: "3D Lab", href: "/3d-lab" },
   { label: "Components", href: "/components" },
-  { label: "Sample lesson", href: "/showcase/smart-environment-monitor" },
-  { label: "For teachers", href: "/teachers" },
-  { label: "About", href: "/about" },
+  { label: "For teachers", href: "/teachers", also: ["/about"] },
 ];
 
 function isActive(pathname: string, link: (typeof links)[number]) {
@@ -35,7 +33,7 @@ export function PublicHeader() {
     <div className="container">
       <Brand />
       <button type="button" className="public-menu-toggle" aria-expanded={open} aria-controls="public-nav" onClick={() => setOpen((value) => !value)}>
-        <span aria-hidden="true">{open ? "✕" : "☰"}</span><span className="public-menu-label">{open ? "Close" : "Menu"}</span>
+        <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">{open ? <path d="M6 6l12 12M18 6 6 18" /> : <path d="M4 7h16M4 12h16M4 17h16" />}</svg><span className="public-menu-label">{open ? "Close" : "Menu"}</span>
       </button>
       <nav id="public-nav" aria-label="Main navigation" data-open={open}>
         {links.map((link) => <Link key={link.href} href={link.href} aria-current={isActive(pathname, link) ? "page" : undefined} onClick={() => setOpen(false)}>{link.label}</Link>)}

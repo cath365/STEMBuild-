@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { PublicHeader } from "@/components/public-header";
 import { PublicFooter } from "@/components/public-footer";
+import { PageHeader } from "@/components/page-header";
 import { ComponentBrowser } from "@/components/component-browser";
+import { componentCatalog } from "@/lib/build-catalog";
 
 export const metadata: Metadata = {
   title: "Component Library",
@@ -12,13 +14,11 @@ export default function ComponentsPage() {
   return <div>
     <PublicHeader />
     <main>
-      <section className="sample-hero">
-        <div className="container">
-          <div className="eyebrow">STEMBuild COMPONENT LIBRARY</div>
-          <h1>Know your parts.<br/><span>Build with confidence.</span></h1>
-          <p className="lead">Learn what each component does, how to connect it safely, which boards it works with and what real projects you can build with it.</p>
-        </div>
-      </section>
+      <PageHeader
+        crumbs={[{ label: "Home", href: "/" }, { label: "Components" }]}
+        title="Component library"
+        description={`${componentCatalog.length} parts with voltages, interfaces and safety notes. Tick the ones in your kit to see which projects you can build.`}
+      />
       <section className="container section">
         <ComponentBrowser />
       </section>

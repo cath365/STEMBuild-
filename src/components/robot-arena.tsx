@@ -134,7 +134,7 @@ export function RobotArena({active=true}:{active?:boolean}){
  function addBlock(x:number,z:number){if(running)return;if(!Number.isFinite(x)||!Number.isFinite(z)){setMessage('Enter valid block coordinates.');return;}if(blocks.length>=20){setMessage('Maximum 20 obstacles. Remove one to add another.');return;}x=Math.max(-78,Math.min(78,x));z=Math.max(-78,Math.min(78,z));if(blocks.some(b=>Math.abs(b.x-x)<23&&Math.abs(b.z-z)<23)){setMessage('Choose a clear position for the new block.');return;}if(collides(robot.x,robot.z,[{id:0,x,z,size:22}])){setMessage('Keep blocks clear of the robot.');return;}setBlocks(b=>[...b,{id:Date.now(),x,z,size:22}]);}
  function download(){const url=URL.createObjectURL(new Blob([robotSketch(threshold)],{type:'text/plain'}));const a=document.createElement('a');a.href=url;a.download='stembuild-obstacle-robot.ino';a.click();URL.revokeObjectURL(url);}
  return <section className="robot-lab" id="robot-arena">
-  <div className="eyebrow">ROBOTICS · BUILD AND TEST</div><h2>Obstacle-avoiding robot</h2>
+  <div className="eyebrow">Robotics · Build and test</div><h2>Obstacle-avoiding robot</h2>
   <p>Assemble a two-wheel Uno robot and add blocks to its test arena. This model tests the generated avoidance logic; arbitrary Arduino code execution and motor electronics are not connected to this arena yet.</p>
   <div className="lab-project-save">
    <p role="status">{saveStatus}</p>

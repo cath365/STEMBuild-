@@ -79,7 +79,7 @@ export default async function ComponentDetailPage({ params }: { params: Promise<
           </section>
 
           {pinout ? <section className="card">
-            <div className="eyebrow">PIN / ROLE GUIDE</div>
+            <div className="eyebrow">Pin and role guide</div>
             <h2 style={{marginTop:8}}>{pinout.title}</h2>
             <p className="small muted">{pinout.orientationNote}</p>
             <div className="pinout-visual" role="list">

@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 };
 
 export default function Page() {
-  return <ToolShell slug="logic" eyebrow="LEVEL 2 · LOGIC GATE LAB" title="Ones and zeros" accent="make decisions." intro="Every computer is built from logic gates. Toggle inputs, watch outputs and see the truth table, from a single AND gate to the adder inside a processor.">
+  return <ToolShell slug="logic" description="Every processor is built from logic gates. Toggle the inputs, watch the outputs and read the truth table, from a single AND gate to a binary adder.">
       <LogicLab />
   </ToolShell>;
 }

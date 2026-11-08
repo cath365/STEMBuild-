@@ -236,7 +236,7 @@ export function CircuitBench() {
       </div>
       <p className="small muted" style={{ margin: "8px 0 0" }}>{PRESETS.find((p) => p.id === presetId)?.summary}</p>
       <div className="bench-palette" role="group" aria-label="Tools">
-        <button type="button" className={tool.kind === "probe" ? "chip active" : "chip"} aria-pressed={tool.kind === "probe"} onClick={() => { setTool({ kind: "probe" }); setPending(null); }}>🔍 Measure</button>
+        <button type="button" className={tool.kind === "probe" ? "chip active" : "chip"} aria-pressed={tool.kind === "probe"} onClick={() => { setTool({ kind: "probe" }); setPending(null); }}>Measure</button>
         <button type="button" className={tool.kind === "select" ? "chip active" : "chip"} aria-pressed={tool.kind === "select"} onClick={() => { setTool({ kind: "select" }); setPending(null); }}>Select / edit</button>
         {(["wire", "resistor", "led", "battery", "switch"] as ElementKind[]).map((kind) => <button key={kind} type="button" className={tool.kind === "place" && tool.element === kind ? "chip active" : "chip"} aria-pressed={tool.kind === "place" && tool.element === kind} onClick={() => { setTool({ kind: "place", element: kind }); setPending(null); }}>+ {kind === "led" ? "LED" : kind}</button>)}
       </div>
