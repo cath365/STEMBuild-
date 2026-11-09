@@ -38,6 +38,17 @@ export function InviteForm({ action, email }: { action: Action; email: string | 
   </form>;
 }
 
+export function SetupForm({ action }: { action: Action }) {
+  const [state, submit, pending] = useActionState(action, {});
+  return <form action={submit} className="form">
+    <div className="field"><label htmlFor="displayName">Your name</label><input className="input" id="displayName" name="displayName" required autoComplete="name" maxLength={80} /></div>
+    <div className="field"><label htmlFor="email">Email</label><input className="input" id="email" name="email" type="email" required autoComplete="email" /><span className="small muted">You will sign in with this email.</span></div>
+    <PasswordFields />
+    {state.error ? <div className="error" role="alert">{state.error}</div> : null}
+    <button className="btn btn-primary" disabled={pending}>{pending ? "Creating account…" : "Create administrator account"}</button>
+  </form>;
+}
+
 export function ResetForm({ action }: { action: Action }) {
   const [state, submit, pending] = useActionState(action, {});
   return <form action={submit} className="form">

@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { hashPassword } from "@/lib/password";
 import { createSession, getCurrentUser, requireRole } from "@/lib/session";
+import { setupIsOpen } from "@/lib/setup";
 import { INVITE_TTL_MS, RESET_TTL_MS, hashToken, joinCodeCandidates, newJoinCode, newToken, tokenStatus, validateDisplayName, validateEmail, validateNewPassword } from "@/lib/account-tokens";
 
 export type FormState = { error?: string; link?: string; message?: string };
@@ -121,6 +122,36 @@ export async function createAdminResetLink(userId: string, _: FormState): Promis
   const user = await db.user.findUnique({ where: { id: userId } });
   if (!user) return { error: "User not found." };
   return { link: await issueResetLink(user.id, admin.id), message: `Reset link for ${user.displayName}. It works once and expires in 24 hours.` };
+}
+
+// ---------- First run: the very first administrator ----------
+
+export async function createFirstAdmin(_: FormState, formData: FormData): Promise<FormState> {
+  const name = validateDisplayName(String(formData.get("displayName") ?? ""));
+  if ("error" in name) return { error: name.error };
+  const email = validateEmail(String(formData.get("email") ?? ""));
+  if ("error" in email) return { error: email.error };
+  const password = String(formData.get("password") ?? "");
+  const problem = validateNewPassword(password, String(formData.get("confirm") ?? ""), email.value);
+  if (problem) return { error: problem };
+  const passwordHash = await hashPassword(password);
+  let admin: { id: string } | "closed" | "taken";
+  try {
+    // Serializable: if two people submit at the same moment, only one can become the first admin.
+    admin = await db.$transaction(async (tx) => {
+      if ((await tx.user.count({ where: { role: "ADMIN" } })) > 0) return "closed" as const;
+      if (await tx.user.findUnique({ where: { email: email.value } })) return "taken" as const;
+      return tx.user.create({ data: { displayName: name.value, email: email.value, passwordHash, role: "ADMIN" }, select: { id: true } });
+    }, { isolationLevel: "Serializable" });
+  } catch (error) {
+    // A serialization conflict means someone else finished first; anything else is a real failure.
+    if (await setupIsOpen()) throw error;
+    admin = "closed";
+  }
+  if (admin === "closed") return { error: "An administrator already exists, so setup is closed. Sign in instead." };
+  if (admin === "taken") return { error: "An account already uses this email. Use a different email for the administrator." };
+  await createSession(admin.id);
+  redirect("/dashboard/admin");
 }
 
 // ---------- Public: accept an invitation, reset a password ----------
