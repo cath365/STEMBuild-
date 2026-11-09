@@ -1,0 +1,127 @@
+/* Component lessons (/components/[slug]) and the learning roadmap (/start). */
+
+.btn-small { min-height: 32px; padding: 4px 12px; font-size: 13px; }
+
+.guide-section h2 { scroll-margin-top: 90px; }
+.guide-section > p { line-height: 1.65; }
+
+.guide-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; margin: 18px 0 0; }
+.guide-facts > div { background: var(--ds-subtle); border: 1px solid var(--ds-line); border-radius: var(--ds-radius); padding: 10px 12px; }
+.guide-facts dt { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--ds-muted); }
+.guide-facts dd { margin: 4px 0 0; font-weight: 500; color: var(--ds-text); }
+.guide-facts-wide { grid-template-columns: 1fr; }
+.guide-facts-wide > div { display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: 12px; align-items: baseline; }
+.guide-facts-wide dd { margin: 0; font-weight: 400; }
+
+/* Board picker */
+.mcu-picker { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin: 14px 0 6px; }
+.mcu-choice { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; padding: 10px 12px; border: 1px solid var(--ds-line-strong); border-radius: var(--ds-radius); background: var(--ds-surface); color: var(--ds-text); cursor: pointer; font: inherit; }
+.mcu-choice span { font-size: 12px; color: var(--ds-muted); }
+.mcu-choice:hover { border-color: var(--ds-accent); }
+.mcu-choice[aria-checked="true"] { border-color: var(--ds-accent); background: var(--brand-blue-soft, #eaf2ff); box-shadow: inset 0 0 0 1px var(--ds-accent); }
+.mcu-choice:focus-visible { outline: 2px solid var(--ds-accent); outline-offset: 2px; }
+
+.guide-warnings { margin: 14px 0 4px; }
+.guide-warnings p { margin: 0; }
+.guide-warnings p + p { margin-top: 6px; }
+
+/* Wiring diagram */
+.wiring-diagram { display: block; width: 100%; height: auto; margin: 16px 0; font-family: var(--ds-font); }
+.wd-board { fill: #0f3a2e; stroke: #0a2a21; }
+.wd-part { fill: var(--ds-subtle); stroke: var(--ds-line-strong); }
+.wd-title { font-size: 14px; font-weight: 700; fill: var(--ds-text); }
+.wd-title-light { fill: #e8f5ef; }
+.wd-pin { font-size: 12.5px; font-family: var(--ds-mono); fill: var(--ds-text); }
+.wd-pin-light { fill: #e8f5ef; }
+.wd-ext { font-size: 12px; fill: var(--ds-text-2); font-style: italic; }
+.wd-via { fill: #fff; stroke: var(--ds-line-strong); }
+.wd-via-warn { fill: #fff8ec; stroke: var(--brand-orange, #f29200); }
+.wd-via-text { font-size: 12px; font-weight: 600; fill: var(--ds-text); }
+
+.guide-wiring-table { width: 100%; min-width: 0; border-collapse: collapse; font-size: 14px; }
+.guide-wiring-table th, .guide-wiring-table td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--ds-line); }
+.guide-wiring-table thead th { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--ds-muted); background: var(--ds-subtle); }
+.guide-wiring-table tbody th { font-weight: 600; white-space: nowrap; }
+.guide-wiring-table tbody th small { display: block; margin-left: 16px; font-weight: 400; color: var(--ds-muted); }
+.guide-wiring-table td p { margin: 0; }
+.guide-wiring-table td p + p { margin-top: 4px; }
+.guide-wiring-table .row-warn { background: #fffaf0; }
+.role-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 7px; vertical-align: 1px; }
+.guide-warn { color: #9a4d00; font-weight: 600; }
+
+/* Code */
+.guide-code-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-top: 8px; }
+.guide-code-head h2 { margin: 0; }
+.segmented { display: inline-flex; border: 1px solid var(--ds-line-strong); border-radius: var(--ds-radius); overflow: hidden; }
+.segmented button { padding: 6px 14px; border: 0; background: var(--ds-surface); color: var(--ds-text-2); font: inherit; font-size: 14px; cursor: pointer; }
+.segmented button + button { border-left: 1px solid var(--ds-line-strong); }
+.segmented button[aria-selected="true"] { background: var(--ds-text); color: #fff; }
+.guide-code-wrap { position: relative; margin: 12px 0; }
+.guide-code-wrap .btn { position: absolute; top: 10px; right: 10px; z-index: 1; }
+.guide-code { margin: 0; max-height: 540px; overflow: auto; padding: 16px 18px; border-radius: var(--ds-radius-lg); background: #0d1b2a; color: #e6edf5; font-family: var(--ds-mono); font-size: 13px; line-height: 1.6; tab-size: 2; }
+.guide-code:focus-visible { outline: 2px solid var(--ds-accent); outline-offset: 2px; }
+
+.guide-try { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; background: linear-gradient(120deg, #f2f8ff, #fff); }
+.guide-try > div { flex: 1 1 320px; }
+
+.guide-mistakes { margin: 12px 0 0; padding-left: 20px; line-height: 1.6; }
+.guide-mistakes li + li { margin-top: 6px; }
+
+/* Check question */
+.guide-options { display: grid; gap: 8px; margin-top: 14px; }
+.guide-option { text-align: left; padding: 12px 14px; border: 1px solid var(--ds-line-strong); border-radius: var(--ds-radius); background: var(--ds-surface); color: var(--ds-text); font: inherit; cursor: pointer; }
+.guide-option:hover { border-color: var(--ds-accent); }
+.guide-option.is-right { border-color: #188038; background: #e9f6ee; }
+.guide-option.is-wrong { border-color: #c5221f; background: #fdeceb; }
+.guide-feedback { margin-top: 12px; padding: 12px 14px; border-radius: var(--ds-radius); }
+.guide-feedback.is-right { background: #e9f6ee; }
+.guide-feedback.is-wrong { background: #fdeceb; }
+
+.guide-stage-list { list-style: none; margin: 10px 0 14px; padding: 0; font-size: 14px; }
+.guide-stage-list li { padding: 5px 0 5px 12px; border-left: 2px solid var(--ds-line); }
+.guide-stage-list li[aria-current="step"] { border-left-color: var(--ds-accent); font-weight: 600; }
+
+/* Roadmap */
+.start-banner { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 22px; }
+.start-banner > div { flex: 1 1 360px; }
+.lesson-steps { list-style: none; padding: 0; margin: 14px 0 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+.lesson-steps h3 { margin: 10px 0 4px; font-size: 16px; }
+.roadmap-number { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--ds-text); color: #fff; font-weight: 700; font-size: 14px; flex: none; }
+.roadmap-summary { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 18px; margin-top: 14px; }
+.roadmap-summary > div { flex: 1 1 360px; }
+.roadmap-meter { height: 10px; border-radius: 999px; background: var(--ds-line); overflow: hidden; margin: 10px 0 8px; }
+.roadmap-meter span { display: block; height: 100%; background: var(--brand-teal, #0f9d8a); transition: width .3s ease; }
+.roadmap-stages { list-style: none; padding: 0; margin: 14px 0 0; display: grid; gap: 14px; }
+.roadmap-stage[data-current="true"] { border-color: var(--ds-accent); box-shadow: 0 0 0 1px var(--ds-accent); }
+.roadmap-stage-head { display: flex; align-items: flex-start; gap: 12px; }
+.roadmap-stage-head > div { flex: 1; }
+.roadmap-stage-head h3 { margin: 2px 0 2px; }
+.roadmap-count { font-family: var(--ds-mono); font-weight: 600; color: var(--ds-text-2); }
+.roadmap-parts { list-style: none; padding: 0; margin: 14px 0 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.roadmap-part { display: inline-flex; align-items: center; gap: 6px; padding: 6px 11px; border: 1px solid var(--ds-line-strong); border-radius: 999px; color: var(--ds-text); text-decoration: none; font-size: 14px; background: var(--ds-surface); }
+.roadmap-part:hover { border-color: var(--ds-accent); }
+.roadmap-part.is-learned { border-color: #188038; background: #e9f6ee; }
+.roadmap-part small, .sim-key { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--ds-accent); border: 1px solid currentColor; border-radius: 4px; padding: 0 4px; }
+.roadmap-more { margin-top: 10px; }
+.roadmap-more summary { cursor: pointer; font-size: 14px; color: var(--ds-text-2); }
+.roadmap-stage-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--ds-line); }
+.roadmap-stage-grid h4 { margin: 0 0 6px; font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--ds-muted); }
+.roadmap-stage-grid ul { margin: 0; padding-left: 18px; font-size: 14px; line-height: 1.6; }
+.roadmap-stage-grid p { margin: 0 0 10px; }
+.career-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; margin-top: 14px; }
+.career-grid h3 { margin: 0 0 6px; font-size: 16px; }
+
+.wiring-diagram-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+@media (max-width: 640px) {
+  .guide-facts-wide > div { grid-template-columns: 1fr; gap: 2px; }
+  .mcu-picker { grid-template-columns: 1fr 1fr; }
+  .wiring-diagram { min-width: 600px; }
+  .guide-wiring-table thead { display: none; }
+  .guide-wiring-table, .guide-wiring-table tbody, .guide-wiring-table tr, .guide-wiring-table th, .guide-wiring-table td { display: block; width: 100%; }
+  .guide-wiring-table tr { padding: 10px 0; border-bottom: 1px solid var(--ds-line); }
+  .guide-wiring-table tbody th, .guide-wiring-table td { border: 0; padding: 3px 12px; white-space: normal; }
+  .guide-wiring-table td::before { content: attr(data-label); display: block; color: var(--ds-muted); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+  .guide-wiring-table td[data-empty="true"] { display: none; }
+  .guide-code { font-size: 12px; }
+}

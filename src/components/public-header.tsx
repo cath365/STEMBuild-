@@ -11,7 +11,7 @@ const links = [
   { label: "Maker Studio", href: "/studio" },
   { label: "Virtual lab", href: "/tools", also: ["/hardware-monitor"] },
   { label: "3D Lab", href: "/3d-lab" },
-  { label: "Components", href: "/components" },
+  { label: "Learn", href: "/start", also: ["/components"] },
   { label: "For teachers", href: "/teachers", also: ["/about"] },
 ];
 

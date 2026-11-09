@@ -438,7 +438,7 @@ export function MakerStudio() {
     void decodeBuild(encoded).then((data) => {
       const shared = data ? parseDoc(JSON.stringify(data)) : null;
       if (!shared) { window.alert("That shared build link is damaged or incomplete."); return; }
-      if (window.confirm(`Open the shared build (${shared.parts.length} parts)? It replaces the build in your workbench. Export yours first if you want to keep it.`)) save(shared);
+      if (window.confirm(`Open this circuit (${shared.parts.length} parts) with its code? It replaces the build in your workbench. Export yours first if you want to keep it.`)) save(shared);
     });
     // Runs once on arrival.
     // eslint-disable-next-line react-hooks/exhaustive-deps

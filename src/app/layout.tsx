@@ -12,6 +12,7 @@ import "./ux-refresh.css";
 import "./virtual-lab.css";
 import "./design-system.css";
 import "./studio.css";
+import "./learn-guides.css";
 import { PwaRegister } from "@/components/pwa-register";
 import { ConnectivityStatus } from "@/components/connectivity-status";
 
