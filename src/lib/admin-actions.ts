@@ -9,6 +9,8 @@ import { requireRole } from "@/lib/session";
 import { componentBySlug } from "@/lib/build-catalog";
 import { deleteEvidence, storeEvidence } from "@/lib/evidence-storage";
 import { evidenceSignature } from "@/lib/validation";
+import { validateDisplayName, validateEmail, validateNewPassword } from "@/lib/account-tokens";
+import type { FormState } from "@/lib/account-actions";
 
 function slugify(value: string) { return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""); }
 
@@ -20,19 +22,30 @@ export async function createSchool(formData: FormData) {
   revalidatePath("/dashboard/admin/schools");
 }
 
-export async function createUser(formData: FormData) {
+/** Returns a message for the form instead of throwing, so a mistake never shows an error page. */
+export async function createUser(_: FormState, formData: FormData): Promise<FormState> {
   await requireRole("ADMIN");
-  const displayName = String(formData.get("displayName") ?? "").trim();
-  const email = String(formData.get("email") ?? "").trim().toLowerCase();
-  const password = String(formData.get("password") ?? "");
+  const name = validateDisplayName(String(formData.get("displayName") ?? ""));
+  if ("error" in name) return { error: name.error };
+  const email = validateEmail(String(formData.get("email") ?? ""));
+  if ("error" in email) return { error: email.error };
   const role = String(formData.get("role") ?? "STUDENT") as "STUDENT" | "TEACHER" | "ADMIN";
+  if (!["STUDENT", "TEACHER", "ADMIN"].includes(role)) return { error: "Choose a role." };
   const schoolId = String(formData.get("schoolId") ?? "") || null;
-  if (!["STUDENT", "TEACHER", "ADMIN"].includes(role)) throw new Error("Invalid role.");
-  if (schoolId && !await db.school.findUnique({ where: { id: schoolId } })) throw new Error("School not found.");
-  if (!displayName || !email.includes("@")) throw new Error("Name and a valid email are required.");
+  if (schoolId && !await db.school.findUnique({ where: { id: schoolId } })) return { error: "That school no longer exists. Refresh the page and choose again." };
+  const password = String(formData.get("password") ?? "");
+  const problem = validateNewPassword(password, password, email.value);
+  if (problem) return { error: problem };
+  if (await db.user.findUnique({ where: { email: email.value } })) return { error: `An account already uses ${email.value}. Find it in the list below; use "Reset link" if that person has forgotten the password.` };
   const passwordHash = await hashPassword(password);
-  await db.user.create({ data: { displayName, email, passwordHash, role, schoolId } });
+  try {
+    await db.user.create({ data: { displayName: name.value, email: email.value, passwordHash, role, schoolId } });
+  } catch (error) {
+    if ((error as { code?: string }).code === "P2002") return { error: `An account already uses ${email.value}.` };   // created at the same moment
+    throw error;
+  }
   revalidatePath("/dashboard/admin/users");
+  return { message: `${role[0] + role.slice(1).toLowerCase()} account created for ${name.value} (${email.value}). Share the temporary password privately.` };
 }
 
 export async function createHardware(formData: FormData) {

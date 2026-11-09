@@ -49,6 +49,23 @@ export function SetupForm({ action }: { action: Action }) {
   </form>;
 }
 
+/** Admin: create an account directly. Clears itself after a success so the next one starts fresh. */
+export function CreateUserForm({ action, schools }: { action: Action; schools: { id: string; name: string }[] }) {
+  const [state, submit, pending] = useActionState(action, {});
+  return <form action={submit} className="form" style={{ marginTop: 14 }} key={state.message ?? "new"}>
+    <div className="grid grid-2">
+      <div className="field"><label htmlFor="new-name">Name</label><input id="new-name" className="input" name="displayName" required maxLength={80} /></div>
+      <div className="field"><label htmlFor="new-email">Email</label><input id="new-email" className="input" type="email" name="email" required /></div>
+      <div className="field"><label htmlFor="new-role">Role</label><select id="new-role" className="select" name="role" defaultValue="STUDENT"><option value="STUDENT">Student</option><option value="TEACHER">Teacher</option><option value="ADMIN">Administrator</option></select></div>
+      <div className="field"><label htmlFor="new-school">School</label><select id="new-school" className="select" name="schoolId"><option value="">No school</option>{schools.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></div>
+    </div>
+    <div className="field"><label htmlFor="new-password">Temporary password (12+ characters)</label><input id="new-password" className="input" type="password" name="password" minLength={12} required autoComplete="new-password" /></div>
+    {state.error ? <div className="error" role="alert">{state.error}</div> : null}
+    {state.message ? <div className="notice" role="status">{state.message}</div> : null}
+    <button className="btn btn-primary" disabled={pending}>{pending ? "Creating…" : "Create user"}</button>
+  </form>;
+}
+
 export function ResetForm({ action }: { action: Action }) {
   const [state, submit, pending] = useActionState(action, {});
   return <form action={submit} className="form">
