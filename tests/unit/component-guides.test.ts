@@ -98,7 +98,7 @@ test("code is adapted to each board", () => {
 test("Try-it builds open as wired Maker Studio circuits that match the guide", () => {
   const unoPins = new Set(UNO_PINS.map((p) => p.id));
   const withStudio = COMPONENT_GUIDES.filter((g) => g.studio);
-  assert.equal(withStudio.length, 9);
+  assert.equal(withStudio.length, 19);
   for (const guide of withStudio) {
     const doc = studioDocFor(guide)!;
     assert.ok(doc, guide.slug);

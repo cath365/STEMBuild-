@@ -38,6 +38,7 @@ export function buildNets(doc: Pick<StudioDoc, "parts" | "wires">, pressed: Read
     if (part.type === "button" && pressed.has(part.id)) union(`${part.id}:a`, `${part.id}:b`);
     if (part.type === "switch") union(`${part.id}:common`, `${part.id}:${part.props.position === "b" ? "b" : "a"}`);
     if (part.type === "seven-segment") union(`${part.id}:common`, `${part.id}:common2`);
+    if (part.type === "tilt-switch" && !part.props.tilted) union(`${part.id}:a`, `${part.id}:b`);   // the ball joins the legs while upright
   }
 
   const info: Nets["info"] = new Map();
@@ -98,6 +99,25 @@ const isRail = (nets: Nets, net: string, rail: "gnd" | "v5") => Boolean(nets.inf
 
 function powered(nets: Nets, partId: string) {
   return (isRail(nets, nets.of(`${partId}:vcc`), "v5") || Boolean(nets.info.get(nets.of(`${partId}:vcc`))?.v33)) && isRail(nets, nets.of(`${partId}:gnd`), "gnd");
+}
+
+// Sensor modules with a comparator output: which pin they drive, the prop that triggers them,
+// and whether the output goes LOW (most IR and flame modules) or HIGH when triggered.
+const DIGITAL_MODULES: Partial<Record<PartType, { pin: string; prop: string; activeLow: boolean }>> = {
+  "ir-obstacle": { pin: "out", prop: "obstacle", activeLow: true },
+  "line-sensor": { pin: "do", prop: "black", activeLow: false },
+  "flame-sensor": { pin: "do", prop: "flame", activeLow: true },
+  "sound-sensor": { pin: "do", prop: "loud", activeLow: false },
+  "hall-sensor": { pin: "s", prop: "magnet", activeLow: true },
+};
+// Analog modules: output voltage as a fraction of their supply.
+const ANALOG_MODULES: Partial<Record<PartType, { pin: string; fraction: (props: PlacedPart["props"]) => number }>> = {
+  "soil-moisture": { pin: "aout", fraction: (p) => 0.82 - 0.56 * Number(p.moisture ?? 0.3) },   // wetter = lower
+  "gas-sensor": { pin: "ao", fraction: (p) => 0.06 + 0.84 * Number(p.gas ?? 0.1) },
+};
+
+function supplyVolts(nets: Nets, partId: string) {
+  return nets.info.get(nets.of(`${partId}:vcc`))?.v5 ? 5 : 3.3;
 }
 
 function attached(doc: Pick<StudioDoc, "wires">, partId: string) {
@@ -177,6 +197,27 @@ export function simulate(doc: Pick<StudioDoc, "parts" | "wires">, nets: Nets, bo
         if (part.type === "light-sensor") netVolts.set(nets.of(`${part.id}:ao`), 5 * Number(p.light ?? 0.6));
         if (part.type === "temp-sensor") netVolts.set(nets.of(`${part.id}:out`), Math.max(0, 0.5 + Number(p.celsius ?? 24) * 0.01));
         if (part.type === "pir") { const out = nets.of(`${part.id}:out`); digitalDrive.set(out, Boolean(p.motion)); netVolts.set(out, p.motion ? 5 : 0); }
+        break;
+      }
+      case "ir-obstacle": case "line-sensor": case "flame-sensor": case "sound-sensor": case "hall-sensor":
+      case "soil-moisture": case "gas-sensor": case "joystick": {
+        const isPowered = powered(nets, part.id);
+        views[part.id] = { powered: isPowered };
+        if (!isPowered) { if (attached(doc, part.id)) warnings.push({ level: "warning", partId: part.id, message: `${name(part.id)} has no power: wire VCC to 5V and GND to GND.` }); break; }
+        const supply = supplyVolts(nets, part.id);
+        const digital = DIGITAL_MODULES[part.type], analog = ANALOG_MODULES[part.type];
+        if (digital) {
+          const out = nets.of(`${part.id}:${digital.pin}`);
+          const level = Boolean(p[digital.prop]) !== digital.activeLow;
+          digitalDrive.set(out, level);
+          netVolts.set(out, level ? supply : 0);
+        }
+        if (analog) netVolts.set(nets.of(`${part.id}:${analog.pin}`), supply * Math.max(0, Math.min(1, analog.fraction(p))));
+        if (part.type === "joystick") {
+          netVolts.set(nets.of(`${part.id}:vrx`), supply * Number(p.x ?? 0.5));
+          netVolts.set(nets.of(`${part.id}:vry`), supply * Number(p.y ?? 0.5));
+          if (p.pressed) { const sw = nets.of(`${part.id}:sw`); digitalDrive.set(sw, false); netVolts.set(sw, 0); }   // the switch pulls SW to GND
+        }
         break;
       }
       case "ultrasonic": {
@@ -277,6 +318,36 @@ export function simulate(doc: Pick<StudioDoc, "parts" | "wires">, nets: Nets, bo
         const grounded = isRail(nets, nets.of(`${part.id}:minus`), "gnd");
         const frequency = src?.pin && grounded ? board.freq[pinIndex(src.pin)] : 0;
         views[part.id] = { frequency: frequency > 20 ? frequency : 0 };
+        break;
+      }
+      case "active-buzzer": {
+        const src = netSource(nets, nets.of(`${part.id}:plus`), board);
+        const on = Boolean(src && src.rail !== "GND" && src.duty > 0.3) && isRail(nets, nets.of(`${part.id}:minus`), "gnd");
+        views[part.id] = { frequency: on ? 2300 : 0 };
+        break;
+      }
+      case "traffic-light": {
+        const grounded = isRail(nets, nets.of(`${part.id}:gnd`), "gnd");
+        const level = (pin: string) => { const s = netSource(nets, nets.of(`${part.id}:${pin}`), board); return grounded && s && s.rail !== "GND" ? s.duty : 0; };
+        if (!grounded && attached(doc, part.id)) warnings.push({ level: "warning", partId: part.id, message: "Traffic-light module: connect GND to GND." });
+        views[part.id] = { segments: { r: level("r"), y: level("y"), g: level("g") } };
+        break;
+      }
+      case "vibration-motor": {
+        const isPowered = powered(nets, part.id);
+        const src = netSource(nets, nets.of(`${part.id}:in`), board);
+        if (!isPowered && attached(doc, part.id)) warnings.push({ level: "warning", partId: part.id, message: "Vibration motor has no power: VCC to 5V and GND to GND." });
+        views[part.id] = { powered: isPowered, speed: isPowered && src && src.rail !== "GND" ? src.duty : 0 };
+        break;
+      }
+      case "relay": {
+        const isPowered = powered(nets, part.id);
+        const inNet = nets.of(`${part.id}:in`);
+        const src = netSource(nets, inNet, board);
+        // Active-LOW module: the coil energises when IN is pulled LOW; an unconnected IN stays off.
+        const on = isPowered && Boolean(src && (src.rail === "GND" || (src.pin && src.duty < 0.5)));
+        if (!isPowered && attached(doc, part.id)) warnings.push({ level: "warning", partId: part.id, message: "Relay module has no power: VCC to 5V and GND to GND." });
+        views[part.id] = { powered: isPowered, direction: on ? 1 : 0 };
         break;
       }
       case "servo": {

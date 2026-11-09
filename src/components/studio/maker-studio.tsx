@@ -117,6 +117,14 @@ function starterCode(doc: StudioDoc) {
       case "ultrasonic": { add("_TRIG", conn.trig, "OUTPUT"); add("_ECHO", conn.echo, "INPUT"); break; }
       case "servo": { add("_PIN", conn.signal, ""); break; }
       case "motor-driver": { add("_IN1", conn.in1, "OUTPUT"); add("_IN2", conn.in2, "OUTPUT"); add("_EN", conn.en, "OUTPUT"); break; }
+      case "tilt-switch": { const c = add("_PIN", conn.a || conn.b, "INPUT_PULLUP"); if (c) loop.push(`  bool upright = digitalRead(${c}) == LOW;`); break; }
+      case "ir-obstacle": case "flame-sensor": case "hall-sensor": { const c = add("_PIN", conn.out ?? conn.do ?? conn.s, "INPUT"); if (c) loop.push(`  bool ${name.toLowerCase()}Active = digitalRead(${c}) == LOW;   // this module pulls LOW when triggered`); break; }
+      case "line-sensor": case "sound-sensor": { const c = add("_PIN", conn.do, "INPUT"); if (c) loop.push(`  bool ${name.toLowerCase()}Active = digitalRead(${c}) == HIGH;`); break; }
+      case "soil-moisture": case "gas-sensor": { const c = add("_PIN", conn.aout ?? conn.ao, ""); if (c) loop.push(`  Serial.print("${name.toLowerCase()}:"); Serial.println(analogRead(${c}));`); break; }
+      case "joystick": { const x = add("_X", conn.vrx, ""), y = add("_Y", conn.vry, ""), s = add("_SW", conn.sw, "INPUT_PULLUP"); if (x && y) loop.push(`  Serial.print("x:"); Serial.print(analogRead(${x})); Serial.print(" y:"); Serial.println(analogRead(${y}));`); if (s) loop.push(`  bool stickPressed = digitalRead(${s}) == LOW;`); break; }
+      case "active-buzzer": case "vibration-motor": { const c = add("_PIN", conn.plus ?? conn.in, "OUTPUT"); if (c) loop.push(`  digitalWrite(${c}, HIGH);`); break; }
+      case "traffic-light": { add("_RED", conn.r, "OUTPUT"); add("_YELLOW", conn.y, "OUTPUT"); add("_GREEN", conn.g, "OUTPUT"); break; }
+      case "relay": { const c = add("_PIN", conn.in, "OUTPUT"); if (c) loop.push(`  digitalWrite(${c}, LOW);   // most relay modules switch ON with LOW`); break; }
       default: break;
     }
   }
@@ -452,7 +460,7 @@ export function MakerStudio() {
 
   const partsForDraw = doc.parts.map((p) => (drag?.id === p.id ? { ...p, x: drag.x, y: drag.y } : p));
   const pendingPos = pending ? pinPosition(pending, partsForDraw) : null;
-  const inputParts = doc.parts.filter((p) => ["button", "switch", "potentiometer", "light-sensor", "temp-sensor", "ultrasonic", "pir"].includes(p.type));
+  const inputParts = doc.parts.filter((p) => ["button", "switch", "potentiometer", "light-sensor", "temp-sensor", "ultrasonic", "pir", "joystick"].includes(p.type) || PART_BY_TYPE[p.type].control);
   const partLabel = (p: PlacedPart) => `${PART_BY_TYPE[p.type].name}${doc.parts.filter((q) => q.type === p.type).length > 1 ? ` ${doc.parts.filter((q) => q.type === p.type).indexOf(p) + 1}` : ""}`;
 
   return <div className="studio" onKeyDown={onKeyDown}>
@@ -618,6 +626,18 @@ export function MakerStudio() {
             {p.type === "temp-sensor" ? <label><input type="range" min={-10} max={60} step={1} value={Number(p.props.celsius ?? 24)} onChange={(e) => setProp(p.id, "celsius", Number(e.target.value))} /><span>{Number(p.props.celsius ?? 24)} °C</span></label> : null}
             {p.type === "ultrasonic" ? <label><input type="range" min={2} max={400} step={1} value={Number(p.props.distance ?? 60)} onChange={(e) => setProp(p.id, "distance", Number(e.target.value))} /><span>{Number(p.props.distance ?? 60)} cm</span></label> : null}
             {p.type === "pir" ? <button type="button" className={p.props.motion ? "btn btn-primary" : "btn"} onClick={() => setProp(p.id, "motion", !p.props.motion)}>{p.props.motion ? "Motion detected" : "No motion"}</button> : null}
+            {p.type === "joystick" ? <>
+              <label><input type="range" min={0} max={1} step={0.01} value={Number(p.props.x ?? 0.5)} onChange={(e) => setProp(p.id, "x", Number(e.target.value))} aria-label="Joystick X" /><span>X {Math.round((Number(p.props.x ?? 0.5) - 0.5) * 200)}%</span></label>
+              <label><input type="range" min={0} max={1} step={0.01} value={Number(p.props.y ?? 0.5)} onChange={(e) => setProp(p.id, "y", Number(e.target.value))} aria-label="Joystick Y" /><span>Y {Math.round((Number(p.props.y ?? 0.5) - 0.5) * 200)}%</span></label>
+              <button type="button" className={p.props.pressed ? "btn btn-primary" : "btn"} onPointerDown={() => setProp(p.id, "pressed", true)} onPointerUp={() => setProp(p.id, "pressed", false)} onPointerLeave={() => { if (p.props.pressed) setProp(p.id, "pressed", false); }}>{p.props.pressed ? "Pressed" : "Hold to press"}</button>
+            </> : null}
+            {(() => {
+              const control = PART_BY_TYPE[p.type].control;
+              if (!control) return null;
+              if (control.kind === "toggle") return <button type="button" className={p.props[control.prop] ? "btn btn-primary" : "btn"} onClick={() => setProp(p.id, control.prop, !p.props[control.prop])}>{p.props[control.prop] ? control.on : control.off}</button>;
+              const value = Number(p.props[control.prop] ?? control.min);
+              return <label><input type="range" min={control.min} max={control.max} step={control.step} value={value} onChange={(e) => setProp(p.id, control.prop, Number(e.target.value))} /><span>{control.format(value)}</span></label>;
+            })()}
           </div>)}
         </div> : null}
 

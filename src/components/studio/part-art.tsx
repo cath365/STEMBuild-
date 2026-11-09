@@ -149,6 +149,97 @@ export function PartArt({ part, view, pressed }: { part: PlacedPart; view?: Part
         <Label x={27} y={58} size={8}>{dir === 0 ? "stop" : `${dir > 0 ? "fwd" : "rev"} ${Math.round(speed * 100)}%`}</Label>
       </g>;
     }
+    case "active-buzzer": {
+      const sounding = (view?.frequency ?? 0) > 0;
+      return <g>
+        <line x1={22} y1={50} x2={22} y2={h} stroke="#9aa5b1" strokeWidth={2} /><line x1={38} y1={50} x2={38} y2={h} stroke="#9aa5b1" strokeWidth={2} />
+        <circle cx={30} cy={28} r={24} fill="#111" /><circle cx={30} cy={28} r={16} fill="#1b1b1b" stroke="#333" /><circle cx={30} cy={28} r={3} fill="#444" />
+        <Label x={20} y={14} fill="#bbb">+</Label><Label x={30} y={48} fill="#888" size={7}>ACTIVE</Label>
+        {sounding ? <g className="studio-waves" stroke="#0172e5" fill="none" strokeWidth={2}><path d="M58 16 q8 12 0 24" /><path d="M64 10 q12 18 0 36" /></g> : null}
+      </g>;
+    }
+    case "traffic-light": {
+      const s = view?.segments ?? {};
+      const lamp = (id: string, cy: number, on: string, off: string) => { const b = s[id] ?? 0; return <g key={id}>
+        {b > 0.05 ? <circle cx={32} cy={cy} r={18} fill={on} opacity={0.25 * b} /> : null}
+        <circle cx={32} cy={cy} r={12} fill={b > 0.05 ? on : off} opacity={b > 0.05 ? 0.45 + 0.55 * b : 1} stroke="#000" />
+      </g>; };
+      return <g>
+        <rect x={10} y={2} width={44} height={h - 12} rx={8} fill="#1b1b1b" stroke="#000" />
+        {lamp("r", 22, "#ff3b30", "#3a1414")}{lamp("y", 52, "#ffd60a", "#3a3210")}{lamp("g", 82, "#30d158", "#10301a")}
+      </g>;
+    }
+    case "tilt-switch": {
+      const tilted = Boolean(p.tilted);
+      return <g>
+        <line x1={15} y1={44} x2={15} y2={h} stroke="#9aa5b1" strokeWidth={2} /><line x1={35} y1={44} x2={35} y2={h} stroke="#9aa5b1" strokeWidth={2} />
+        <g transform={tilted ? "rotate(-35 25 26)" : undefined}>
+          <rect x={10} y={4} width={30} height={42} rx={14} fill="#c7ccd3" stroke="#6b7380" />
+          <circle cx={25} cy={tilted ? 14 : 36} r={7} fill="#6b7380" />
+        </g>
+      </g>;
+    }
+    case "joystick": {
+      const x = Number(p.x ?? 0.5), y = Number(p.y ?? 0.5);
+      return <g>
+        <Board w={w} h={h} colour="#1b1b1b" title="JOYSTICK" />
+        <circle cx={50} cy={36} r={26} fill="#2a2f36" stroke="#444" />
+        <circle cx={50 + (x - 0.5) * 30} cy={36 + (0.5 - y) * 30} r={14} fill={p.pressed ? "#c2410c" : "#3a3f46"} stroke="#111" strokeWidth={2} />
+      </g>;
+    }
+    case "ir-obstacle": case "line-sensor": case "flame-sensor": case "sound-sensor": case "hall-sensor": {
+      const titles: Record<string, string> = { "ir-obstacle": "IR OBSTACLE", "line-sensor": "LINE", "flame-sensor": "FLAME", "sound-sensor": "SOUND", "hall-sensor": "HALL" };
+      const active = Boolean(p.obstacle ?? p.black ?? p.flame ?? p.loud ?? p.magnet);
+      return <g>
+        <Board w={w} h={h} colour={part.type === "sound-sensor" ? "#b8282e" : PCB_BLUE} title={titles[part.type]} />
+        {part.type === "ir-obstacle" ? <><rect x={12} y={12} width={14} height={20} rx={7} fill="#f2f2f2" /><rect x={30} y={12} width={14} height={20} rx={7} fill="#1b1b1b" /></> : null}
+        {part.type === "line-sensor" ? <rect x={16} y={14} width={24} height={16} rx={3} fill="#1b1b1b" stroke="#555" /> : null}
+        {part.type === "flame-sensor" ? <circle cx={28} cy={22} r={9} fill="#151515" stroke="#555" /> : null}
+        {part.type === "sound-sensor" ? <circle cx={28} cy={22} r={11} fill="#c7ccd3" stroke="#6b7380" /> : null}
+        {part.type === "hall-sensor" ? <rect x={20} y={14} width={16} height={14} rx={2} fill="#1b1b1b" /> : null}
+        <circle cx={w - 12} cy={12} r={4} fill={view?.powered ? "#30d158" : "#334"} />
+        <circle cx={w - 12} cy={26} r={4} fill={active && view?.powered ? "#ff3b30" : "#334"} />
+      </g>;
+    }
+    case "soil-moisture": {
+      const wet = Number(p.moisture ?? 0.3);
+      return <g>
+        <path d={`M6 0 H${w - 6} V70 L${w / 2} 96 L6 70 Z`} fill="#1b1b1b" stroke="#000" />
+        <rect x={6} y={44} width={w - 12} height={26} fill="#6b4a2b" opacity={0.4 + wet * 0.6} />
+        <Label x={w / 2} y={20} size={7}>SOIL</Label>
+        <Label x={w / 2} y={36} fill="#7cc4ff" size={8}>{Math.round(wet * 100)}%</Label>
+      </g>;
+    }
+    case "gas-sensor": {
+      const gas = Number(p.gas ?? 0.1);
+      return <g>
+        <Board w={w} h={h} colour={PCB_BLUE} title="MQ-2" />
+        <circle cx={w / 2} cy={26} r={19} fill="#c7ccd3" stroke="#6b7380" />
+        <circle cx={w / 2} cy={26} r={13} fill="none" stroke="#8a95a3" strokeDasharray="2 2" />
+        <circle cx={w / 2} cy={26} r={6} fill={gas > 0.25 ? "#ffb020" : "#6b7380"} opacity={0.5 + gas / 2} />
+        <circle cx={w - 10} cy={10} r={4} fill={view?.powered ? "#30d158" : "#334"} />
+      </g>;
+    }
+    case "vibration-motor": {
+      const speed = view?.speed ?? 0;
+      return <g>
+        <Board w={w} h={h} colour={PCB_BLUE} title="VIBRATION" />
+        <g className={speed > 0.05 ? "studio-shake" : undefined}><circle cx={w / 2} cy={24} r={14} fill="#c7ccd3" stroke="#6b7380" /><circle cx={w / 2} cy={24} r={5} fill="#6b7380" /></g>
+        <Label x={w / 2} y={48} size={7}>{speed > 0.05 ? `${Math.round(speed * 100)}%` : "off"}</Label>
+      </g>;
+    }
+    case "relay": {
+      const on = view?.direction === 1;
+      return <g>
+        <Board w={w} h={h} colour={PCB_BLUE} title="RELAY" />
+        <rect x={10} y={10} width={40} height={36} rx={3} fill="#1f5fd0" stroke="#0e3462" />
+        <Label x={30} y={32} size={7}>SRD-05</Label>
+        <circle cx={70} cy={22} r={11} fill={on ? "#ffd60a" : "#ddd"} stroke="#999" />
+        {on ? <circle cx={70} cy={22} r={17} fill="#ffd60a" opacity={0.3} /> : null}
+        <Label x={70} y={46} fill={SILK} size={7}>{on ? "ON" : "OFF"}</Label>
+        <circle cx={52} cy={8} r={3} fill={on ? "#ff3b30" : "#334"} />
+      </g>;
+    }
     case "resistor": {
       const ohms = Number(p.ohms ?? 220);
       const bands = bandsFromResistor(ohms) ?? [];

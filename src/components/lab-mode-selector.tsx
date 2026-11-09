@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
-import { RobotArena } from "@/components/robot-arena";
+import { RobotGarage } from "@/components/robot-kits";
 import { RobotCADWorkspace } from "@/components/robot-cad-workspace";
 import { CircuitStudio } from "@/components/circuit-studio";
 import Link from "next/link";
@@ -24,7 +24,7 @@ const modes: {
   {
     id: "robot",
     title: "Robot Builder",
-    description: "Assemble the obstacle-avoiding robot and test it against movable blocks.",
+    description: "Choose a robot (obstacle avoider, line follower, light seeker or Bluetooth car), build it step by step and test it.",
     tag: "Build & test",
     anchor: "robot-arena",
   },
@@ -138,7 +138,7 @@ export function LabModeSelector() {
         <CircuitStudio active={mode === "circuit"} />
       </div>
       <div id="lab-panel-robot" role="tabpanel" aria-labelledby="lab-tab-robot" tabIndex={0} className="lab-mode-panel" hidden={mode !== "robot"}>
-        <RobotArena active={mode === "robot"} />
+        <RobotGarage active={mode === "robot"} />
       </div>
       <div id="lab-panel-cad" role="tabpanel" aria-labelledby="lab-tab-cad" tabIndex={0} className="lab-mode-panel" hidden={mode !== "cad"}>
         <RobotCADWorkspace active={mode === "cad"} />

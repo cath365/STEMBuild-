@@ -1,0 +1,56 @@
+/* Robot Builder garage: robot picker, guided kit workshop and arenas. */
+.robot-garage { display: grid; gap: 16px; }
+.rk-choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px; }
+.rk-choice { display: grid; grid-template-columns: 72px 1fr; gap: 10px; align-items: center; text-align: left; padding: 10px; border: 1px solid var(--ds-line-strong); border-radius: var(--ds-radius-lg); background: var(--ds-surface); color: var(--ds-text); font: inherit; cursor: pointer; }
+.rk-choice img { width: 72px; height: 54px; object-fit: contain; }
+.rk-choice span { display: grid; gap: 2px; }
+.rk-choice small { font-size: 12px; color: var(--ds-accent); font-weight: 600; }
+.rk-choice em { font-style: normal; font-size: 12.5px; color: var(--ds-text-2); line-height: 1.4; }
+.rk-choice:hover { border-color: var(--ds-accent); }
+.rk-choice[aria-checked="true"] { border-color: var(--ds-accent); background: var(--brand-blue-soft, #eaf2ff); box-shadow: inset 0 0 0 1px var(--ds-accent); }
+
+.rk-workshop { display: grid; gap: 14px; }
+.rk-workshop > h2, .rk-workshop > p { margin: 0; }
+.rk-progress { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.rk-progress li { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--ds-line-strong); background: var(--ds-surface); font-size: 14px; }
+.rk-progress li[data-done="true"] { border-color: #188038; background: #e9f6ee; }
+.rk-message { margin: 0; padding: 10px 14px; border-left: 3px solid var(--ds-accent); border-radius: 0 var(--ds-radius) var(--ds-radius) 0; background: #f2f8ff; }
+.rk-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px; align-items: start; }
+.rk-build, .rk-wire, .rk-arena-card, .rk-code { display: grid; gap: 10px; }
+.rk-build h3, .rk-wire h3, .rk-arena-card h3, .rk-code h3 { margin: 0; }
+.rk-tray { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 6px; }
+.rk-part { display: grid; grid-template-columns: 48px 1fr; gap: 6px; align-items: center; padding: 4px 6px; text-align: left; border: 1px solid var(--ds-line); border-radius: var(--ds-radius); background: var(--ds-surface); color: var(--ds-text); font: inherit; font-size: 12.5px; cursor: pointer; }
+.rk-part img { width: 48px; height: 36px; object-fit: contain; }
+.rk-part.next { border-color: var(--brand-orange, #f29200); box-shadow: 0 0 0 2px rgba(242, 146, 0, .25); }
+.rk-part.placed { opacity: .5; cursor: default; }
+.rk-assembly { width: 100%; height: auto; border-radius: var(--ds-radius-lg); }
+.rk-zone { fill: rgba(255, 255, 255, .6); stroke: #879eb2; stroke-dasharray: 4 3; cursor: pointer; }
+.rk-zone.next { fill: rgba(242, 146, 0, .14); stroke: var(--brand-orange, #f29200); stroke-width: 2.5; stroke-dasharray: none; animation: rk-glow 1.1s ease-in-out infinite alternate; }
+.rk-zone:focus-visible { outline: none; stroke: var(--ds-accent); stroke-width: 3; }
+.rk-zone-label { font-size: 8.5px; fill: #334155; pointer-events: none; }
+@keyframes rk-glow { from { fill-opacity: .25; } to { fill-opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .rk-zone.next { animation: none; } }
+
+.rk-pins { display: grid; gap: 8px; }
+.rk-pins > div { display: grid; gap: 4px; }
+.rk-pins strong { font-size: 13px; }
+.rk-pins > div > div { display: flex; flex-wrap: wrap; gap: 5px; }
+.rk-pin { min-width: 44px; padding: 5px 8px; border: 1px solid var(--ds-line-strong); border-radius: var(--ds-radius); background: var(--ds-surface); color: var(--ds-text); font: 12.5px var(--ds-mono); cursor: pointer; }
+.rk-pin:hover { border-color: var(--ds-accent); }
+.rk-pin.next { border-color: var(--brand-orange, #f29200); background: #fff4e0; box-shadow: 0 0 0 2px rgba(242, 146, 0, .3); font-weight: 700; }
+.rk-pin.pending { border-color: var(--ds-accent); background: var(--ds-accent); color: #fff; }
+.rk-wire-list ol { margin: 8px 0 0; padding-left: 20px; font-size: 13px; line-height: 1.6; }
+.rk-reset { justify-self: start; }
+
+.rk-arena-layout { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(220px, 1fr); gap: 14px; align-items: start; }
+.rk-arena { width: 100%; height: auto; border-radius: var(--ds-radius-lg); touch-action: none; }
+.rk-arena:focus-visible { outline: 2px solid var(--ds-accent); }
+.rk-telemetry { display: grid; gap: 8px; }
+.rk-telemetry p { margin: 0; }
+.rk-telemetry dl { margin: 0; display: grid; gap: 4px; }
+.rk-telemetry dl > div { display: flex; justify-content: space-between; gap: 8px; padding: 5px 8px; border-radius: var(--ds-radius); background: var(--ds-subtle); font-size: 13px; }
+.rk-telemetry dt { color: var(--ds-muted); }
+.rk-telemetry dd { margin: 0; font-family: var(--ds-mono); font-weight: 600; }
+.rk-pad { display: grid; grid-template-columns: repeat(3, 64px); gap: 6px; justify-content: start; }
+.rk-pad .btn { padding: 6px 0; }
+@media (max-width: 760px) { .rk-arena-layout { grid-template-columns: 1fr; } }

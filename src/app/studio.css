@@ -145,3 +145,7 @@
 .studio-error-details summary { cursor: pointer; font-size: 13px; font-weight: 600; color: #7a271a; margin-bottom: 6px; }
 .studio-segment { display: flex; gap: 6px; margin-bottom: 10px; }
 .studio-share-note { margin: 0; padding: 8px 12px; border-radius: var(--ds-radius); background: #e9f7f2; color: #0a5c48; }
+
+.studio-shake { animation: studio-shake .09s linear infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes studio-shake { 0% { transform: translate(-1px, 0); } 50% { transform: translate(1px, .5px); } 100% { transform: translate(-1px, 0); } }
+@media (prefers-reduced-motion: reduce) { .studio-shake { animation: none; } }

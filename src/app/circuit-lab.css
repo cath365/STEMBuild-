@@ -1,0 +1,55 @@
+/* Live circuit simulator (components/circuit-lab). */
+.circuit-lab { display: grid; gap: 14px; }
+.cl-toolbar { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; }
+.cl-field { display: grid; gap: 4px; font-size: 13px; font-weight: 600; color: var(--ds-text-2); }
+.cl-field .select, .cl-field .input { min-width: 220px; font-weight: 400; }
+.cl-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.cl-speed { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ds-text-2); }
+.cl-speed span { font-family: var(--ds-mono); min-width: 44px; }
+
+.cl-layout { display: grid; grid-template-columns: 168px minmax(0, 1fr) 250px; gap: 14px; align-items: start; }
+.cl-palette { display: grid; gap: 6px; max-height: 720px; overflow: auto; padding-right: 2px; }
+.cl-tool { display: grid; grid-template-columns: 56px 1fr; align-items: center; gap: 6px; text-align: left; padding: 4px 8px; border: 1px solid var(--ds-line); border-radius: var(--ds-radius); background: var(--ds-surface); color: var(--ds-text); font: inherit; font-size: 13px; cursor: pointer; }
+.cl-tool svg { width: 56px; height: 28px; }
+.cl-tool:first-child { grid-template-columns: 1fr; padding: 8px 10px; }
+.cl-tool:first-child span { font-size: 12px; color: var(--ds-muted); }
+.cl-tool:hover { border-color: var(--ds-accent); }
+.cl-tool.active { border-color: var(--ds-accent); background: var(--brand-blue-soft, #eaf2ff); box-shadow: inset 0 0 0 1px var(--ds-accent); }
+
+.cl-stage { display: grid; gap: 10px; min-width: 0; }
+.cl-hint { margin: 0; font-size: 13px; color: var(--ds-text-2); min-height: 20px; }
+.cl-canvas-wrap { border: 1px solid var(--ds-line-strong); border-radius: var(--ds-radius-lg); background: #fbfcfe; overflow: auto; }
+.cl-canvas { display: block; width: 100%; min-width: 640px; height: auto; touch-action: none; user-select: none; }
+.cl-canvas.drawing { cursor: crosshair; }
+.cl-dot { fill: #ffcc00; stroke: #9a7400; stroke-width: 0.6; pointer-events: none; }
+.cl-post { fill: #1f2a37; }
+.cl-post.open { fill: #fff; stroke: #d93a3a; stroke-width: 1.8; }
+.cl-handle { fill: #fff; stroke: #0172e5; stroke-width: 2.5; cursor: move; }
+.cl-el.draft { opacity: 0.6; }
+.cl-label { font-size: 11.5px; font-family: var(--ds-mono); fill: #45566b; pointer-events: none; }
+.cl-label.meter { font-size: 13px; font-weight: 700; fill: #4a148c; }
+.cl-waves { animation: cl-pulse 0.3s ease-in-out infinite alternate; }
+@keyframes cl-pulse { from { opacity: 0.25; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .cl-waves { animation: none; } }
+
+.cl-warnings { margin: 0; padding: 10px 14px 10px 30px; border-left: 3px solid #d93a3a; border-radius: 0 var(--ds-radius) var(--ds-radius) 0; background: #fdeceb; font-size: 14px; }
+.cl-warnings li + li { margin-top: 4px; }
+.cl-try { padding: 10px 14px; border-left: 3px solid var(--brand-teal, #0f9d8a); border-radius: 0 var(--ds-radius) var(--ds-radius) 0; background: #eef8f6; font-size: 14px; line-height: 1.55; }
+.cl-try em { font-style: normal; font-weight: 600; }
+
+.cl-inspector { border: 1px solid var(--ds-line); border-radius: var(--ds-radius-lg); background: var(--ds-surface); padding: 14px; display: grid; gap: 10px; }
+.cl-inspector h3 { margin: 0; font-size: 16px; }
+.cl-inspector ol { margin: 0; padding-left: 18px; line-height: 1.55; }
+.cl-readings { margin: 0; display: grid; gap: 6px; }
+.cl-readings > div { display: flex; justify-content: space-between; gap: 10px; padding: 6px 8px; border-radius: var(--ds-radius); background: var(--ds-subtle); }
+.cl-readings dt { font-size: 13px; color: var(--ds-muted); }
+.cl-readings dd { margin: 0; font-family: var(--ds-mono); font-weight: 600; }
+.cl-inspector .cl-field .select, .cl-inspector .cl-field .input { min-width: 0; width: 100%; }
+.cl-inspector-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.cl-table table { min-width: 0; font-size: 14px; }
+.cl-table summary { cursor: pointer; font-weight: 600; }
+
+@media (max-width: 1100px) {
+  .cl-layout { grid-template-columns: 1fr; }
+  .cl-palette { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); max-height: none; }
+}

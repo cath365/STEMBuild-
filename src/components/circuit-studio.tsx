@@ -2,6 +2,7 @@
 import Image from 'next/image';
 import {useEffect,useRef,useState} from 'react';
 import {BreadboardWorkshop} from './breadboard-workshop';
+import {CircuitLab} from './circuit-lab/circuit-lab';
 import {cableColours,checkStudio,circuitProjects,emptyStudio,exampleStudio,parseStudio,studioDelays,type CableColour,type StudioDocument} from '@/lib/circuit-studio';
 
 const STORAGE='stembuild-circuit-studio-v1';
@@ -25,7 +26,7 @@ export function CircuitStudio({active=true}:{active?:boolean}){
  const project=circuitProjects.find(p=>p.id===choice)??circuitProjects[0];
  const doc=documents[project.id],check=checkStudio(doc,project);
  useEffect(()=>{const frame=requestAnimationFrame(()=>{
-  try{const raw=localStorage.getItem(STORAGE);if(raw){const saved=JSON.parse(raw);if(saved.version!==1||!saved.documents||typeof saved.documents!=='object')throw Error('Invalid save');const next:Documents={};for(const p of circuitProjects){next[p.id]=saved.documents[p.id]===undefined?emptyStudio(p):parseStudio(saved.documents[p.id],p)!;if(!next[p.id])throw Error('Invalid project');}setDocuments(next);if(saved.choice==='breadboard'||circuitProjects.some(p=>p.id===saved.choice))setChoice(saved.choice);setSaveMessage('Saved projects restored.');}}
+  try{const raw=localStorage.getItem(STORAGE);if(raw){const saved=JSON.parse(raw);if(saved.version!==1||!saved.documents||typeof saved.documents!=='object')throw Error('Invalid save');const next:Documents={};for(const p of circuitProjects){next[p.id]=saved.documents[p.id]===undefined?emptyStudio(p):parseStudio(saved.documents[p.id],p)!;if(!next[p.id])throw Error('Invalid project');}setDocuments(next);if(saved.choice==='breadboard'||saved.choice==='simulator'||circuitProjects.some(p=>p.id===saved.choice))setChoice(saved.choice);setSaveMessage('Saved projects restored.');}}
   catch{setCanSave(false);setSaveMessage('Saved data could not be restored. It has been retained; download a backup before clearing browser storage.');}
   setReady(true);
  });return ()=>cancelAnimationFrame(frame);},[]);
@@ -55,13 +56,15 @@ export function CircuitStudio({active=true}:{active?:boolean}){
 
  return <section className="circuit-studio" aria-label="Circuit project studio">
   <header className="cs-heading"><div><p className="eyebrow">STEMBuild / electronics lab</p><h2>Circuit Builder</h2><p>Select a project. Place its components, connect terminals and test the result.</p></div><span className="cs-save" role="status">{saveMessage}</span></header>
-  <label className="cs-project-select">Circuit project<select aria-label="Circuit project" value={choice} onChange={e=>choose(e.target.value)}><option value="breadboard">Breadboard workshop</option>{circuitProjects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select><span>Drag bodies to move · drag terminals to wire</span></label>
+  <label className="cs-project-select">Circuit project<select aria-label="Circuit project" value={choice} onChange={e=>choose(e.target.value)}><option value="breadboard">Breadboard workshop</option><option value="simulator">Live circuit simulator</option>{circuitProjects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select><span>Drag bodies to move · drag terminals to wire</span></label>
   <div className="cs-projects" aria-label="Circuit projects">
    <button aria-pressed={choice==='breadboard'} onClick={()=>choose('breadboard')}><Image src="/images/cad/breadboard.webp" alt="" width={120} height={90} unoptimized/><strong>Breadboard workshop</strong><span>Hole-level wiring · LED blink</span><small>Interactive</small></button>
+   <button aria-pressed={choice==='simulator'} onClick={()=>choose('simulator')}><Image src="/images/cad/battery.webp" alt="" width={120} height={90} unoptimized/><strong>Live circuit simulator</strong><span>Draw any circuit · see current flow</span><small>15 circuits · real physics</small></button>
    {circuitProjects.map(p=><button key={p.id} aria-pressed={choice===p.id} onClick={()=>choose(p.id)}><Image src={`/images/cad/${p.output==='alarm'?'buzzer':p.output==='power'?'battery':p.output==='button'?'button':'led'}.webp`} alt="" width={120} height={90} unoptimized/><strong>{p.name}</strong><span>{p.summary}</span><small>Beginner · Logic preview</small></button>)}
   </div>
   <div hidden={choice!=='breadboard'}><BreadboardWorkshop active={active&&choice==='breadboard'}/></div>
-  {choice!=='breadboard'&&<div className="cs-workspace">
+  {choice==='simulator'&&active?<CircuitLab/>:null}
+  {choice!=='breadboard'&&choice!=='simulator'&&<div className="cs-workspace">
    <div className="cs-toolbar"><strong>{project.name}</strong><div><button disabled={!ready} onClick={()=>{change(emptyStudio(project));setSelected('');}}>Start empty circuit</button><button disabled={!ready} onClick={()=>change(exampleStudio(project))}>Load circuit example</button><button disabled={!past.length} onClick={()=>{const prev=past.at(-1)!;stop();setFirst('');setPast(past.slice(0,-1));const all={...documents,[project.id]:prev};setDocuments(all);persist(all);}}>Undo circuit edit</button></div></div>
    <div className="cs-layout">
     <aside className="cs-parts"><h3>01 · Components</h3><p>Add each required part. Drag a placed part to reposition it, or use the position buttons.</p>

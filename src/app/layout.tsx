@@ -13,6 +13,8 @@ import "./virtual-lab.css";
 import "./design-system.css";
 import "./studio.css";
 import "./learn-guides.css";
+import "./circuit-lab.css";
+import "./robot-kits.css";
 import { PwaRegister } from "@/components/pwa-register";
 import { ConnectivityStatus } from "@/components/connectivity-status";
 
