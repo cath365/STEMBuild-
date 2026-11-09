@@ -197,8 +197,33 @@ model User {
   offlineCheckpoints      OfflineLessonCheckpoint[] @relation("OfflineCheckpointLearner")
   kitUsages               KitUsage[]               @relation("KitUsageLearner")
   challengeAttempts       ChallengeAttempt[]
+  tokensCreated           AccountToken[]          @relation("AccountTokenCreator")
+  accountTokens           AccountToken[]          @relation("AccountTokenUser")
 
   @@index([schoolId, role])
+}
+
+enum AccountTokenKind {
+  TEACHER_INVITE
+  PASSWORD_RESET
+}
+
+/// Single-use invitation or password-reset link. Only a SHA-256 hash of the token is stored.
+model AccountToken {
+  id          String           @id @default(cuid())
+  kind        AccountTokenKind
+  tokenHash   String           @unique
+  email       String?
+  schoolId    String?
+  userId      String?
+  createdById String
+  expiresAt   DateTime
+  usedAt      DateTime?
+  createdAt   DateTime         @default(now())
+  createdBy   User             @relation("AccountTokenCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  user        User?            @relation("AccountTokenUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, kind])
 }
 
 /// A Maker Studio challenge run by a signed-in learner. The test bench runs in the learner's
@@ -231,6 +256,8 @@ model Classroom {
   id          String            @id @default(cuid())
   name        String
   joinCode    String            @unique
+  /// Teachers can close self-enrolment once a class is complete.
+  joinOpen    Boolean           @default(true)
   teacherId   String
   schoolId    String?
   isDemo      Boolean           @default(false)

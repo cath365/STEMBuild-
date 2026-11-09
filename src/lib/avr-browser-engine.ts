@@ -218,8 +218,15 @@ export type UnoStudioSimulation = {
   /** Run `callback` after `micros` of emulated time (used for switch-bounce tests). */
   scheduleMicros(micros: number, callback: () => void): void;
   cycles(): number;
+  /** Pin transitions since the last call (for the logic analyzer), with emulated cycle timestamps. */
+  drainEdges(): StudioEdge[];
+  /** Current logic level of D0–D13. */
+  levels(): boolean[];
   stop(): void;
 };
+
+export type StudioEdge = { pin: number; high: boolean; cycle: number };
+const MAX_PENDING_EDGES = 60_000;
 
 /**
  * Full-board emulation for Maker Studio: every pin's mode and duty, tone frequency and pulse width,
@@ -261,8 +268,10 @@ export async function startUnoStudio(
     else if (pin >= 8 && pin <= 13) portB.setPin(pin - 8, high);
   };
 
+  let edgeLog: StudioEdge[] = [];
   const onEdge = (pin: number, high: boolean) => {
     const now = cpu.cycles;
+    if (edgeLog.length < MAX_PENDING_EDGES) edgeLog.push({ pin, high, cycle: now });
     if (high) {
       rises[pin]++;
       if (firstRise[pin] < 0) firstRise[pin] = now;
@@ -347,6 +356,8 @@ export async function startUnoStudio(
     setUltrasonic: (links) => { ultrasonic = links; },
     scheduleMicros: (micros, callback) => { cpu.addClockEvent(callback, Math.max(1, Math.round(micros * 16))); },
     cycles: () => cpu.cycles,
+    drainEdges: () => { const drained = edgeLog; edgeLog = []; return drained; },
+    levels: () => level.slice(),
     stop: () => { stopped = true; cancelAnimationFrame(frame); },
   };
 }

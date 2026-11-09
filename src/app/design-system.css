@@ -285,3 +285,21 @@ tbody tr:hover { background: #fafbfc; }
 }
 .how-page .section h2 { font-size: clamp(24px, 2.6vw, 32px); }
 .how-page .card h2, .how-page .card h3 { font-size: 20px; }
+
+/* ---------- Accounts: class join, links ---------- */
+.join-card { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 20px 32px; align-items: start; margin-bottom: 4px; }
+.join-code { margin: 12px 0 8px; font-family: var(--ds-mono); font-size: clamp(28px, 4vw, 40px); font-weight: 500; letter-spacing: .06em; color: var(--ds-text); }
+.join-link { display: block; font-size: 13px; color: var(--ds-text-2); overflow-wrap: anywhere; }
+.join-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.join-actions .btn { width: auto; }
+.join-actions p { flex-basis: 100%; margin: 0; }
+.account-code { font-family: var(--ds-mono); letter-spacing: .06em; text-transform: uppercase; }
+.link-maker { display: grid; gap: 8px; }
+.link-maker-form { display: grid; gap: 10px; justify-items: start; }
+.link-maker-form .field { width: 100%; }
+.link-maker-form .btn { width: auto; }
+.link-maker-result { display: grid; gap: 6px; padding: 10px 12px; border: 1px solid var(--ds-line); border-radius: var(--ds-radius); background: var(--ds-subtle); max-width: 520px; }
+.link-maker-result code { font-size: 12.5px; overflow-wrap: anywhere; }
+.link-maker-result .btn { width: auto; justify-self: start; min-height: 32px; padding: 4px 12px; }
+.link-maker-result p { margin: 0; }
+@media (max-width: 760px) { .join-card { grid-template-columns: 1fr; } }

@@ -10,6 +10,16 @@ import { STUDIO_EXAMPLES, EMPTY_DOC } from "@/lib/studio/examples";
 import { formatSI } from "@/lib/electronics";
 import { useStoredValue } from "@/lib/use-stored-value";
 import { PartArt } from "@/components/studio/part-art";
+import { LogicAnalyzer, type AnalyzerSnapshot } from "@/components/studio/logic-analyzer";
+import { CodeEditor } from "@/components/studio/code-editor";
+import { SerialChart } from "@/components/serial-chart";
+import { appendEdges, CPU_HZ, type PinHistory } from "@/lib/studio/analyzer";
+import { parseCompilerErrors } from "@/lib/studio/compile-errors";
+import { decodeBuild, encodeBuild, MAX_SHARE_CHARS, SHARE_PREFIX } from "@/lib/studio/share";
+import { parseSerialLine, seriesNames, type SerialPoint } from "@/lib/serial-capture";
+
+const ANALYZER_KEEP_CYCLES = 2.5 * CPU_HZ; // 2.5 s of history per pin
+const MAX_EDGES_PER_PIN = 8000;
 
 const STORAGE_KEY = "stembuild-maker-studio-v1";
 const CANVAS = { w: 1180, h: 780 };
@@ -26,6 +36,18 @@ function parseDoc(raw: string | null): StudioDoc | null {
     const parts = data.parts.filter((p: PlacedPart) => p && typeof p.id === "string" && p.type in PART_BY_TYPE && Number.isFinite(p.x) && Number.isFinite(p.y));
     return { version: 1, parts: parts.map((p: PlacedPart) => ({ ...p, props: p.props ?? {} })), wires: data.wires.filter((w: { a?: unknown; b?: unknown }) => typeof w?.a === "string" && typeof w?.b === "string"), code: data.code };
   } catch { return null; }
+}
+
+/** A copy of the analyzer history for rendering, capped per pin (keeping the level before the cap). */
+function analyzerSnapshot(history: Map<number, PinHistory>, now: number): AnalyzerSnapshot {
+  return {
+    now,
+    pins: [...history].map(([pin, h]) => {
+      if (h.edges.length <= MAX_EDGES_PER_PIN) return { pin, history: { base: h.base, edges: h.edges.slice() } };
+      const cut = h.edges.length - MAX_EDGES_PER_PIN;
+      return { pin, history: { base: h.edges[cut - 1].high, edges: h.edges.slice(cut) } };
+    }),
+  };
 }
 
 let counter = 0;
@@ -136,6 +158,16 @@ export function MakerStudio() {
   const [results, setResults] = useState<Record<string, Check[] | "running">>({});
   const [activeChallenge, setActiveChallenge] = useState<string | null>(null);
   const [saveNote, setSaveNote] = useState<Record<string, string>>({});
+  const [analyzer, setAnalyzer] = useState<AnalyzerSnapshot>({ now: 0, pins: [] });
+  const [showAnalyzer, setShowAnalyzer] = useState(false);
+  const [serialView, setSerialView] = useState<"text" | "plot">("text");
+  const [plot, setPlot] = useState<SerialPoint[]>([]);
+  const [shareNote, setShareNote] = useState("");
+  const historyRef = useRef(new Map<number, PinHistory>());
+  const analyzerOpenRef = useRef(false);
+  useEffect(() => { analyzerOpenRef.current = showAnalyzer; }, [showAnalyzer]);
+  const plotRef = useRef<SerialPoint[]>([]);
+  const lineBufferRef = useRef("");
 
   const simRef = useRef<UnoStudioSimulation | null>(null);
   const snapRef = useRef<StudioSnapshot | null>(null);
@@ -152,6 +184,8 @@ export function MakerStudio() {
   useEffect(() => { soundRef.current = soundOn; }, [soundOn]);
 
   const running = runState === "running";
+  const diagnostics = useMemo(() => (runState === "error" ? parseCompilerErrors(runMessage, doc.code) : []), [runState, runMessage, doc.code]);
+  const wiredPins = useMemo(() => [...new Set(doc.wires.flatMap((w) => [w.a, w.b]).map((e) => e.match(/^uno:D(\d+)$/)?.[1]).filter(Boolean).map(Number))], [doc.wires]);
   const idle = useMemo(() => simulate(doc, buildNets(doc, pressed), IDLE_BOARD), [doc, pressed]);
   const views = running ? live.views : idle.views;
   const warnings = running ? live.warnings : idle.warnings.filter((w) => w.level !== "info" || doc.wires.length > 0);
@@ -184,10 +218,11 @@ export function MakerStudio() {
     burntRef.current = new Set(result.burnt);
     for (const [id, view] of Object.entries(result.views)) if (view.angle !== undefined) anglesRef.current[id] = view.angle;
     viewsRef.current = result.views;
+    appendEdges(historyRef.current, sim.drainEdges(), snapshot.cycles, ANALYZER_KEEP_CYCLES, sim.levels());
     waitersRef.current = waitersRef.current.filter((w) => { if (snapshot.cycles >= w.cycles) { w.resolve(); return false; } return true; });
     updateSound(result.views);
     // Repaint about 16 times per emulated second (60 ms of chip time).
-    if (snapshot.cycles - lastPaint.current > 60 * 16_000 || snapshot.cycles < lastPaint.current) { lastPaint.current = snapshot.cycles; setLive({ views: result.views, warnings: result.warnings, snapshot }); }
+    if (snapshot.cycles - lastPaint.current > 60 * 16_000 || snapshot.cycles < lastPaint.current) { lastPaint.current = snapshot.cycles; setLive({ views: result.views, warnings: result.warnings, snapshot }); if (analyzerOpenRef.current) setAnalyzer(analyzerSnapshot(historyRef.current, snapshot.cycles)); }
   }
 
   function stop(message = "Stopped. Edit your circuit or code, then press Run.") {
@@ -198,6 +233,7 @@ export function MakerStudio() {
     lockedPins.current.clear();
     burntRef.current = new Set();
     anglesRef.current = {};
+    historyRef.current = new Map();
     audioRef.current?.gain.gain.setTargetAtTime(0, audioRef.current.ctx.currentTime, 0.01);
     setLive({ views: {}, warnings: [], snapshot: null });
     setRunState("idle");
@@ -209,12 +245,22 @@ export function MakerStudio() {
     setRunState("compiling");
     setRunMessage("Compiling your sketch for the ATmega328P…");
     serialRef.current = ""; setSerial("");
+    plotRef.current = []; setPlot([]); lineBufferRef.current = "";
     try {
       const firmware = await compileUnoFirmware(docRef.current.code);
       if (!firmware.fitsTarget) { setRunState("error"); setRunMessage(`The program is ${firmware.flashBytes} bytes: too big for the Uno’s 32 KB flash.`); return false; }
       simRef.current = await startUnoStudio(firmware.hex, {
         onFrame,
-        onSerial: (text) => { serialRef.current = (serialRef.current + text).slice(-8000); setSerial(serialRef.current); },
+        onSerial: (text) => {
+          serialRef.current = (serialRef.current + text).slice(-8000);
+          setSerial(serialRef.current);
+          // Serial plotter: timestamp each complete numeric line with emulated time.
+          const lines = (lineBufferRef.current + text).split(/\r?\n/);
+          lineBufferRef.current = lines.pop() ?? "";
+          const t = (simRef.current?.cycles() ?? 0) / 16_000;
+          const points = lines.map((line) => parseSerialLine(line)).filter((v): v is Record<string, number> => Boolean(v)).map((values) => ({ t, values }));
+          if (points.length) { plotRef.current = [...plotRef.current, ...points].slice(-800); setPlot(plotRef.current); }
+        },
       });
       setRunState("running");
       setRunMessage(`Running · ${firmware.flashBytes} bytes of flash · compiled in ${(firmware.compileMs / 1000).toFixed(1)} s`);
@@ -376,6 +422,28 @@ export function MakerStudio() {
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
+  async function shareBuild() {
+    const encoded = await encodeBuild(docRef.current);
+    if (encoded.length > MAX_SHARE_CHARS) { setShareNote("This build is too large for a link. Use Export instead."); return; }
+    const url = `${window.location.origin}/studio${SHARE_PREFIX}${encoded}`;
+    try { await navigator.clipboard.writeText(url); setShareNote("Link copied. Anyone who opens it gets a copy of this circuit and code."); }
+    catch { window.prompt("Copy this link to share your build:", url); }
+  }
+
+  // Opening a shared link: offer to load the build it carries, then tidy the address bar.
+  useEffect(() => {
+    if (!window.location.hash.startsWith(SHARE_PREFIX)) return;
+    const encoded = window.location.hash.slice(SHARE_PREFIX.length);
+    window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    void decodeBuild(encoded).then((data) => {
+      const shared = data ? parseDoc(JSON.stringify(data)) : null;
+      if (!shared) { window.alert("That shared build link is damaged or incomplete."); return; }
+      if (window.confirm(`Open the shared build (${shared.parts.length} parts)? It replaces the build in your workbench. Export yours first if you want to keep it.`)) save(shared);
+    });
+    // Runs once on arrival.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   async function importDoc(file: File) {
     const parsed = parseDoc(await file.text());
     if (!parsed) { window.alert("That file is not a STEMBuild Maker Studio project."); return; }
@@ -403,11 +471,13 @@ export function MakerStudio() {
             <option value="empty">Start with an empty bench</option>
           </select>
         </label>
+        <button type="button" className="btn" onClick={() => void shareBuild()}>Share link</button>
         <button type="button" className="btn" onClick={exportDoc}>Export</button>
         <label className="btn studio-import">Import<input type="file" accept="application/json,.json" onChange={(event) => { const f = event.target.files?.[0]; if (f) void importDoc(f); event.target.value = ""; }} /></label>
         <label className="studio-sound"><input type="checkbox" checked={soundOn} onChange={(event) => setSoundOn(event.target.checked)} /> Sound</label>
       </div>
     </div>
+    {shareNote ? <p className="studio-share-note small" role="status">{shareNote} <button type="button" className="kit-clear" onClick={() => setShareNote("")}>Dismiss</button></p> : null}
 
     <div className="studio-layout">
       <aside className="studio-palette" aria-label="Parts">
@@ -534,7 +604,9 @@ export function MakerStudio() {
           <span>Wire colour</span>
           {Object.entries(WIRE_COLOURS).map(([name, hex]) => <button key={name} type="button" className={wireColour === name ? "active" : ""} style={{ background: hex }} aria-label={`${name} wire`} aria-pressed={wireColour === name} onClick={() => setWireColour(name)} />)}
           <span className="small muted">5V wires turn red and GND wires black automatically.</span>
+          <button type="button" className={showAnalyzer ? "btn btn-primary studio-analyzer-toggle" : "btn studio-analyzer-toggle"} aria-pressed={showAnalyzer} onClick={() => setShowAnalyzer((v) => !v)}>Logic analyzer</button>
         </div>
+        {showAnalyzer ? <LogicAnalyzer snapshot={analyzer} wiredPins={wiredPins} running={running} /> : null}
 
         {inputParts.length ? <div className="studio-controls" aria-label="Inputs and sensors">
           {inputParts.map((p) => <div key={p.id} className="studio-control">
@@ -563,25 +635,26 @@ export function MakerStudio() {
         </div>
 
         {tab === "code" ? <div className="studio-panel">
-          {runState === "error" ? <pre className="studio-error" role="alert">{runMessage}</pre> : null}
-          <textarea className="studio-code" spellCheck={false} aria-label="Arduino sketch" value={doc.code}
-            onChange={(event) => save({ ...docRef.current, code: event.target.value })}
-            onKeyDown={(event) => {
-              if (event.key !== "Tab") return;
-              event.preventDefault();
-              const el = event.currentTarget, start = el.selectionStart, end = el.selectionEnd;
-              const next = el.value.slice(0, start) + "  " + el.value.slice(end);
-              save({ ...docRef.current, code: next });
-              requestAnimationFrame(() => { el.selectionStart = el.selectionEnd = start + 2; });
-            }} />
+          {runState === "error" ? (diagnostics.length
+            ? <details className="studio-error-details"><summary>Your code did not compile. Click a message to jump to the line.</summary><pre className="studio-error">{runMessage}</pre></details>
+            : <pre className="studio-error" role="alert">{runMessage}</pre>) : null}
+          <CodeEditor value={doc.code} diagnostics={diagnostics} onChange={(code) => save({ ...docRef.current, code })} />
           <div className="inline" style={{ marginTop: 10 }}>
             <button type="button" className="btn" onClick={() => { if (window.confirm("Replace your code with a starter sketch generated from your wiring?")) save({ ...docRef.current, code: starterCode(docRef.current) }); }}>Generate starter code from wiring</button>
           </div>
         </div> : null}
 
         {tab === "serial" ? <div className="studio-panel">
-          <div className="hw-log studio-serial" tabIndex={0} aria-label="Serial output">{serial || <span className="muted">Serial.print() output appears here while the simulation runs.</span>}</div>
-          <button type="button" className="kit-clear" onClick={() => { serialRef.current = ""; setSerial(""); }}>Clear</button>
+          <div className="studio-segment" role="group" aria-label="Serial view">
+            <button type="button" aria-pressed={serialView === "text"} className={serialView === "text" ? "chip active" : "chip"} onClick={() => setSerialView("text")}>Monitor</button>
+            <button type="button" aria-pressed={serialView === "plot"} className={serialView === "plot" ? "chip active" : "chip"} onClick={() => setSerialView("plot")}>Plotter</button>
+          </div>
+          {serialView === "text"
+            ? <div className="hw-log studio-serial" tabIndex={0} aria-label="Serial output">{serial || <span className="muted">Serial.print() output appears here while the simulation runs.</span>}</div>
+            : seriesNames(plot).length
+              ? <SerialChart points={plot} series={seriesNames(plot)} windowMs={20_000} label="Values printed by your sketch" />
+              : <p className="small muted">Print numbers to graph them, for example <code>Serial.print(&quot;temp:&quot;); Serial.println(t);</code></p>}
+          <button type="button" className="kit-clear" onClick={() => { serialRef.current = ""; setSerial(""); plotRef.current = []; setPlot([]); }}>Clear</button>
         </div> : null}
 
         {tab === "challenges" ? <div className="studio-panel studio-challenges">

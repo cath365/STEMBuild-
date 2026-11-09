@@ -37,7 +37,7 @@ export default async function StudentDashboard() {
   const overdueCount = items.filter((item) => item.overdue).length;
 
   return <>
-    <div className="topbar"><div className="page-title"><div className="eyebrow">Student</div><h1 style={{fontSize:38}}>Welcome, {user.displayName}</h1><div className="muted">Continue your assigned practical learning.</div></div></div>
+    <div className="topbar"><div className="page-title"><div className="eyebrow">Student</div><h1 style={{fontSize:38}}>Welcome, {user.displayName}</h1><div className="muted">Continue your assigned practical learning.</div></div><Link className="btn" href="/join">Join a class</Link></div>
 
     {next ? <section className="card continue-card" aria-labelledby="continue-title">
       <div>
