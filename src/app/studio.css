@@ -100,3 +100,6 @@
   .studio-tabs { grid-template-columns: repeat(2, 1fr); }
 }
 @media (prefers-reduced-motion: reduce) { .studio-spin, .studio-waves path { animation: none; } }
+.studio-outcomes { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; }
+.studio-outcomes .small { flex-basis: 100%; }
+.studio-challenge .inline .btn { margin-top: 10px; }

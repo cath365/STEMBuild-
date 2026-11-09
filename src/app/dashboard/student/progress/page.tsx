@@ -3,17 +3,21 @@ import { getStudentLearningAnalytics } from "@/lib/analytics";
 import { db } from "@/lib/db";
 import { formatDate, percent, percentRatio } from "@/lib/format";
 import { requireRole } from "@/lib/session";
+import { learnerChallengeRows } from "@/lib/challenge-analytics";
+import Link from "next/link";
 
 export default async function StudentProgress() {
   const user = await requireRole("STUDENT");
-  const [progress, quiz, practical, badges, certificates, analytics] = await Promise.all([
+  const [progress, quiz, practical, badges, certificates, analytics, challengeAttempts] = await Promise.all([
     db.lessonProgress.findMany({ where: { studentId: user.id }, include: { lesson: { include: { module: true } } }, orderBy: { updatedAt: "desc" } }),
     db.quizAttempt.findMany({ where: { studentId: user.id, completedAt: { not: null } }, include: { quiz: { include: { lesson: true } } }, orderBy: { completedAt: "desc" } }),
     db.practicalSubmission.findMany({ where: { studentId: user.id }, include: { task: { include: { lesson: true } }, assessment: true, hardwarePlatform: true }, orderBy: { createdAt: "desc" } }),
     db.studentBadge.findMany({ where: { studentId: user.id }, include: { badge: true }, orderBy: { awardedAt: "desc" } }),
     db.certificate.findMany({ where: { studentId: user.id, status: "ISSUED" }, include: { course: true }, orderBy: { issuedAt: "desc" } }),
     getStudentLearningAnalytics(user.id),
+    db.challengeAttempt.findMany({ where: { studentId: user.id }, select: { studentId: true, challengeId: true, passed: true, createdAt: true }, orderBy: { createdAt: "asc" } }),
   ]);
+  const challengeRows = learnerChallengeRows(challengeAttempts);
   const passedQuiz = quiz.filter((q) => q.passed).length;
   const assessed = practical.filter((p) => p.status === "ASSESSED").length;
   const visibleSkills = analytics.skillMastery.filter((skill) => skill.evidenceCount > 0);
@@ -26,6 +30,7 @@ export default async function StudentProgress() {
 
   <section className="section"><h2>Recent quiz attempts</h2><div className="table-wrap" style={{marginTop:14}}><table><thead><tr><th>Lesson</th><th>Attempt</th><th>Score</th><th>Status</th></tr></thead><tbody>{quiz.map((q) => <tr key={q.id}><td>{q.quiz.lesson.title}</td><td>{q.attemptNo}</td><td>{percent(q.score, q.maxScore)}</td><td><span className={q.passed ? "badge badge-green" : "badge badge-yellow"}>{q.passed ? "Passed" : "Retry"}</span></td></tr>)}</tbody></table></div></section>
   <section><h2>Practical submissions</h2><div className="table-wrap" style={{marginTop:14}}><table><thead><tr><th>Lesson</th><th>Board</th><th>Submission</th><th>Teacher score</th></tr></thead><tbody>{practical.map((p) => <tr key={p.id}><td>{p.task.lesson.title}</td><td>{p.hardwarePlatform.name}</td><td>{p.status.replaceAll("_", " ")}</td><td>{p.assessment ? percent(p.assessment.totalScore, p.assessment.maxScore) : "Awaiting assessment"}</td></tr>)}</tbody></table></div></section>
+  <section className="section"><div className="section-title"><div><h2>Maker Studio challenges</h2><p className="muted">Practice evidence from the Maker Studio test bench. It runs in your browser, so it shows practice, not a teacher grade.</p></div><Link className="btn" href="/studio">Open Maker Studio</Link></div><div className="table-wrap"><table><thead><tr><th>Challenge</th><th>Level</th><th>Outcomes</th><th>Attempts</th><th>Status</th><th>Last tried</th></tr></thead><tbody>{challengeRows.map((row) => <tr key={row.challenge.id}><td>{row.challenge.title}</td><td>{row.challenge.level}</td><td>{row.challenge.outcomes.join(", ")}</td><td>{row.attempts}</td><td><span className={row.passed ? "badge badge-green" : "badge badge-yellow"}>{row.passed ? `Passed on attempt ${row.firstPassAttempt}` : "Not yet passed"}</span></td><td>{formatDate(row.lastAttemptAt)}</td></tr>)}{challengeRows.length === 0 ? <tr><td colSpan={6} className="muted">No challenges tried yet. Run one in Maker Studio while signed in and it appears here.</td></tr> : null}</tbody></table></div></section>
   <section className="section"><h2>Recent learning events</h2><p className="muted">A compact audit trail of meaningful learning actions—not page views.</p><div className="table-wrap" style={{marginTop:14}}><table><thead><tr><th>Date</th><th>Event</th><th>Context</th><th>Outcome</th></tr></thead><tbody>{analytics.events.slice(0, 20).map((event) => <tr key={event.id}><td>{formatDate(event.occurredAt)}</td><td>{event.type.replaceAll("_", " ").toLowerCase()}</td><td>{event.lesson?.title ?? event.project?.title ?? event.skill?.name ?? "Learning activity"}</td><td>{event.outcome?.replaceAll("_", " ").toLowerCase() ?? "—"}</td></tr>)}{analytics.events.length === 0 ? <tr><td colSpan={4} className="muted">No learning events have been recorded yet.</td></tr> : null}</tbody></table></div></section>
   <section><h2>Earned credentials</h2><div className="grid grid-2" style={{marginTop:14}}>{badges.map((b) => <div className="card" key={b.id}><span className="badge badge-green">Badge</span><h3 style={{marginTop:10}}>{b.badge.title}</h3><p className="muted">{b.badge.description}</p></div>)}{certificates.map((c) => <div className="card" key={c.id}><span className="badge badge-green">Certificate</span><h3 style={{marginTop:10}}>{c.course.title}</h3><div className="small muted">Certificate {c.certificateNumber}</div></div>)}{badges.length === 0 && certificates.length === 0 ? <div className="card empty">Badges and certificates appear only after the required quiz, practical and project assessments are completed.</div> : null}</div></section></>;
 }

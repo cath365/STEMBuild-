@@ -2,6 +2,8 @@ import { StatCard } from "@/components/stat-card";
 import { getTeacherLearningAnalytics } from "@/lib/analytics";
 import { formatDuration, percentRatio } from "@/lib/format";
 import { requireRole } from "@/lib/session";
+import { db } from "@/lib/db";
+import { classChallengeSummary } from "@/lib/challenge-analytics";
 
 export default async function TeacherAnalytics() {
   const teacher = await requireRole("TEACHER");
@@ -10,6 +12,8 @@ export default async function TeacherAnalytics() {
   const needsAttention = analytics.learnerRows.filter((row) => row.needsAttention);
   const codingVsWiring = analytics.learnerRows.filter((row) => row.codingStrongWiringWeak);
   const repeatedHints = analytics.learnerRows.filter((row) => row.repeatedHints);
+  const challengeAttempts = await db.challengeAttempt.findMany({ where: { studentId: { in: analytics.learnerRows.map((row) => row.id) } }, select: { studentId: true, challengeId: true, passed: true, createdAt: true } });
+  const studio = classChallengeSummary(challengeAttempts);
 
   return <>
     <div className="topbar"><div className="page-title"><div className="eyebrow">Learning engineering</div><h1 style={{fontSize:38}}>Class learning analytics from stored events</h1><div className="muted">No page-view metrics and no generated AI conclusions. Every value below is derived from learner attempts, rubric scores, hints, troubleshooting and completion events.</div></div></div>
@@ -28,5 +32,17 @@ export default async function TeacherAnalytics() {
     <section><h2>Hardware difficulty signals</h2><p className="muted">These are counts, not an AI ranking. A difficulty signal is a failed/revision review, hint request or troubleshooting event associated with that platform.</p><div className="table-wrap" style={{marginTop:14}}><table><thead><tr><th>Platform</th><th>Attempts</th><th>Failed/revision</th><th>Hints</th><th>Troubleshooting</th><th>Total signals</th></tr></thead><tbody>{analytics.hardwareDifficulty.map((row) => <tr key={row.id}><td>{row.name}</td><td>{row.attempts}</td><td>{row.failed}</td><td>{row.hints}</td><td>{row.troubleshooting}</td><td>{row.difficultySignals}</td></tr>)}{analytics.hardwareDifficulty.length === 0 ? <tr><td colSpan={6} className="muted">Hardware analytics appear after hardware-linked learner events exist.</td></tr> : null}</tbody></table></div></section>
 
     <section className="section"><h2>Are learners improving over time?</h2><p className="muted">Trend compares the average normalized score in the first half of a learner&apos;s scored events with the second half. At least four scored events are required. ±10 percentage points is the improvement/decline threshold.</p><div className="table-wrap" style={{marginTop:14}}><table><thead><tr><th>Learner</th><th>Trend</th><th>Change</th><th>Scored events</th></tr></thead><tbody>{analytics.learnerRows.map((row) => <tr key={row.id}><td>{row.displayName}</td><td>{row.trend.label}</td><td>{row.trend.delta == null ? "—" : `${row.trend.delta >= 0 ? "+" : ""}${Math.round(row.trend.delta * 100)} pts`}</td><td>{row.trend.samples}</td></tr>)}</tbody></table></div></section>
+
+    <section className="section">
+      <h2>Maker Studio challenge practice</h2>
+      <p className="muted">Self-run practice: the test bench runs in the learner’s browser, so treat these as signals of independent practice and debugging, not as grades. {studio.activeLearners} of {analytics.learnerRows.length} learners have tried at least one challenge.</p>
+      <div className="table-wrap" style={{ marginTop: 14 }}><table><thead><tr><th>Challenge</th><th>Level</th><th>Outcomes</th><th>Learners tried</th><th>Learners passed</th><th>Median attempts to pass</th></tr></thead><tbody>
+        {studio.summaries.map((s) => <tr key={s.challenge.id}><td>{s.challenge.title}</td><td>{s.challenge.level}</td><td>{s.challenge.outcomes.join(", ")}</td><td>{s.learners}</td><td>{s.passedLearners}</td><td>{s.medianAttemptsToPass ?? "—"}</td></tr>)}
+        {studio.summaries.length === 0 ? <tr><td colSpan={6} className="muted">No challenge attempts yet. Learners save attempts by running challenges in Maker Studio while signed in.</td></tr> : null}
+      </tbody></table></div>
+      <h3 style={{ marginTop: 24 }}>Learning outcomes demonstrated</h3>
+      <p className="small muted">A learner counts towards an outcome after passing at least one challenge mapped to it.</p>
+      <div className="grid grid-3" style={{ marginTop: 12 }}>{studio.outcomeCoverage.map((o) => <div className="card card-muted" key={o.outcome}><div className="small muted">{o.outcome}</div><div className="metric">{o.learners}<span className="small muted"> / {analytics.learnerRows.length}</span></div><div className="small muted">{o.description}</div></div>)}</div>
+    </section>
   </>;
 }

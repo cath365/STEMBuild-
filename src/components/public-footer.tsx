@@ -4,7 +4,7 @@ import { Brand } from "@/components/brand";
 const columns: { title: string; links: [string, string][] }[] = [
   { title: "Learn", links: [["Projects", "/projects"], ["First robot path", "/learning-paths/first-robot"], ["Sample lesson", "/showcase/smart-environment-monitor"], ["Component library", "/components"]] },
   { title: "Tools", links: [["3D Lab", "/3d-lab"], ["Virtual electronics lab", "/tools"], ["Virtual Arduino Uno", "/tools/virtual-arduino"], ["Live hardware monitor", "/hardware-monitor"]] },
-  { title: "Schools", links: [["Teacher guide", "/teachers"], ["About & impact", "/about"], ["Sign in", "/login"]] },
+  { title: "Schools", links: [["Teacher guide", "/teachers"], ["How it helps", "/how-it-helps"], ["About & impact", "/about"], ["Sign in", "/login"]] },
 ];
 
 const YEAR = new Date().getFullYear();

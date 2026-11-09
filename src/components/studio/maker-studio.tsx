@@ -4,7 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { compileUnoFirmware, startUnoStudio, type StudioSnapshot, type UnoStudioSimulation } from "@/lib/avr-browser-engine";
 import { buildNets, connectionsOf, IDLE_BOARD, simulate, type PartView, type PlacedPart, type StudioDoc, type Warning } from "@/lib/studio/circuit";
 import { LED_COLOURS, PART_BY_TYPE, PART_CATEGORIES, PART_DEFINITIONS, PWM_PINS, RESISTOR_VALUES, UNO, UNO_PINS, isGround, pinPosition, type PartType } from "@/lib/studio/parts";
-import { CHALLENGES, type Challenge, type Check, type Harness } from "@/lib/studio/challenges";
+import { CHALLENGES, LEARNING_OUTCOMES, type Challenge, type Check, type Harness } from "@/lib/studio/challenges";
+import { recordChallengeAttempt } from "@/lib/studio-actions";
 import { STUDIO_EXAMPLES, EMPTY_DOC } from "@/lib/studio/examples";
 import { formatSI } from "@/lib/electronics";
 import { useStoredValue } from "@/lib/use-stored-value";
@@ -134,6 +135,7 @@ export function MakerStudio() {
   const [soundOn, setSoundOn] = useState(false);
   const [results, setResults] = useState<Record<string, Check[] | "running">>({});
   const [activeChallenge, setActiveChallenge] = useState<string | null>(null);
+  const [saveNote, setSaveNote] = useState<Record<string, string>>({});
 
   const simRef = useRef<UnoStudioSimulation | null>(null);
   const snapRef = useRef<StudioSnapshot | null>(null);
@@ -298,6 +300,21 @@ export function MakerStudio() {
     };
     const checks = await challenge.run(harness);
     setResults((r) => ({ ...r, [challenge.id]: checks }));
+    // Signed-in learners get the attempt saved to their progress for their teacher.
+    try {
+      const outcome = await recordChallengeAttempt(challenge.id, checks.map(({ label, passed }) => ({ label, passed })));
+      setSaveNote((n) => ({ ...n, [challenge.id]: outcome.saved ? "Saved to your progress." : outcome.reason === "signed-out" ? "Sign in as a student to save this result to your progress." : outcome.reason === "rate-limited" ? "Not saved: too many attempts this hour." : "" }));
+    } catch {
+      setSaveNote((n) => ({ ...n, [challenge.id]: "Result not saved (offline?). It is still shown here." }));
+    }
+  }
+
+  function loadStarter(challenge: Challenge) {
+    if (!challenge.starter) return;
+    if (docRef.current.parts.length && !window.confirm("Replace your current build with the broken build for this challenge? Export first if you want to keep yours.")) return;
+    stop("Broken build loaded. Run it, observe what goes wrong, then fix the wiring or the code.");
+    save(structuredClone(challenge.starter));
+    setSelection(null);
   }
 
   // ---------- Editing ----------
@@ -577,7 +594,12 @@ export function MakerStudio() {
               <p>{challenge.brief}</p>
               <p className="small muted">Skills: {challenge.concepts.join(" · ")}</p>
               <ul className="studio-criteria">{challenge.criteria.map((c) => <li key={c}>{c}</li>)}</ul>
-              <button type="button" className="btn btn-primary" disabled={result === "running"} onClick={() => void runChallenge(challenge)}>{result === "running" ? "Testing…" : "Run the test bench"}</button>
+              <div className="studio-outcomes">{challenge.outcomes.map((o) => <span key={o} className="badge" title={LEARNING_OUTCOMES[o]}>{o}</span>)}<span className="small muted">{challenge.outcomes.map((o) => LEARNING_OUTCOMES[o]).join("; ")}</span></div>
+              <div className="inline">
+                {challenge.starter ? <button type="button" className="btn" onClick={() => loadStarter(challenge)}>Load the broken build</button> : null}
+                <button type="button" className="btn btn-primary" disabled={result === "running"} onClick={() => void runChallenge(challenge)}>{result === "running" ? "Testing…" : "Run the test bench"}</button>
+              </div>
+              {saveNote[challenge.id] ? <p className="small muted" role="status">{saveNote[challenge.id]}</p> : null}
               {Array.isArray(result) ? <ul className="studio-results">{result.map((check) => <li key={check.label} className={check.passed ? "pass" : "fail"}>
                 <span aria-hidden="true">{check.passed ? "✓" : "✗"}</span><span><strong>{check.label}</strong>{check.detail ? <small>{check.detail}</small> : null}</span>
               </li>)}</ul> : null}

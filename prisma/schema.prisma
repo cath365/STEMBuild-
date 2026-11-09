@@ -196,8 +196,24 @@ model User {
   aiCoachSessions         AiCoachSession[]        @relation("AiCoachLearner")
   offlineCheckpoints      OfflineLessonCheckpoint[] @relation("OfflineCheckpointLearner")
   kitUsages               KitUsage[]               @relation("KitUsageLearner")
+  challengeAttempts       ChallengeAttempt[]
 
   @@index([schoolId, role])
+}
+
+/// A Maker Studio challenge run by a signed-in learner. The test bench runs in the learner's
+/// browser, so results are practice evidence for teachers, not an assessed grade.
+model ChallengeAttempt {
+  id          String   @id @default(cuid())
+  studentId   String
+  challengeId String
+  passed      Boolean
+  checks      Json
+  createdAt   DateTime @default(now())
+  student     User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId, challengeId])
+  @@index([challengeId, passed])
 }
 
 model Session {

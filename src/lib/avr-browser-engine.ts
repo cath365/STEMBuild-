@@ -1,7 +1,12 @@
 "use client";
 
-const COMPILER_BASE = "https://cdn.jsdelivr.net/npm/@horang-corp/avr-gcc-wasm@0.2.0/";
-const AVR8_URL = "https://esm.sh/avr8js@0.21.1";
+// The 53 MB avr-gcc toolchain is fetched on first compile from a public CDN, with a mirror if
+// the first is blocked. Both URLs are version-pinned (immutable), and the service worker keeps
+// them so later compiles work offline and never re-download.
+export const COMPILER_MIRRORS = [
+  "https://cdn.jsdelivr.net/npm/@horang-corp/avr-gcc-wasm@0.2.0/",
+  "https://unpkg.com/@horang-corp/avr-gcc-wasm@0.2.0/",
+];
 
 type RemoteModule = Record<string, any>;
 
@@ -10,6 +15,11 @@ function remoteImport(url: string): Promise<RemoteModule> {
   // a learner explicitly chooses Full Firmware Mode.
   const importer = new Function("url", "return import(url)") as (url: string) => Promise<RemoteModule>;
   return importer(url);
+}
+
+/** The AVR emulator ships with the site (code-split), so it needs no third-party server. */
+async function loadAvr8(): Promise<RemoteModule> {
+  return (await import("avr8js")) as unknown as RemoteModule;
 }
 
 function loadIntelHex(source: string, target: Uint8Array) {
@@ -48,35 +58,28 @@ export async function compileUnoFirmware(source: string): Promise<FirmwareCompil
   // Arduino IDE preprocessing implicitly provides Arduino.h for .ino sketches.
   // The WASM compiler consumes C++ directly, so mirror that standard step when needed.
   const compileSource = /#\s*include\s*[<"]Arduino\.h[>"]/.test(source) ? source : `#include <Arduino.h>\n${source}`;
+  // Pick the first mirror whose compiler module downloads. A mirror is skipped only when the
+  // download fails; errors in the learner's code are reported straight away, never retried.
+  let base = "";
+  let downloadError: unknown = null;
+  for (const mirror of COMPILER_MIRRORS) {
+    try { compiler = await remoteImport(`${mirror}index.js`); base = mirror; break; } catch (error) { downloadError = error; }
+  }
+  if (!base) throw new Error(`The compiler could not be downloaded (network): ${downloadError instanceof Error ? downloadError.message : String(downloadError)}`);
+  const finish = (result: RemoteModule) => ({
+    hex: String(result.hex),
+    flashBytes: Number(result.flashBytes ?? 0),
+    fitsTarget: Boolean(result.fitsTarget),
+    compileMs: performance.now() - started,
+  });
   try {
-    compiler = await remoteImport(`${COMPILER_BASE}index.js`);
-    const result = await compiler.compile({
-      source: compileSource,
-      sensors: [],
-      assetsBase: COMPILER_BASE,
-    });
-    return {
-      hex: String(result.hex),
-      flashBytes: Number(result.flashBytes ?? 0),
-      fitsTarget: Boolean(result.fitsTarget),
-      compileMs: performance.now() - started,
-    };
+    return finish(await compiler!.compile({ source: compileSource, sensors: [], assetsBase: base }));
   } catch (workerError) {
     // Some browsers block a cross-origin module Worker. The package also
     // exposes the same compiler pipeline for direct execution.
     try {
-      compiler = await remoteImport(`${COMPILER_BASE}firmware-builder.js`);
-      const result = await compiler.buildFirmware({
-        source: compileSource,
-        sensors: [],
-        assetsBase: COMPILER_BASE,
-      });
-      return {
-        hex: String(result.hex),
-        flashBytes: Number(result.flashBytes ?? 0),
-        fitsTarget: Boolean(result.fitsTarget),
-        compileMs: performance.now() - started,
-      };
+      const direct = await remoteImport(`${base}firmware-builder.js`);
+      return finish(await direct.buildFirmware({ source: compileSource, sensors: [], assetsBase: base }));
     } catch (directError) {
       const first = workerError instanceof Error ? workerError.message : String(workerError);
       const second = directError instanceof Error ? directError.message : String(directError);
@@ -117,7 +120,7 @@ export async function startUnoBoard(
   hex: string,
   options: { onFrame: (state: UnoBoardState) => void; onSerial: (text: string) => void; analogVolts: number[]; inputs: Record<number, boolean> },
 ): Promise<UnoBoardSimulation> {
-  const avr = await remoteImport(AVR8_URL);
+  const avr = await loadAvr8();
   const program = new Uint16Array(0x4000);
   loadIntelHex(hex, new Uint8Array(program.buffer));
 
@@ -226,7 +229,7 @@ export async function startUnoStudio(
   hex: string,
   options: { onFrame: (snapshot: StudioSnapshot) => void; onSerial: (text: string) => void },
 ): Promise<UnoStudioSimulation> {
-  const avr = await remoteImport(AVR8_URL);
+  const avr = await loadAvr8();
   const program = new Uint16Array(0x4000);
   loadIntelHex(hex, new Uint8Array(program.buffer));
   const cpu = new avr.CPU(program);
@@ -361,7 +364,7 @@ export async function startUnoFirmwareSimulation(
     onCycles?: (cycles: number) => void;
   },
 ): Promise<AVRSimulation> {
-  const avr = await remoteImport(AVR8_URL);
+  const avr = await loadAvr8();
   const FLASH_WORDS = 0x4000; // ATmega328P has 32 KB flash (16K words).
   const program = new Uint16Array(FLASH_WORDS);
   loadIntelHex(hex, new Uint8Array(program.buffer));

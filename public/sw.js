@@ -1,5 +1,11 @@
 const SHELL_CACHE = "stembuild-shell-v7";
 const STATIC_CACHE = "stembuild-static-v7";
+// Kept across service-worker versions: the toolchain URLs are immutable, so it never goes stale.
+const TOOLCHAIN_CACHE = "stembuild-toolchain-avr-gcc-0.2.0";
+const TOOLCHAIN_PREFIXES = [
+  "https://cdn.jsdelivr.net/npm/@horang-corp/avr-gcc-wasm@0.2.0/",
+  "https://unpkg.com/@horang-corp/avr-gcc-wasm@0.2.0/",
+];
 const PUBLIC_PAGES = ["/", "/offline", "/offline-lesson.html", "/showcase/smart-environment-monitor", "/teachers", "/about"];
 const BRAND_ICON = "/brand/stembuild-icon-64x64.png";
 const SHELL_URLS = [...PUBLIC_PAGES, BRAND_ICON, "/icon-192.png", "/icon-512.png", "/lessons/smart-monitor-uno.ino", "/lessons/smart-monitor-esp32.ino", "/lessons/reading-log.csv", "/lessons/pilot-planning-brief.md"];
@@ -92,7 +98,7 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
   event.waitUntil((async () => {
     const keys = await caches.keys();
-    await Promise.all(keys.filter((key) => key.startsWith("stembuild-") && ![SHELL_CACHE, STATIC_CACHE].includes(key)).map((key) => caches.delete(key)));
+    await Promise.all(keys.filter((key) => key.startsWith("stembuild-") && ![SHELL_CACHE, STATIC_CACHE, TOOLCHAIN_CACHE].includes(key)).map((key) => caches.delete(key)));
     await self.clients.claim();
   })());
 });
@@ -100,6 +106,18 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const request = event.request;
   const url = new URL(request.url);
+  // Arduino compiler (avr-gcc WASM): version-pinned public files, so cache-first is safe. After the
+  // first compile, the ~53 MB toolchain is never downloaded again and compiling works offline.
+  if (request.method === "GET" && TOOLCHAIN_PREFIXES.some((prefix) => request.url.startsWith(prefix))) {
+    event.respondWith(caches.open(TOOLCHAIN_CACHE).then(async (cache) => {
+      const cached = await cache.match(request.url);
+      if (cached) return cached;
+      const response = await fetch(request);
+      if (response.ok && response.type !== "opaque") await cache.put(request.url, response.clone());
+      return response;
+    }));
+    return;
+  }
   if (request.method !== "GET" || url.origin !== self.location.origin || request.headers.get("RSC") === "1") return;
 
   const imageSource = url.searchParams.get("url") || "";
